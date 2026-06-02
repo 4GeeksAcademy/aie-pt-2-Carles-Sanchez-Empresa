@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TrackFlow</title>
     <meta name="description" content="TrackFlow" />
+    <link rel="preload" as="image" href="media/Logo TrackFlow.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="application/ld+json">
       {
@@ -51,15 +52,24 @@
   <body class="min-h-screen bg-[#c6dced] text-[#2f4a62]">
     <div class="sticky top-0 z-20">
       <header class="border-b border-[#c89d66] bg-[#f3ddba]">
-      <div class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4" itemscope itemtype="https://schema.org/Organization">
-        <a href="#inicio" itemprop="url" class="inline-flex items-center bg-transparent" style="background-color: transparent !important;" aria-label="TrackFlow">
-          <img src="media/Logo TrackFlow.png" alt="Logo TrackFlow" class="h-20 w-auto bg-transparent" style="background-color: transparent !important;" itemprop="logo">
-        </a>
-      </div>
+        <div class="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3" itemscope itemtype="https://schema.org/Organization">
+          <a href="#inicio" itemprop="url" class="inline-flex items-center bg-transparent" style="background-color: transparent !important;" aria-label="TrackFlow">
+            <img src="media/Logo TrackFlow.png" alt="Logo TrackFlow" class="h-14 w-auto bg-transparent md:h-16" style="background-color: transparent !important;" itemprop="logo" fetchpriority="high" decoding="async">
+          </a>
+
+          <nav aria-label="Navegacion principal" class="hidden md:block">
+            <ul class="flex items-center gap-4 text-center text-sm font-medium text-[#2f4a62]">
+              <li><a href="#inicio" class="block rounded-md px-2 py-2 hover:bg-[#e5be83] hover:text-[#14263a]">Inicio</a></li>
+              <li><a href="#servicios" class="block rounded-md px-2 py-2 hover:bg-[#e5be83] hover:text-[#14263a]">Servicios</a></li>
+              <li><a href="#cobertura" class="block rounded-md px-2 py-2 hover:bg-[#e5be83] hover:text-[#14263a]">Cobertura</a></li>
+              <li><a href="#contacto" class="block rounded-md px-2 py-2 hover:bg-[#e5be83] hover:text-[#14263a]">Contacto</a></li>
+            </ul>
+          </nav>
+        </div>
       </header>
 
-      <nav aria-label="Navegacion principal" class="fixed inset-x-0 bottom-0 z-30 border-t border-[#c89d66] bg-[#f3ddba] md:static md:border-b md:border-t-0">
-        <ul class="mx-auto grid w-full max-w-5xl grid-cols-4 gap-1 px-2 py-2 text-center text-xs font-medium text-[#2f4a62] md:flex md:justify-end md:gap-6 md:px-4 md:py-3 md:text-sm">
+      <nav aria-label="Navegacion principal movil" class="fixed inset-x-0 bottom-0 z-30 border-t border-[#c89d66] bg-[#f3ddba] md:hidden">
+        <ul class="mx-auto grid w-full max-w-5xl grid-cols-4 gap-1 px-2 py-2 text-center text-xs font-medium text-[#2f4a62]">
           <li><a href="#inicio" class="block rounded-md px-2 py-2 hover:bg-[#e5be83] hover:text-[#14263a]">Inicio</a></li>
           <li><a href="#servicios" class="block rounded-md px-2 py-2 hover:bg-[#e5be83] hover:text-[#14263a]">Servicios</a></li>
           <li><a href="#cobertura" class="block rounded-md px-2 py-2 hover:bg-[#e5be83] hover:text-[#14263a]">Cobertura</a></li>
@@ -78,7 +88,7 @@
         <a href="./application.html" class="mt-5 inline-flex items-center rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Solicitar información</a>
       </section>
 
-      <section id="servicios" aria-labelledby="servicios-title" class="scroll-mt-28 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm md:scroll-mt-36 md:p-8">
+      <section id="servicios" aria-labelledby="servicios-title" class="scroll-mt-28 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm [content-visibility:auto] [contain-intrinsic-size:1px_850px] md:scroll-mt-36 md:p-8">
         <h2 id="servicios-title" class="text-xl font-semibold text-[#14263a] md:text-2xl">Servicios</h2>
         <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
           <article class="rounded-lg border border-[#c89d66] bg-[#e5be83] p-4">
@@ -88,7 +98,7 @@
               <li class="leading-relaxed">Inventario en tiempo real</li>
               <li class="leading-relaxed">Operamos almacenes en Los Ángeles y Zaragoza</li>
             </ul>
-            <img src="media/Almacen.webp" alt="Gestión de Almacenes" class="mt-4 h-48 w-full rounded-md object-cover">
+            <img src="media/Almacen.webp" alt="Gestión de Almacenes" class="mt-4 h-48 w-full rounded-md object-cover" loading="lazy" decoding="async" fetchpriority="low">
           </article>
           <article class="rounded-lg border border-[#c89d66] bg-[#e5be83] p-4">
             <h3 class="text-base font-semibold text-[#14263a]">Entregas de Última Milla</h3>
@@ -97,7 +107,7 @@
               <li class="leading-relaxed">Seguimiento unificado de envíos</li>
               <li class="leading-relaxed">Gestión de incidencias y devoluciones</li>
             </ul>
-            <img src="media/Furgoneta.webp" alt="Entregas de Última Milla" class="mt-4 h-48 w-full rounded-md object-cover">
+            <img src="media/Furgoneta.webp" alt="Entregas de Última Milla" class="mt-4 h-48 w-full rounded-md object-cover" loading="lazy" decoding="async" fetchpriority="low">
           </article>
           <article class="rounded-lg border border-[#c89d66] bg-[#e5be83] p-4">
             <h3 class="text-base font-semibold text-[#14263a]">Logística Inversa</h3>
@@ -106,12 +116,12 @@
               <li class="leading-relaxed">Inspección y reacondicionamiento</li>
               <li class="leading-relaxed">Integración con tu plataforma de ventas</li>
             </ul>
-            <img src="media/Logistica.jpg" alt="Logística Inversa" class="mt-4 h-48 w-full rounded-md object-cover">
+            <img src="media/Logistica.jpg" alt="Logística Inversa" class="mt-4 h-48 w-full rounded-md object-cover" loading="lazy" decoding="async" fetchpriority="low">
           </article>
         </div>
       </section>
 
-      <section id="cobertura" aria-labelledby="cobertura-title" class="scroll-mt-28 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm md:scroll-mt-36 md:p-8">
+      <section id="cobertura" aria-labelledby="cobertura-title" class="scroll-mt-28 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm [content-visibility:auto] [contain-intrinsic-size:1px_450px] md:scroll-mt-36 md:p-8">
         <h2 id="cobertura-title" class="text-xl font-semibold text-[#14263a] md:text-2xl">Cobertura</h2>
         <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
           <article class="rounded-lg border border-[#c89d66] bg-[#e5be83] p-4">
@@ -133,7 +143,7 @@
         </div>
       </section>
 
-      <section aria-labelledby="why-title" class="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm md:p-8">
+      <section aria-labelledby="why-title" class="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm [content-visibility:auto] [contain-intrinsic-size:1px_380px] md:p-8">
         <h2 id="why-title" class="text-xl font-semibold text-[#14263a] md:text-2xl">¿Por qué TrackFlow?</h2>
         <ul class="mt-4 list-inside list-disc space-y-3 text-sm text-[#2f4a62] md:text-base">
           <li class="leading-relaxed"><strong>Operación binacional:</strong> El único operador con infraestructura propia en Estados Unidos y España</li>
@@ -143,7 +153,7 @@
         </ul>
       </section>
 
-      <section id="contacto" aria-labelledby="contacto-title" class="scroll-mt-28 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm md:scroll-mt-36 md:p-8">
+      <section id="contacto" aria-labelledby="contacto-title" class="scroll-mt-28 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm [content-visibility:auto] [contain-intrinsic-size:1px_280px] md:scroll-mt-36 md:p-8">
         <h2 id="contacto-title" class="text-xl font-semibold text-[#14263a] md:text-2xl">Contacto</h2>
         <ul class="mt-4 list-inside list-disc space-y-2 text-sm text-[#2f4a62] md:text-base">
           <li class="leading-relaxed">Email: comercial@trackflow.com</li>
