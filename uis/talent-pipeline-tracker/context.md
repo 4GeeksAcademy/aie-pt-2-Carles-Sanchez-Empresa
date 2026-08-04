@@ -1,5 +1,6 @@
 # Contexto del Proyecto 
 - **Objetivo**: Crear un frontend para gestionar las candidaturas que recibe una empresa, filtrarlas por estado y etapa y abrir el detalle de cada una sin perder el contexto del listado.
+- Diseño hecho por un diseñador Full-Stack senior
 - Contexto del proceso de seleccion:
     - Puesto: Asistende de Direccion
     - Empresa: Trackflow
@@ -7,7 +8,7 @@
     - Perfil buscado: experiencia en asistencia ejecutiva, gestion de agenda y viajes, ingles profesional, manejo de herramientas ofimaticas.
 - La API esta lista para usarse (no modificar ni adaptar!): https://playground.4geeks.com/tracker/api/v1/docs
 - La navegacion entre vistas debe usar sistema de rutas de Next.js (sin recargas completas de pagina)
-- Usa unicamente tipos TypeScript bien tipados, usa Next.js (App Router) y React. 
+- Usa unicamente tipos TypeScript bien tipados, usa Tailwind CSS, Next.js (App Router) y React. 
 - No uses librerias externas de gestion de estados (Redux, Zustand, Jotai, etc).
 - Es suficiente el estado a nivel componente con hooks.
 
@@ -71,7 +72,7 @@
 Los valores crudos de la APU no deben salir en la interfaz, usar las etiqueras a continuacion:
 
 Valores de estado de candidatura:
-    - recieved -> Recibida
+    - received -> Recibida
     - in_progress -> En proceso
     - selected -> Seleccionada
     - discarded -> Descartada
