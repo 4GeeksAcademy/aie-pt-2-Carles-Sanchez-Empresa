@@ -81,6 +81,12 @@
 
 ---
 
+### 📐 Reglas de Desarrollo — `.agents/rules/`
+- [x] Creación de `typescript-strict.md` — tipado estricto, prohibición de `any`, tipado explícito en funciones y componentes
+- [x] Creación de `styling-rules.md` — paleta de colores TrackFlow, mobile-first responsive, estados de UI obligatorios, Tailwind CSS
+
+---
+
 ## 🔜 Próximos Pasos
 
 *(Por definir — sección reservada para futuros hitos)*
