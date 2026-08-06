@@ -1,0 +1,25 @@
+{
+  "scenario": "Devolución de producto defectuoso en Fashion, Zaragoza",
+  "input": {
+    "productSKU": "SHOE-BLK-42",
+    "productCategory": "Fashion",
+    "productUnitCostUSD": 35.00,
+    "daysSincePurchase": 45,
+    "returnReason": "defective",
+    "itemCondition": "used",
+    "customerType": "consumer",
+    "originalShipmentWeightKg": 2.5,
+    "originalShipmentCountry": "Spain",
+    "warehouseLocation": "Zaragoza",
+    "customerReturnCount": 1
+  },
+  "expectedOutput": {
+    "approved": true,
+    "pickUpRequired": true,
+    "refurbishAction": "restock",
+    "estimatedReturnCostUSD": 8.75,
+    "refundPercentage": 100,
+    "justification": "Devolución aprobada. Motivo: defective (días desde compra: 45 ≤ 60). Se requiere recogida en domicilio (peso 2.5 kg > 1 kg). El producto usado tiene valor residual suficiente (35.00 × 0.3 = 10.50 USD) y es categoría Fashion, se reacondiciona y restockea. Reembolso del 100%.",
+    "rulesApplied": ["R1-auto-approve-defective", "R5-pickup-weight-threshold", "R7-refurbish-if-viable"]
+  }
+}

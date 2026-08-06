@@ -85,6 +85,10 @@
 - [x] Creación de `typescript-strict.md` — tipado estricto, prohibición de `any`, tipado explícito en funciones y componentes
 - [x] Creación de `styling-rules.md` — paleta de colores TrackFlow, mobile-first responsive, estados de UI obligatorios, Tailwind CSS
 
+### 🤖 Skills de Agente — `skills/`
+- [x] Creación de **Carrier Selection Optimizer** — selección óptima del transportista entre los 8 de la red TrackFlow evaluando coste, tiempo y fiabilidad
+- [x] Creación de **Returns Triage Assistant** — clasificación automática de devoluciones con reglas de aprobación/rechazo, recogida y reacondicionamiento
+
 ---
 
 ## 🔜 Próximos Pasos
