@@ -67,8 +67,6 @@
       </h2>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-        <!-- Filtrar por almacén -->
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
           <label class="block text-sm font-medium text-gray-600 mb-2">Filtrar productos por almacén</label>
           <div class="flex gap-2">
@@ -81,7 +79,6 @@
           <pre id="resultWarehouse" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
-        <!-- Filtrar por categoría -->
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
           <label class="block text-sm font-medium text-gray-600 mb-2">Filtrar productos por categoría</label>
           <div class="flex gap-2">
@@ -97,14 +94,12 @@
           <pre id="resultCategory" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
-        <!-- Stock bajo -->
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
           <p class="text-sm font-medium text-gray-600 mb-2">Productos con stock bajo</p>
           <button onclick="runLowStock()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Ejecutar</button>
           <pre id="resultLowStock" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
-        <!-- Ordenar productos por stock -->
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
           <label class="block text-sm font-medium text-gray-600 mb-2">Ordenar productos por stock</label>
           <div class="flex gap-2">
@@ -117,7 +112,6 @@
           <pre id="resultSortStock" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
-        <!-- Ordenar transportistas -->
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50 md:col-span-2">
           <label class="block text-sm font-medium text-gray-600 mb-2">Ordenar transportistas por fiabilidad (onTimeRate)</label>
           <div class="flex gap-2">
@@ -129,7 +123,6 @@
           </div>
           <pre id="resultSortCarriers" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
-
       </div>
     </section>
 
@@ -143,7 +136,6 @@
       </h2>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
           <label class="block text-sm font-medium text-gray-600 mb-2">Buscar producto por SKU (case-sensitive)</label>
           <div class="flex gap-2">
@@ -170,7 +162,6 @@
           </div>
           <pre id="resultBinary" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
-
       </div>
     </section>
 
@@ -184,7 +175,6 @@
       </h2>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
           <p class="text-sm font-medium text-gray-600 mb-2">Score de transportista para un envío</p>
           <button onclick="runScoreCarrier()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Calcular</button>
@@ -229,7 +219,6 @@
           </div>
           <pre id="resultTopCarriers" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
-
       </div>
     </section>
 
@@ -243,7 +232,6 @@
       </h2>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
           <p class="text-sm font-medium text-gray-600 mb-2">Validar producto (ejemplo actual)</p>
           <button onclick="runValidateProduct()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Validar</button>
@@ -261,359 +249,14 @@
           <button onclick="runValidateCarrier()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Validar</button>
           <pre id="resultValidCarrier" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
-
       </div>
     </section>
-
   </main>
 
   <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200">
     TrackFlow — Panel de verificación manual
   </footer>
 
-  <!-- ════════════════════════════════════════════ -->
-  <!-- JAVASCRIPT: Datos + Funciones + UI -->
-  <!-- ════════════════════════════════════════════ -->
-  <script>
-    // ───────────────────────────────────────────────
-    // DATOS DE EJEMPLO
-    // ───────────────────────────────────────────────
-
-    const products = [
-      { sku: "SHOE-BLK-42", name: "Zapatillas Negras Running - Talla 42", category: "Fashion", weightKg: 0.8, dimensions: { lengthCm: 35, widthCm: 22, heightCm: 12 }, warehouse: "Los Angeles", stockQuantity: 45, minStockThreshold: 20, unitCostUSD: 35.0, isFragile: false, status: "Active" },
-      { sku: "LAPTOP-DELL-15", name: "Laptop Dell 15 pulgadas", category: "Electronics", weightKg: 2.3, dimensions: { lengthCm: 40, widthCm: 28, heightCm: 3 }, warehouse: "Zaragoza", stockQuantity: 8, minStockThreshold: 10, unitCostUSD: 650.0, isFragile: true, status: "Low stock" },
-      { sku: "PERFUME-COCO-50", name: "Perfume Coco 50ml", category: "Cosmetics", weightKg: 0.3, dimensions: { lengthCm: 12, widthCm: 8, heightCm: 15 }, warehouse: "Los Angeles", stockQuantity: 120, minStockThreshold: 30, unitCostUSD: 85.0, isFragile: true, status: "Active" },
-    ];
-
-    const shipments = [
-      { id: "SH-2024-8821", sku: "LAPTOP-DELL-15", quantity: 1, origin: "Zaragoza", destination: { city: "Madrid", country: "Spain", postalCode: "28001", distanceKm: 320 }, priority: "Express", declaredValueUSD: 650.0, carrier: null, status: "Pending", createdAt: new Date("2024-03-15") },
-    ];
-
-    const carriers = [
-      { id: "CAR-UPS", name: "UPS", operatesIn: ["United States"], baseRateUSD: 5.0, ratePerKgUSD: 1.2, ratePerKmUSD: 0.05, avgDeliveryDays: 3, onTimeRate: 88, maxWeightKg: 30, handlesFragile: true, acceptsPriority: ["Standard", "Express"] },
-      { id: "CAR-SEUR", name: "SEUR", operatesIn: ["Spain"], baseRateUSD: 6.5, ratePerKgUSD: 1.5, ratePerKmUSD: 0.08, avgDeliveryDays: 2, onTimeRate: 92, maxWeightKg: 25, handlesFragile: true, acceptsPriority: ["Standard", "Express", "Same-day"] },
-      { id: "CAR-DHL", name: "DHL Express", operatesIn: ["United States", "Spain"], baseRateUSD: 12.0, ratePerKgUSD: 2.0, ratePerKmUSD: 0.1, avgDeliveryDays: 1, onTimeRate: 95, maxWeightKg: 50, handlesFragile: true, acceptsPriority: ["Express", "Same-day"] },
-    ];
-
-    // ───────────────────────────────────────────────
-    // FUNCIONES (portadas a JS plano)
-    // ───────────────────────────────────────────────
-
-    // ---- COLLECTIONS ----
-    function filterProductsByWarehouse(products, warehouse) {
-      return products.filter(p => p.warehouse === warehouse);
-    }
-
-    function filterProductsByCategory(products, category) {
-      return products.filter(p => p.category === category);
-    }
-
-    function filterLowStockProducts(products) {
-      return products.filter(p => p.stockQuantity <= p.minStockThreshold);
-    }
-
-    function sortProductsByStock(products, order) {
-      const sorted = [...products];
-      sorted.sort((a, b) => order === "asc" ? a.stockQuantity - b.stockQuantity : b.stockQuantity - a.stockQuantity);
-      return sorted;
-    }
-
-    function sortCarriersByReliability(carriers, order) {
-      const sorted = [...carriers];
-      sorted.sort((a, b) => order === "asc" ? a.onTimeRate - b.onTimeRate : b.onTimeRate - a.onTimeRate);
-      return sorted;
-    }
-
-    // ---- SEARCH ----
-    function findProductBySKU(products, sku) {
-      for (const prod of products) {
-        if (prod.sku === sku) return prod;
-      }
-      return null;
-    }
-
-    function findShipmentById(shipments, id) {
-      for (const sh of shipments) {
-        if (sh.id === id) return sh;
-      }
-      return null;
-    }
-
-    function binarySearchProductByWeight(sortedProducts, targetWeight) {
-      let left = 0, right = sortedProducts.length - 1;
-      while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        if (sortedProducts[mid].weightKg === targetWeight) return mid;
-        else if (sortedProducts[mid].weightKg < targetWeight) left = mid + 1;
-        else right = mid - 1;
-      }
-      return -1;
-    }
-
-    // ---- TRANSFORMATIONS ----
-    function calculateShippingCost(shipment, product, carrier) {
-      let cost = carrier.baseRateUSD;
-      cost += product.weightKg * carrier.ratePerKgUSD * shipment.quantity;
-      cost += shipment.destination.distanceKm * carrier.ratePerKmUSD;
-      if (shipment.priority === "Express") cost *= 1.3;
-      else if (shipment.priority === "Same-day") cost *= 1.6;
-      return Number(cost.toFixed(2));
-    }
-
-    function scoreCarrierForShipment(carrier, shipment, product) {
-      let score = 0;
-      const totalWeight = product.weightKg * shipment.quantity;
-      if (carrier.operatesIn.includes(shipment.destination.country)) score += 20;
-      if (totalWeight <= carrier.maxWeightKg) score += 20;
-      if (carrier.acceptsPriority.includes(shipment.priority)) score += 15;
-      if (!product.isFragile || carrier.handlesFragile) score += 15;
-      score += carrier.onTimeRate * 0.3;
-      return Number(score.toFixed(2));
-    }
-
-    function selectBestCarrier(carriers, shipment, product) {
-      let best = null;
-      for (const carrier of carriers) {
-        const score = scoreCarrierForShipment(carrier, shipment, product);
-        if (score < 50) continue;
-        const cost = calculateShippingCost(shipment, product, carrier);
-        if (!best || cost < best.cost) best = { carrier, score, cost };
-      }
-      return best;
-    }
-
-    function countProductsByCategory(products) {
-      const counts = { Fashion: 0, Electronics: 0, Cosmetics: 0, Home: 0, Other: 0 };
-      for (const p of products) counts[p.category]++;
-      return counts;
-    }
-
-    function calculateTotalInventoryValue(products) {
-      let total = 0;
-      for (const p of products) total += p.stockQuantity * p.unitCostUSD;
-      return Number(total.toFixed(2));
-    }
-
-    function calculateAverageShipmentDistance(shipments) {
-      if (shipments.length === 0) return 0;
-      let total = 0;
-      for (const s of shipments) total += s.destination.distanceKm;
-      return Number((total / shipments.length).toFixed(2));
-    }
-
-    function groupShipmentsByStatus(shipments) {
-      const groups = { Pending: [], Assigned: [], "In transit": [], Delivered: [], Failed: [] };
-      for (const s of shipments) groups[s.status].push(s);
-      return groups;
-    }
-
-    function findTopCarriers(shipments, topN) {
-      const counts = {};
-      for (const s of shipments) {
-        if (s.carrier === null) continue;
-        counts[s.carrier] = (counts[s.carrier] || 0) + 1;
-      }
-      const sorted = Object.entries(counts).map(([carrier, count]) => ({ carrier, count }));
-      sorted.sort((a, b) => b.count - a.count);
-      return sorted.slice(0, topN);
-    }
-
-    function getTopCarriers(shipments, topN) {
-      const result = findTopCarriers(shipments, topN);
-      if (result.length === 0) {
-        return "❌ Ningún envío tiene un transportista asignado. Asigna un carrier a los envíos para ver el ranking.";
-      }
-      return result;
-    }
-
-    // ---- VALIDATIONS ----
-    function validateProduct(product) {
-      const errors = [];
-      if (!product.sku || product.sku.trim() === "") errors.push("El SKU no puede estar vacío");
-      if (product.weightKg <= 0 || product.weightKg > 100) errors.push("El peso debe ser >0 y ≤100 kg");
-      if (product.dimensions.lengthCm <= 0 || product.dimensions.lengthCm > 200 ||
-          product.dimensions.widthCm <= 0 || product.dimensions.widthCm > 200 ||
-          product.dimensions.heightCm <= 0 || product.dimensions.heightCm > 200)
-        errors.push("Dimensiones deben ser >0 y ≤200 cm");
-      if (product.stockQuantity < 0) errors.push("Stock no puede ser negativo");
-      if (product.minStockThreshold < 0) errors.push("Umbral mínimo no puede ser negativo");
-      if (product.unitCostUSD <= 0) errors.push("Costo unitario debe ser >0");
-      return { valid: errors.length === 0, errors };
-    }
-
-    function validateShipment(shipment) {
-      const errors = [];
-      if (shipment.quantity <= 0) errors.push("La cantidad debe ser >0");
-      if (shipment.declaredValueUSD <= 0) errors.push("El valor declarado debe ser >0");
-      if (shipment.destination.distanceKm < 0) errors.push("La distancia no puede ser negativa");
-      return { valid: errors.length === 0, errors };
-    }
-
-    function validateCarrier(carrier) {
-      const errors = [];
-      if (carrier.baseRateUSD < 0) errors.push("Tarifa base no puede ser negativa");
-      if (carrier.ratePerKgUSD < 0) errors.push("Tarifa por kg no puede ser negativa");
-      if (carrier.ratePerKmUSD < 0) errors.push("Tarifa por km no puede ser negativa");
-      if (carrier.avgDeliveryDays <= 0) errors.push("Días promedio deben ser >0");
-      if (carrier.onTimeRate < 0 || carrier.onTimeRate > 100) errors.push("onTimeRate debe estar entre 0 y 100");
-      if (carrier.maxWeightKg <= 0) errors.push("Peso máximo debe ser >0");
-      if (!carrier.operatesIn || carrier.operatesIn.length < 1) errors.push("Debe operar en al menos 1 país");
-      return { valid: errors.length === 0, errors };
-    }
-
-    // ───────────────────────────────────────────────
-    // HELPERS UI
-    // ───────────────────────────────────────────────
-
-    function show(id, data) {
-      const el = document.getElementById(id);
-      el.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
-    }
-
-    function fillTextarea(id, data) {
-      document.getElementById(id).value = JSON.stringify(data, null, 2);
-    }
-
-    function showSampleData() {
-      fillTextarea("sampleProducts", products);
-      fillTextarea("sampleShipments", shipments);
-      fillTextarea("sampleCarriers", carriers);
-    }
-
-    function applyDataChanges() {
-      try {
-        const newProducts = JSON.parse(document.getElementById("sampleProducts").value);
-        const newShipments = JSON.parse(document.getElementById("sampleShipments").value);
-        const newCarriers = JSON.parse(document.getElementById("sampleCarriers").value);
-
-        // Sobrescribir las variables globales
-        products.length = 0;
-        shipments.length = 0;
-        carriers.length = 0;
-        products.push(...newProducts);
-        shipments.push(...newShipments);
-        carriers.push(...newCarriers);
-
-        // Mostrar los datos actualizados
-        fillTextarea("sampleProducts", products);
-        fillTextarea("sampleShipments", shipments);
-        fillTextarea("sampleCarriers", carriers);
-
-        const status = document.getElementById("dataStatus");
-        status.textContent = "✅ Datos actualizados correctamente";
-        status.className = "text-xs text-emerald-600 font-medium";
-      } catch (e) {
-        const status = document.getElementById("dataStatus");
-        status.textContent = "❌ Error de JSON: " + e.message;
-        status.className = "text-xs text-red-600 font-medium";
-      }
-    }
-
-    // ───────────────────────────────────────────────
-    // MANEJADORES DE BOTONES
-    // ───────────────────────────────────────────────
-
-    function runFilterByWarehouse() {
-      const wh = document.getElementById("warehouseSelect").value;
-      const res = filterProductsByWarehouse(products, wh);
-      show("resultWarehouse", res.length ? res : "❌ Ningún producto encontrado");
-    }
-
-    function runFilterByCategory() {
-      const cat = document.getElementById("categorySelect").value;
-      const res = filterProductsByCategory(products, cat);
-      show("resultCategory", res.length ? res : "❌ Ningún producto encontrado");
-    }
-
-    function runLowStock() {
-      const res = filterLowStockProducts(products);
-      show("resultLowStock", res.length ? res : "✅ Ningún producto con stock bajo");
-    }
-
-    function runSortByStock() {
-      const order = document.getElementById("stockOrder").value;
-      const res = sortProductsByStock(products, order);
-      show("resultSortStock", res);
-    }
-
-    function runSortCarriers() {
-      const order = document.getElementById("reliabilityOrder").value === "asc" ? "asc" : "desc";
-      const res = sortCarriersByReliability(carriers, order);
-      show("resultSortCarriers", res);
-    }
-
-    function runFindBySKU() {
-      const sku = document.getElementById("skuInput").value;
-      const res = findProductBySKU(products, sku);
-      show("resultSKU", res ? res : "❌ Producto no encontrado");
-    }
-
-    function runFindShipmentById() {
-      const id = document.getElementById("shipmentIdInput").value;
-      const res = findShipmentById(shipments, id);
-      show("resultShipmentId", res ? res : "❌ Envío no encontrado");
-    }
-
-    function runBinarySearch() {
-      const target = parseFloat(document.getElementById("weightInput").value);
-      const sorted = [...products].sort((a, b) => a.weightKg - b.weightKg);
-      const idx = binarySearchProductByWeight(sorted, target);
-      show("resultBinary", idx !== -1
-        ? `✅ Peso ${target} kg encontrado en índice ${idx}: ${JSON.stringify(sorted[idx], null, 2)}`
-        : `❌ Peso ${target} kg no encontrado (índice -1)`);
-    }
-
-    function runScoreCarrier() {
-      const results = carriers.map(c => ({
-        carrier: c.name,
-        score: scoreCarrierForShipment(c, shipments[0], products[1])
-      }));
-      show("resultScore", results);
-    }
-
-    function runSelectBest() {
-      const res = selectBestCarrier(carriers, shipments[0], products[1]);
-      show("resultBest", res ? res : "❌ Ningún transportista adecuado");
-    }
-
-    function runCountByCategory() {
-      show("resultCountCategory", countProductsByCategory(products));
-    }
-
-    function runInventoryValue() {
-      show("resultInventory", `💰 $${calculateTotalInventoryValue(products).toLocaleString("en-US", { minimumFractionDigits: 2 })}`);
-    }
-
-    function runAvgDistance() {
-      show("resultAvgDist", `📏 ${calculateAverageShipmentDistance(shipments)} km`);
-    }
-
-    function runGroupByStatus() {
-      show("resultGroupStatus", groupShipmentsByStatus(shipments));
-    }
-
-    function runTopCarriers() {
-      const n = parseInt(document.getElementById("topNInput").value) || 3;
-      show("resultTopCarriers", getTopCarriers(shipments, n));
-    }
-
-    function runValidateProduct() {
-      show("resultValidProduct", validateProduct(products[0]));
-    }
-
-    function runValidateShipment() {
-      show("resultValidShipment", validateShipment(shipments[0]));
-    }
-
-    function runValidateCarrier() {
-      show("resultValidCarrier", validateCarrier(carriers[0]));
-    }
-
-    // ───────────────────────────────────────────────
-    // INICIALIZAR
-    // ───────────────────────────────────────────────
-    showSampleData();
-  </script>
-
+  <script src="./js/app.js"></script>
 </body>
 </html>

@@ -28,13 +28,58 @@
 - [x] Validaciones de negocio (`src/utils/validations.ts`):
   - `validateProduct`, `validateShipment`, `validateCarrier`
 
-### 🌐 Landing Pages (HTML estático)
+### 🗂️ Backoffice Operacional — `uis/backoffice/`
+
+**Fase 1 — Migración del HTML al área de UI**
+- [x] Traslado del panel manual desde `src/index.html` a `uis/backoffice/index.html`
+- [x] Conservación de la interfaz visual y de los resultados renderizados en pantalla (`<pre>`, estados de validación y mensajes de error/éxito)
+
+**Fase 2 — Integración con TypeScript del monorepo**
+- [x] Creación de datos de ejemplo tipados en `src/data/sampleData.ts`
+- [x] Creación del entrypoint de interfaz en `src/ui/handlers.ts`
+- [x] Exportación de tipos y funciones del dominio para reutilización desde la UI:
+  - `src/types/models.ts`
+  - `src/utils/collections.ts`
+  - `src/utils/search.ts`
+  - `src/utils/transformations.ts`
+  - `src/utils/validations.ts`
+- [x] Conexión de la interfaz del backoffice con la lógica de negocio original de `src/`, sin mantener archivos fuente duplicados en `uis/backoffice/`
+
+**Fase 3 — Build y eliminación de duplicación**
+- [x] Conversión de `src/` en fuente de verdad TypeScript con `noEmit` y `typecheck` sin generación de JS intermedio
+- [x] Configuración de `uis/backoffice/package.json` con build de navegador mediante `esbuild`
+- [x] Generación de un único bundle de salida en `uis/backoffice/js/app.js`
+- [x] Eliminación del árbol duplicado de artefactos `js/data`, `js/types`, `js/ui` y `js/utils` en backoffice
+- [x] Eliminación de sourcemaps en la salida final para evitar copias textuales adicionales del código fuente
+
+**Fase 4 — Verificación funcional**
+- [x] `npm run typecheck` correcto en `src/`
+- [x] `npm run build` correcto en `uis/backoffice/`
+- [x] Carga HTTP verificada del panel y del bundle (`index.html` + `js/app.js`)
+- [x] El resultado de la lógica de negocio sigue siendo visible en la UI del backoffice, no solo en consola
+- [x] Documentación bilingüe del backoffice (`README.md` y `README.es.md`) con instalación, build, watch y servidor estático
+
+### 🌐 Landing Pages (HTML estático) → React Website (`uis/website/`)
+
+**Fase 1 — HTML estático original**
 - [x] Landing page principal (`index.html`) con datos estructurados Schema.org
 - [x] Formulario de solicitud empresarial (`application.html`) con diseño TrackFlow
 - [x] Validación JavaScript del formulario (`validation.js`):
   - Validación de campos requeridos, email, teléfono, URL
   - Selectores condicionales (producto × volumen)
   - Feedback visual de errores y éxito
+
+**Fase 2 — Migración a React + TypeScript + Tailwind**
+- [x] Migración de HTML estático a componentes React reutilizables con TypeScript y Tailwind
+- [x] Proyecto Vite + React 19 + TypeScript + Tailwind en `uis/website/`
+- [x] **Componentes reutilizables de layout**: `SiteHeader` (responsive desktop/móvil), `SiteFooter`
+- [x] **Componentes de landing**: `StructuredData` (Schema.org JSON-LD), `SectionContainer`, `InfoCard`
+- [x] **Formulario React tipado**: `ApplicationForm` con estado local, `FormField` genérico
+- [x] **Tipos TypeScript del dominio** (`src/types/application.ts`): `ApplicationFormData`, `FormErrors`, tipos unión para producto, volumen, país, servicios
+- [x] **Validación TypeScript** (`src/utils/applicationValidation.ts`): email, teléfono, URL, campos requeridos, advertencia producto×volumen, contador de caracteres
+- [x] **Ruteo SPA**: `/` (landing) y `/application` (formulario) con React Router
+- [x] **Documentación bilingüe**: `README.md` (EN) y `README.es.md` (ES) con comandos y troubleshooting
+- [x] `npm run typecheck` sin errores y `npm run build` correcto
 
 ### 🎯 Talent Pipeline Tracker — Frontend Next.js
 - [x] Inicialización del proyecto Next.js 16 con App Router y TypeScript

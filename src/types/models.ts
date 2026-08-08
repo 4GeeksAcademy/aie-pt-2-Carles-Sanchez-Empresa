@@ -3,7 +3,7 @@
 //Variables:
 
 //Del producto:
-interface Product {
+export interface Product {
   sku: string; // Stock Keeping Unit (ej: "SHOE-BLK-42")
   name: string; // Nombre del producto
   category: ProductCategory; // Categoría del producto
@@ -17,23 +17,23 @@ interface Product {
   status: ProductStatus; // Estado actual
 }
 
-interface Dimensions {
+export interface Dimensions {
   lengthCm: number;
   widthCm: number;
   heightCm: number;
 }
 
-type ProductCategory =
+export type ProductCategory =
   | "Fashion"
   | "Electronics"
   | "Cosmetics"
   | "Home"
   | "Other";
-type WarehouseLocation = "Los Angeles" | "Zaragoza";
-type ProductStatus = "Active" | "Low stock" | "Out of stock" | "Discontinued";
+export type WarehouseLocation = "Los Angeles" | "Zaragoza";
+export type ProductStatus = "Active" | "Low stock" | "Out of stock" | "Discontinued";
 
 //Del envío
-interface Shipment {
+export interface Shipment {
   id: string; // ID único de envío (ej: "SH-2024-8821")
   sku: string; // SKU del producto siendo enviado
   quantity: number; // Número de unidades
@@ -46,16 +46,16 @@ interface Shipment {
   createdAt: Date; // Fecha de creación del pedido
 }
 
-interface Destination {
+export interface Destination {
   city: string;
   country: Country;
   postalCode: string;
   distanceKm: number; // Distancia desde el almacén de origen
 }
 
-type Country = "United States" | "Spain";
-type ShipmentPriority = "Standard" | "Express" | "Same-day";
-type ShipmentStatus =
+export type Country = "United States" | "Spain";
+export type ShipmentPriority = "Standard" | "Express" | "Same-day";
+export type ShipmentStatus =
   | "Pending"
   | "Assigned"
   | "In transit"
@@ -63,7 +63,7 @@ type ShipmentStatus =
   | "Failed";
 
 //Del transportista:
-interface Carrier {
+export interface Carrier {
   id: string; // ID del transportista (ej: "CAR-UPS")
   name: string; // Nombre del transportista (ej: "UPS")
   operatesIn: Country[]; // Países donde opera
