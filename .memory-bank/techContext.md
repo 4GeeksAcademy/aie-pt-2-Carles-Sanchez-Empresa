@@ -27,13 +27,30 @@
 |---|---|
 | **TypeScript** | Tipos base compartidos (`Id`, `BaseEntity`) para uso transversal entre proyectos |
 
-### Páginas estáticas / Landing
+### Website corporativo — `uis/website/` (React + Vite)
+
+| Tecnología | Versión | Propósito |
+|---|---|---|
+| **React** | ^19.2.0 | Biblioteca de interfaz de usuario |
+| **TypeScript** | ^5.9.2 | Tipado estático |
+| **Vite** | ^7.1.3 | Bundler y servidor de desarrollo |
+| **Tailwind CSS** | ^3.4.17 | Framework CSS utilitario (Tailwind v3 con PostCSS) |
+| **React Router DOM** | ^7.9.1 | Ruteo SPA entre landing y formulario |
+| **PostCSS + Autoprefixer** | — | Procesamiento de estilos |
+
+### Backoffice operacional — `uis/backoffice/` (HTML estático + bundle desde `src`)
+
+| Tecnología | Versión | Propósito |
+|---|---|---|
+| **HTML5 + Tailwind CDN** | — | Render del panel manual del backoffice |
+| **TypeScript** | ^7.0.2 | Fuente única de lógica y handlers reutilizados desde `src/` |
+| **esbuild** | ^0.28.1 | Bundling de navegador en un único archivo `js/app.js` |
+
+### Paquete compartido — `packages/shared/`
 
 | Tecnología | Propósito |
 |---|---|
-| **HTML5 + Tailwind CDN** | Landing page (`index.html`) y formulario de solicitud (`application.html`) |
-| **Vanilla JS** | Validación del formulario de solicitud (`validation.js`) |
-| **Schema.org JSON-LD** | Datos estructurados para SEO |
+| **TypeScript** | Tipos base compartidos (`Id`, `BaseEntity`) para uso transversal entre proyectos |
 
 ### Estructura del Monorepo
 
@@ -44,7 +61,9 @@ aie-pt-2-Carles-Sanchez-Empresa/
 │   └── utils/              # Colecciones, búsqueda, transformaciones, validaciones
 ├── packages/shared/        # Tipos compartidos (@repo/shared-types)
 ├── uis/                    # Interfaces de usuario
-│   └── talent-pipeline-tracker/  # Next.js App Router
+│   ├── talent-pipeline-tracker/  # Next.js App Router
+│   ├── backoffice/         # HTML estático con bundle generado desde src/
+│   └── website/            # React + Vite (landing corporativa y formulario)
 ├── services/               # Backend (estructura preparada, sin implementación aún)
 ├── agents/                 # Agentes de IA (estructura preparada)
 ├── workflows/              # Automatizaciones y workflows (estructura preparada)
@@ -121,6 +140,17 @@ Todas las llamadas a la API están centralizadas en `services/api.ts`, que expon
 ### 8. Mapeo de valores API a etiquetas
 
 Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquetas legibles en español mediante archivos `lib/constants.ts`. Esto evita que términos técnicos aparezcan en la interfaz de usuario.
+
+### 9. Backoffice con fuente única y bundle de navegador
+
+- La lógica de negocio del backoffice no se mantiene en `uis/backoffice/` como fuente independiente.
+- `src/` es la única fuente de verdad para tipos, utilidades, datos de ejemplo y handlers de UI.
+- `uis/backoffice/` solo contiene:
+  - `index.html` para el render estático
+  - `package.json` con scripts de build/watch
+  - `js/app.js` como artefacto final consumido por el navegador
+- El build del backoffice se realiza bundlando `../../src/ui/handlers.ts` con `esbuild`, evitando árboles duplicados de salida por módulo.
+- `src/tsconfig.json` usa `noEmit` para separar claramente validación TypeScript y salida de navegador.
 
 ---
 
@@ -231,8 +261,26 @@ uis/talent-pipeline-tracker/
 
 ```json
 {
+  "scripts": {
+    "build": "npx tsc -p tsconfig.json --noEmit",
+    "typecheck": "npx tsc -p tsconfig.json --noEmit"
+  },
   "dependencies": {
     "typescript": "^7.0.2"
+  }
+}
+```
+
+### Backoffice (`uis/backoffice/`)
+
+```json
+{
+  "scripts": {
+    "build": "esbuild ../../src/ui/handlers.ts --bundle --platform=browser --format=iife --target=es2020 --outfile=./js/app.js",
+    "build:watch": "esbuild ../../src/ui/handlers.ts --bundle --platform=browser --format=iife --target=es2020 --outfile=./js/app.js --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
   }
 }
 ```

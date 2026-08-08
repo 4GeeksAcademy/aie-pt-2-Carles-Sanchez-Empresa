@@ -1,5 +1,6 @@
 //Validaciones de negocio
 
+import { Product, Shipment, Carrier } from '../types/models.js';
 
 /*
     - Valida todas las reglas de negocio para un producto
@@ -7,7 +8,7 @@
         - valid: true si todas las validaciones pasan, false en caso contrario
         - errors: array de mensajes de error (vacío si es válido)
 */
-function validateProduct(product: Product): { valid: boolean, errors: string[] } {
+export function validateProduct(product: Product): { valid: boolean, errors: string[] } {
     const errors: string[] = [];
 
     if (!product.sku || product.sku.trim() === "") {
@@ -50,7 +51,7 @@ function validateProduct(product: Product): { valid: boolean, errors: string[] }
         - valid: true si todas las validaciones pasan, false en caso contrario
         - errors: array de mensajes de error (vacío si es válido)
 */
-function validateShipment(shipment: Shipment): { valid: boolean, errors: string[] }{
+export function validateShipment(shipment: Shipment): { valid: boolean, errors: string[] }{
     const errors: string[] = [];
 
     if (shipment.quantity <= 0) {
@@ -77,7 +78,7 @@ function validateShipment(shipment: Shipment): { valid: boolean, errors: string[
         - valid: true si todas las validaciones pasan, false en caso contrario
         - errors: array de mensajes de error (vacío si es válido)
 */
-function validateCarrier(carrier: Carrier): { valid: boolean, errors: string[] }{
+export function validateCarrier(carrier: Carrier): { valid: boolean, errors: string[] }{
     const errors: string[] = [];
 
     if (carrier.baseRateUSD < 0) {

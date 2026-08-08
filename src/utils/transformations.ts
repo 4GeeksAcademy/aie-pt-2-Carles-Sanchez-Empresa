@@ -1,11 +1,13 @@
 //Scoring de Transportista y Cálculo de Costos
 
+import { Product, Shipment, Carrier, ProductCategory, ShipmentStatus } from '../types/models.js';
+
 //Funciones:
 
 /*
 Calcula el costo total de envío basado en varias condiciones
 */
-function calculateShippingCost(shipment: Shipment, product: Product, carrier: Carrier): number{
+export function calculateShippingCost(shipment: Shipment, product: Product, carrier: Carrier): number{
     let cost = carrier.baseRateUSD;
     cost += product.weightKg * carrier.ratePerKgUSD * shipment.quantity;
     cost += shipment.destination.distanceKm * carrier.ratePerKmUSD;
@@ -17,7 +19,7 @@ function calculateShippingCost(shipment: Shipment, product: Product, carrier: Ca
 /*
 Calcula un puntaje de idoneidad (0-100) para un transportista basado en distintas condiciones
 */
-function scoreCarrierForShipment(carrier: Carrier, shipment: Shipment, product: Product): number{
+export function scoreCarrierForShipment(carrier: Carrier, shipment: Shipment, product: Product): number{
     let score = 0;
 
     const totalWeight = product.weightKg * shipment.quantity;
@@ -54,7 +56,7 @@ function scoreCarrierForShipment(carrier: Carrier, shipment: Shipment, product: 
     - Entre los transportistas adecuados, selecciona el de menor costo
     - Retorna el mejor transportista con su puntaje y costo, o null si no se encuentra ninguno adecuado
 */
-function selectBestCarrier(carriers: Carrier[], shipment: Shipment, product: Product): {carrier: Carrier, score: number, cost: number} | null{
+export function selectBestCarrier(carriers: Carrier[], shipment: Shipment, product: Product): {carrier: Carrier, score: number, cost: number} | null{
     let bestCarrier: {carrier: Carrier, score: number, cost: number} | null = null;
 
     for (const carrier of carriers) {
@@ -74,7 +76,7 @@ function selectBestCarrier(carriers: Carrier[], shipment: Shipment, product: Pro
 //Agregaciones y Reportes
 
 //Retorna un conteo de productos para cada categoría
-function countProductsByCategory(products: Product[]): Record<ProductCategory, number>{
+export function countProductsByCategory(products: Product[]): Record<ProductCategory, number>{
 
     const counts: Record<ProductCategory, number> = {
         "Fashion": 0,
@@ -94,7 +96,7 @@ function countProductsByCategory(products: Product[]): Record<ProductCategory, n
     - Fórmula: suma de (stockQuantity * unitCostUSD) para todos los productos
     - Redondear a 2 decimales
 */
-function calculateTotalInventoryValue(products: Product[]): number{
+export function calculateTotalInventoryValue(products: Product[]): number{
     let totalValue = 0;
     for (const product of products) {
         totalValue += product.stockQuantity * product.unitCostUSD;
@@ -106,7 +108,7 @@ function calculateTotalInventoryValue(products: Product[]): number{
     - Retorna la distancia promedio de todos los envíos
     - Redondear a 2 decimales
 */
-function calculateAverageShipmentDistance(shipments: Shipment[]): number{
+export function calculateAverageShipmentDistance(shipments: Shipment[]): number{
     if (shipments.length === 0) return 0;
 
     let totalDistance = 0;
@@ -122,7 +124,7 @@ function calculateAverageShipmentDistance(shipments: Shipment[]): number{
     - Agrupa envíos por estado
     - Retorna un objeto donde las claves son estados y los valores son arrays de envíos
 */
-function groupShipmentsByStatus(shipments: Shipment[]): Record<ShipmentStatus, Shipment[]>{
+export function groupShipmentsByStatus(shipments: Shipment[]): Record<ShipmentStatus, Shipment[]>{
     const groups: Record<ShipmentStatus, Shipment[]> = {
         "Pending": [],
         "Assigned": [],
@@ -144,7 +146,7 @@ function groupShipmentsByStatus(shipments: Shipment[]): Record<ShipmentStatus, S
     - Los retorna ordenados por conteo de uso (más alto primero)
     - Cada elemento contiene nombre de transportista y conteo de envíos
 */
-function findTopCarriers(shipments: Shipment[], topN: number): Array<{carrier: string, count: number}>{
+export function findTopCarriers(shipments: Shipment[], topN: number): Array<{carrier: string, count: number}>{
     const carrierCounts: Record<string, number> = {};
 
     for (const shipment of shipments) {
