@@ -181,3 +181,63 @@
 ## 🔜 Próximos Pasos
 
 *(Por definir — sección reservada para futuros hitos)*
+
+---
+
+## ✅ Hitos Completados (continuación)
+
+### 🚀 Backend — API Unificada (`services/api/`)
+
+**Fase 5 — Directorio de Proveedores (`routes/suppliers.py`, `models.py`, `database.py`)**
+- [x] Creación de modelos Pydantic (`models.py`):
+  - `SupplierCreate` con validación de país (USA/Spain), categorías (8 válidas), moneda (USD/EUR), tarifa (>0), estado (Enum active/suspended)
+  - Validador cruzado `model_validator` país↔moneda (USA→USD, Spain→EUR)
+  - `SupplierResponse` con id y updated_at, `SupplierUpdateRate`, `SupplierUpdateStatus`
+- [x] Base de datos TinyDB (`database.py`): tabla `suppliers` persistida en `suppliers_db.json`
+- [x] CRUD completo en `routes/suppliers.py`:
+  - `POST /suppliers` — crear (201 con validación Pydantic)
+  - `GET /suppliers` — listar con filtros por `?country=` y `?category=`
+  - `GET /suppliers/{id}` — obtener por ID (404 si no existe)
+  - `PATCH /suppliers/{id}/rate` — actualizar tarifa
+  - `PATCH /suppliers/{id}/status` — actualizar estado (active/suspended)
+  - `DELETE /suppliers/{id}` — eliminar
+- [x] Seeder `seed.py` con 15 proveedores iniciales (9 USA, 6 Spain), idempotente
+- [x] Inclusión del router en `main.py`: `app.include_router(suppliers_router)`
+- [x] Nuevos endpoints frontend servidos: `GET /suppliers.html`
+- [x] Dependencias: `tinydb>=4.8.0`, `python-multipart>=0.0.6`
+- [x] Documentación `README.md` bilingüe con comandos uv
+
+### 🗂️ Backoffice Operacional — `uis/backoffice/` (nuevas páginas)
+
+**Fase 5 — Analizador de Incidencias (página dedicada)**
+- [x] Nueva página `incidents.html` con:
+  - Cabecera TrackFlow (gradiente azul-verde) y navegación a otras páginas
+  - Zona drag & drop para subir CSV con feedback visual
+  - Botón de análisis con estado disabled hasta seleccionar archivo
+  - Sección de resultados con tarjetas de totales (registros, válidos, inválidos, países, transportistas)
+  - Tabla de reglas inválidas con colores por tipo
+  - Tarjetas de métricas (categorías, estados, satisfacción)
+  - Botón de descarga CSV del resultado
+  - Manejo de errores con alerta visible
+- [x] Lógica `js/incidents.js` con JavaScript vanilla:
+  - Drag & drop nativo + selector de archivos
+  - Validación de extensión .csv
+  - Llamadas fetch a `POST /api/incidents/analyze` y `GET /api/incidents/results/export`
+  - Renderizado dinámico de resultados (totales, tabla, métricas)
+  - Reset de estado y cambio de archivo
+- [x] APIs servidas desde el mismo origen (FastAPI): sin CORS ni Mixed Content
+
+**Fase 6 — Directorio de Proveedores (página dedicada)**
+- [x] Nueva página `suppliers.html` con:
+  - Filtros por país y categoría (selects)
+  - Tabla de proveedores con columnas: nombre, país, categorías, tarifa, moneda, estado, acciones
+  - Botones de acción: editar tarifa, cambiar estado (active/suspended), eliminar
+  - Modal inline para edición de tarifa
+  - Confirmación antes de eliminar
+  - Feedback visual de operaciones (éxito/error)
+  - Diseño responsive con Tailwind CSS CDN
+- [x] Navegación entre páginas: index.html → suppliers.html → incidents.html
+
+**Fase 7 — Panel principal actualizado (`index.html`)**
+- [x] Barra de navegación superior con enlaces a Proveedores y Analizador de Incidencias
+- [x] Diseño coherente con el resto de páginas (misma cabecera, paleta de colores)
