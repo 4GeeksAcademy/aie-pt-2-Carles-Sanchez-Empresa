@@ -21,11 +21,19 @@ This repository is the **starter template** for transversal projects. You will w
 
 ## Current status of the template
 
-The repository currently provides a **base folder structure and documentation skeleton**. It does not include runnable apps or global scripts yet.
+The repository currently provides the **base folder structure and documentation skeleton**, plus the following **implemented deliverables**:
 
-- `CONTEXT.md` is a placeholder and must be replaced with your assigned company context.
-- There is no root `AGENTS.md` yet.
-- Shared package metadata exists in `packages/shared/package.json` (`@repo/shared-types`), but no workspace runner is configured at root.
+| Deliverable | Location | Status |
+|---|---|---|
+| **Domain logic** (types, collections, search, transformations, validations) | `src/` | ✅ Complete |
+| **Backoffice operational panel** (HTML + TypeScript → esbuild bundle) | `uis/backoffice/` | ✅ Complete |
+| **Corporate website** (React + Vite + Tailwind) | `uis/website/` | ✅ Complete |
+| **Talent Pipeline Tracker** (Next.js App Router) | `uis/talent-pipeline-tracker/` | ✅ Complete |
+| **Skills** — Carrier Selection Optimizer, Returns Triage Assistant | `skills/` | ✅ Complete |
+| **Architecture proposal** (Hexagonal + FastAPI) | `docs/ARCHITECTURE_PROPOSAL.md` | ✅ Complete |
+| **Incident Analyzer API** — FastAPI backend for CSV incident analysis | `services/api/` | ✅ Complete |
+
+> All previous placeholder text (`CONTEXT.md`, `AGENTS.md`, `company-choice.md`) has been replaced with TrackFlow-specific content.
 
 ---
 
@@ -61,6 +69,70 @@ ai-engineering-company-project-monorepo/
 3. **Replace** `CONTEXT.md` with the full context for your assigned company.
 4. **Review** each top-level folder `README.md` to understand intended responsibilities (`uis/`, `services/`, `data/`, `skills/`, etc.).
 5. **Start implementing** milestone deliverables in `uis/` and `services/`, reusing `packages/shared/` and `data/` as needed.
+
+---
+
+## Running the project
+
+### 📊 Backoffice — Incident Analyzer (API + Frontend)
+
+The **Incident Analyzer** lets you upload a CSV file with shipment incidents and get validation results and metrics. Both API and frontend are served from the same server.
+
+```bash
+# Start the server (FastAPI serves both API and frontend)
+cd services/api
+python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+- **Open in browser**: `http://localhost:8000` (or Codespaces HTTPS URL on port 8000)
+- **API health check**: `GET /api/health`
+- **Analyze incidents**: Click *"📊 Analizar incidencias"* in the menu, upload a CSV, and click *Analizar*.
+- **Test with sample data**: Use `services/api/tests/sample.csv`
+
+### 📦 Backoffice — Operational Panel (HTML / esbuild)
+
+```bash
+# Build and watch (generates js/app.js from src/ui/handlers.ts)
+cd uis/backoffice
+npm run watch
+
+# In another terminal, serve the static files
+cd uis/backoffice
+python3 -m http.server 5500
+
+# Open: http://localhost:5500
+```
+
+### 🌐 Corporate Website (React + Vite)
+
+```bash
+cd uis/website
+npm install
+npm run dev
+```
+
+### 🎯 Talent Pipeline Tracker (Next.js)
+
+```bash
+cd uis/talent-pipeline-tracker
+npm install
+npm run dev
+```
+
+---
+
+## How to open in Codespaces
+
+When running in GitHub Codespaces, each service is available at a unique HTTPS URL based on its port:
+
+| Service | Local port | Codespaces URL pattern |
+|---|---|---|
+| Incident Analyzer (API + frontend) | 8000 | `https://<codespace-name>-8000.app.github.dev` |
+| Backoffice (static) | 5500 | `https://<codespace-name>-5500.app.github.dev` |
+| Website (Vite) | 5173 | `https://<codespace-name>-5173.app.github.dev` |
+| Talent Pipeline (Next.js) | 3000 | `https://<codespace-name>-3000.app.github.dev` |
+
+> 💡 Tip: In the VS Code *Ports* tab (bottom panel), you can see the exact public URLs for each port. You can also change port visibility from *Private* to *Public* if needed.
 
 ---
 

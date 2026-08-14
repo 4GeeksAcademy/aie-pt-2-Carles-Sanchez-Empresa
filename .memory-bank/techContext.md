@@ -64,7 +64,8 @@ aie-pt-2-Carles-Sanchez-Empresa/
 │   ├── talent-pipeline-tracker/  # Next.js App Router
 │   ├── backoffice/         # HTML estático con bundle generado desde src/
 │   └── website/            # React + Vite (landing corporativa y formulario)
-├── services/               # Backend (estructura preparada, sin implementación aún)
+├── services/               # Backend: Incident Analyzer API (FastAPI)
+│   └── api/                #   analyzer/ (dominio) + main.py (FastAPI)
 ├── agents/                 # Agentes de IA (estructura preparada)
 ├── workflows/              # Automatizaciones y workflows (estructura preparada)
 ├── skills/                 # Habilidades: code-review, data-analysis, research
@@ -172,6 +173,31 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
   - `GET /records/:id/notes` — notas de una candidatura
   - `POST /records/:id/notes` — crear nota
   - `DELETE /records/:id/notes/:note_id` — eliminar nota
+
+### Backend FastAPI — Incident Analyzer (`services/api/`)
+
+- **Framework**: FastAPI 0.141.1 con Uvicorn
+- **Puerto**: 8000 (sirve tanto API como frontend estático)
+- **Endpoints**:
+  - `POST /api/incidents/analyze` — subida CSV, devuelve JSON con validación y métricas
+  - `GET /api/incidents/results/export` — descarga del último análisis como CSV
+  - `GET /api/health` — health check
+  - `GET /` — sirve `index.html` del backoffice
+  - `GET /incidents.html` — sirve la página de análisis de incidencias
+  - `GET /js/*` — sirve los archivos JavaScript del backoffice
+- **Módulo de análisis**: `analyzer/_core.py` con 8 reglas de validación, métricas y exportación CSV
+- **CORS**: configurado con `allow_origins=["*"]`, `allow_credentials=False`
+- **Ejecución**: `python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
+- **Frontend**: HTML + Tailwind CDN + JavaScript vanilla, servido desde FastAPI (mismo origen, sin CORS ni Mixed Content)
+- **Store en memoria**: variable global `_last_result` para la exportación CSV
+
+### Arquitectura Hexagonal (documentada en `docs/ARCHITECTURE_PROPOSAL.md`)
+
+- **Elección**: Arquitectura Hexagonal (Ports & Adapters) sobre MVC y Capas
+- **Motivación**: TrackFlow requiere múltiples integraciones externas (8 transportistas, 2 WMS, ERP) que deben ser intercambiables sin afectar el dominio
+- **Organización propuesta**: `services/` con subcarpetas por servicio, cada una con `domain/`, `application/`, `adapters/` y `tests/`
+- **FastAPI como adaptador de entrada**: no contiene reglas de negocio, solo recibe peticiones y delega en casos de uso
+- **Fases de implementación**: (1) Última Milla, (2) Logística Inversa, (3) Operaciones de Almacén, (4) Atención al Cliente / Dirección
 
 ### TypeScript estricto
 

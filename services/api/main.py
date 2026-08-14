@@ -2,16 +2,20 @@
 main.py — FastAPI service for incident analysis (TrackFlow).
 
 Endpoints:
-    POST /api/incidents/analyze   → Upload CSV, get JSON analysis
+    POST /api/incidents/analyze        → Upload CSV, get JSON analysis
     GET  /api/incidents/results/export  → Download last analysis as CSV
+    GET  /                             → Backoffice frontend (HTML/CSS/JS)
 """
 
 import csv
 import io
+import os
 from typing import Optional
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from analyzer import analyze_rows, build_results_csv
 
@@ -22,6 +26,21 @@ app = FastAPI(
     description="API para analizar incidencias de envíos a partir de ficheros CSV.",
     version="1.0.0",
 )
+
+# ── CORS: permitir peticiones desde el frontend ──
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ── Servir frontend (backoffice) como estáticos ──
+BACKOFFICE_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "uis", "backoffice")
+
+# Servimos JS y demás recursos bajo /js/, /public/, etc.
+app.mount("/js", StaticFiles(directory=os.path.join(BACKOFFICE_DIR, "js")), name="js")
 
 # Almacén en memoria del último resultado (para la exportación CSV)
 _last_result: dict | None = None
@@ -104,9 +123,23 @@ async def get_export():
 
 # ──────────────────────────── Root health-check ────────────────────────────
 
-@app.get("/")
+@app.get("/api/health")
 async def root():
     return {"status": "ok", "service": "TrackFlow Incident Analyzer API"}
+
+
+# ──────────────────────── Frontend Routes ────────────────────────
+
+@app.get("/")
+async def get_index():
+    """Sirve la página principal del backoffice."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "index.html"))
+
+
+@app.get("/incidents.html")
+async def get_incidents():
+    """Sirve la página de análisis de incidencias."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "incidents.html"))
 
 
 # ──────────────────────────── Entry point ────────────────────────────
