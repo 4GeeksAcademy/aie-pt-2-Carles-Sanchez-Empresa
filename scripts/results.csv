@@ -1,0 +1,26 @@
+metrica,subcategoria,valor
+total_registros,,100
+registros_validos,,95
+registros_invalidos,,5
+registros_invalidos_por_regla,Tracking number faltante o < 8 caracteres,1
+registros_invalidos_por_regla,Carrier faltante o inválido para el país,1
+registros_invalidos_por_regla,Categoría faltante o inválida,1
+registros_invalidos_por_regla,Email faltante o inválido,1
+registros_invalidos_por_regla,Status CLOSED sin satisfaction_score,1
+total_por_categoria,DELAYED_DELIVERY,38
+total_por_categoria,WRONG_ADDRESS,19
+total_por_categoria,RETURN_REQUEST,17
+total_por_categoria,LOST_PARCEL,14
+total_por_categoria,DAMAGE,7
+total_por_estado,OPEN,29
+total_por_estado,CLOSED,52
+total_por_estado,DISCARDED,14
+total_por_pais,US,50
+total_por_pais,ES,45
+satisfaccion_media,casos_cerrados_con_puntuacion,3.06
+satisfaccion_media,numero_registros,52
+desglose_puntuacion,puntuacion_1,6
+desglose_puntuacion,puntuacion_2,11
+desglose_puntuacion,puntuacion_3,15
+desglose_puntuacion,puntuacion_4,14
+desglose_puntuacion,puntuacion_5,6
