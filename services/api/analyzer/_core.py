@@ -103,6 +103,8 @@ def validate_record(row: dict[str, Any]) -> list[str]:
 
 def compute_metrics(valid_rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Calcula métricas sobre los registros válidos."""
+    total_valid = len(valid_rows)
+
     category_counts = Counter(r.get("category", "").strip() for r in valid_rows)
     status_counts = Counter(r.get("status", "").strip() for r in valid_rows)
     country_counts = Counter(r.get("country", "").strip() for r in valid_rows)
@@ -120,13 +122,21 @@ def compute_metrics(valid_rows: list[dict[str, Any]]) -> dict[str, Any]:
     avg_satisfaction = sum(closed_scores) / len(closed_scores) if closed_scores else None
     score_distribution = Counter(closed_scores)
 
+    # Porcentajes calculados aquí (single source of truth)
+    def _pct_calc(v: int, t: int) -> float:
+        return round(v / t * 100, 2) if t > 0 else 0.0
+
     return {
         "category_counts": dict(category_counts),
+        "category_pcts": {k: _pct_calc(v, total_valid) for k, v in category_counts.items()},
         "status_counts": dict(status_counts),
+        "status_pcts": {k: _pct_calc(v, total_valid) for k, v in status_counts.items()},
         "country_counts": dict(country_counts),
+        "country_pcts": {k: _pct_calc(v, total_valid) for k, v in country_counts.items()},
         "avg_satisfaction": avg_satisfaction,
         "closed_with_score_count": len(closed_scores),
         "score_distribution": dict(score_distribution),
+        "score_pcts": {k: _pct_calc(v, len(closed_scores)) for k, v in score_distribution.items()},
     }
 
 
@@ -155,12 +165,14 @@ def analyze_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     metrics = compute_metrics(valid_rows)
 
     # Detalle de reglas con etiquetas
+    total_invalid = invalid_count
     rule_details = []
     for rule_key, count in sorted(rule_counter.items(), key=lambda x: -x[1]):
         rule_details.append({
             "rule": rule_key,
             "label": RULE_LABELS.get(rule_key, rule_key),
             "count": count,
+            "pct": round(count / total_invalid * 100, 2) if total_invalid > 0 else 0.0,
         })
 
     return {

@@ -21,11 +21,19 @@ Este repositorio es la **plantilla de inicio** para los proyectos transversales.
 
 ## Estado actual de la plantilla
 
-Actualmente el repositorio ofrece una **estructura base de carpetas y documentación**, pero todavía no incluye aplicaciones ejecutables ni scripts globales en la raíz.
+Actualmente el repositorio ofrece una **estructura base de carpetas y documentación**, más los siguientes **entregables implementados**:
 
-- `CONTEXT.md` es un placeholder y debe sustituirse por el contexto de la empresa asignada.
-- No existe todavía un `AGENTS.md` en la raíz.
-- Existe metadata del paquete compartido en `packages/shared/package.json` (`@repo/shared-types`), pero aún no hay runner de workspace en raíz.
+| Entregable | Ubicación | Estado |
+|---|---|---|
+| **Lógica de dominio** (tipos, colecciones, búsqueda, transformaciones, validaciones) | `src/` | ✅ Completado |
+| **Panel operativo Backoffice** (HTML + TypeScript → bundle esbuild) | `uis/backoffice/` | ✅ Completado |
+| **Web corporativa** (React + Vite + Tailwind) | `uis/website/` | ✅ Completado |
+| **Talent Pipeline Tracker** (Next.js App Router) | `uis/talent-pipeline-tracker/` | ✅ Completado |
+| **Skills** — Carrier Selection Optimizer, Returns Triage Assistant | `skills/` | ✅ Completado |
+| **Propuesta de arquitectura** (Hexagonal + FastAPI) | `docs/ARCHITECTURE_PROPOSAL.md` | ✅ Completado |
+| **Incident Analyzer API** — Backend FastAPI para análisis CSV de incidencias | `services/api/` | ✅ Completado |
+
+> Todos los archivos placeholder anteriores (`CONTEXT.md`, `AGENTS.md`, `company-choice.md`) han sido reemplazados con contenido específico de TrackFlow.
 
 ---
 
@@ -61,6 +69,70 @@ ai-engineering-company-project-monorepo/
 3. **Reemplaza** `CONTEXT.md` con el contexto completo de tu empresa asignada.
 4. **Revisa** los `README.md` de cada carpeta raíz para entender responsabilidades (`uis/`, `services/`, `data/`, `skills/`, etc.).
 5. **Empieza a implementar** entregables por hito en `uis/` y `services/`, reutilizando `packages/shared/` y `data/` según corresponda.
+
+---
+
+## Cómo ejecutar el proyecto
+
+### 📊 Backoffice — Incident Analyzer (API + Frontend)
+
+El **Analizador de Incidencias** permite subir un archivo CSV con incidencias de envíos y obtener resultados de validación y métricas. Tanto la API como el frontend se sirven desde el mismo servidor.
+
+```bash
+# Iniciar el servidor (FastAPI sirve API y frontend)
+cd services/api
+python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+- **Abrir en navegador**: `http://localhost:8000` (o la URL HTTPS de Codespaces en el puerto 8000)
+- **Health check de la API**: `GET /api/health`
+- **Analizar incidencias**: Haz clic en *"📊 Analizar incidencias"* del menú, sube un CSV y pulsa *Analizar*.
+- **Probar con datos de ejemplo**: Usa `services/api/tests/sample.csv`
+
+### 📦 Backoffice — Panel Operativo (HTML / esbuild)
+
+```bash
+# Build y watch (genera js/app.js desde src/ui/handlers.ts)
+cd uis/backoffice
+npm run watch
+
+# En otra terminal, servir los archivos estáticos
+cd uis/backoffice
+python3 -m http.server 5500
+
+# Abrir: http://localhost:5500
+```
+
+### 🌐 Web Corporativa (React + Vite)
+
+```bash
+cd uis/website
+npm install
+npm run dev
+```
+
+### 🎯 Talent Pipeline Tracker (Next.js)
+
+```bash
+cd uis/talent-pipeline-tracker
+npm install
+npm run dev
+```
+
+---
+
+## Cómo abrir en Codespaces
+
+Cuando se ejecuta en GitHub Codespaces, cada servicio está disponible en una URL HTTPS única según su puerto:
+
+| Servicio | Puerto local | Patrón de URL en Codespaces |
+|---|---|---|
+| Incident Analyzer (API + frontend) | 8000 | `https://<codespace>-8000.app.github.dev` |
+| Backoffice (estático) | 5500 | `https://<codespace>-5500.app.github.dev` |
+| Website (Vite) | 5173 | `https://<codespace>-5173.app.github.dev` |
+| Talent Pipeline (Next.js) | 3000 | `https://<codespace>-3000.app.github.dev` |
+
+> 💡 Consejo: En la pestaña *Ports* de VS Code (panel inferior), puedes ver las URLs públicas exactas de cada puerto. También puedes cambiar la visibilidad de *Privado* a *Público* si es necesario.
 
 ---
 
