@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: trackflow-api
+Version: 2.0.0
+Summary: TrackFlow API — Incident Analyzer + Supplier Directory
+Requires-Python: >=3.10
+Requires-Dist: fastapi>=0.104.0
+Requires-Dist: uvicorn[standard]>=0.24.0
+Requires-Dist: python-multipart>=0.0.6
+Requires-Dist: tinydb>=4.8.0
