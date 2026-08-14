@@ -1,0 +1,8 @@
+country,carrier,tracking_number,category,description,status,satisfaction_score,customer_email
+US,UPS,TRACK12345,LOST_PARCEL,Package lost during transit,CLOSED,4,john@example.com
+ES,SEUR,TRACK67890,DELAYED_DELIVERY,Delayed by 3 days,OPEN,,maria@test.com
+US,FEDEX,SHORT,DAMAGE,Broken item,CLOSED,2,bob@example.com
+ES,MRW,TRACK11111,RETURN_REQUEST,Customer wants to return,CLOSED,5,ana@demo.com
+ES,INVALID_CARRIER,TRACK22222,WRONG_ADDRESS,Wrong address provided,OPEN,,carles@empresa.com
+,,TRACK33333,,,CLOSED,,no-at-email
+US,UPS,TRACK44444,LOST_PARCEL,Valid description here,CLOSED,3,valid@email.com
