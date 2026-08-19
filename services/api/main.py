@@ -3,7 +3,10 @@ main.py — FastAPI service for TrackFlow.
 
 Módulos:
     /api/incidents/*      → Analyzer de incidencias (existente)
-    /suppliers/*          → Directorio de proveedores
+    /api/suppliers/*      → Directorio de proveedores (protegido)
+    /auth/*               → Autenticación JWT
+    /users/*              → Gestión de usuarios
+    /profiles/*           → Perfiles de usuario
     GET /                 → Backoffice frontend (HTML/CSS/JS)
 """
 
@@ -12,20 +15,26 @@ import io
 import os
 from typing import Optional
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import Depends, FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from analyzer import analyze_rows, build_results_csv
-from routes import suppliers_router
+from auth import get_current_user
+from routes import (
+    auth_router,
+    profiles_router,
+    suppliers_router,
+    users_router,
+)
 
 # ──────────────────────────── App ────────────────────────────
 
 app = FastAPI(
     title="TrackFlow API",
-    description="API unificada de TrackFlow. Incluye análisis de incidencias y directorio de proveedores.",
-    version="2.0.0",
+    description="API unificada de TrackFlow. Incluye análisis de incidencias, directorio de proveedores y autenticación.",
+    version="2.1.0",
 )
 
 # ── CORS: permitir peticiones desde el frontend ──
@@ -61,10 +70,15 @@ def _parse_csv(content: str) -> list[dict]:
 # ──────────────────────────── Endpoints ────────────────────────────
 
 @app.post("/api/incidents/analyze")
-async def post_analyze(file: UploadFile = File(...)):
+async def post_analyze(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+):
     """
     Recibe un fichero CSV (multipart/form-data) con incidencias,
     ejecuta la validación y métricas, y devuelve el resumen en JSON.
+
+    Requiere autenticación (token JWT).
     """
     global _last_result
 
@@ -101,9 +115,13 @@ async def post_analyze(file: UploadFile = File(...)):
 
 
 @app.get("/api/incidents/results/export")
-async def get_export():
+async def get_export(
+    current_user: dict = Depends(get_current_user),
+):
     """
     Devuelve el último análisis en formato CSV descargable.
+
+    Requiere autenticación (token JWT).
     """
     if _last_result is None:
         raise HTTPException(
@@ -124,7 +142,10 @@ async def get_export():
 
 # ──────────────────────────── Routers ────────────────────────────
 
-app.include_router(suppliers_router)
+app.include_router(suppliers_router, dependencies=[Depends(get_current_user)])
+app.include_router(users_router)
+app.include_router(profiles_router)
+app.include_router(auth_router)
 
 
 # ──────────────────────────── Root health-check ────────────────────────────
