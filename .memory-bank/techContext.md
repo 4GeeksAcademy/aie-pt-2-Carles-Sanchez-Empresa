@@ -47,16 +47,19 @@
 | **TypeScript** | ^7.0.2 | Fuente única de lógica y handlers reutilizados desde `src/` para el panel de utilidades |
 | **esbuild** | ^0.28.1 | Bundling de navegador en un único archivo `js/app.js` |
 
-### Backend API — `services/api/` (FastAPI + TinyDB)
+### Backend API — `services/api/` (FastAPI + TinyDB + JWT Auth)
 
 | Tecnología | Versión | Propósito |
 |---|---|---|
 | **Python** | ^3.12 | Lenguaje de ejecución del backend |
 | **FastAPI** | ^0.104.0 | Framework web asíncrono con OpenAPI automático |
 | **Uvicorn** | ^0.24.0 | Servidor ASGI para FastAPI |
-| **TinyDB** | ^4.8.0 | Base de datos documental ligera (JSON) para el Directorio de Proveedores |
+| **TinyDB** | ^4.8.0 | Base de datos documental ligera (JSON) para Directorio de Proveedores, Usuarios y Perfiles |
 | **Pydantic v2** | — | Validación de datos con `field_validator`, `model_validator` y Enums |
 | **python-multipart** | ^0.0.6 | Soporte para subida de archivos (CSV de incidencias) |
+| **python-jose[cryptography]** | ^3.5.0 | Firma y verificación de tokens JWT (algoritmo HS256) |
+| **libpass[bcrypt]** | ^1.9.3 | Hashing de contraseñas con bcrypt (fork drop-in de passlib, import como `from passlib.hash import bcrypt`) |
+| **python-dotenv** | ^1.2.2 | Carga de variables de entorno desde `.env` (SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES) |
 | **uv** | — | Gestor de proyectos Python (alternativa a pip/poetry) |
 
 ### Estructura del Monorepo
@@ -72,7 +75,7 @@ aie-pt-2-Carles-Sanchez-Empresa/
 │   ├── backoffice/         # HTML estático con bundle generado desde src/
 │   └── website/            # React + Vite (landing corporativa y formulario)
 ├── services/               # Backend: API unificada (FastAPI)
-│   └── api/                #   analyzer/ (incidencias), routes/ (proveedores), models.py, database.py, main.py
+│   └── api/                #   analyzer/ (incidencias), routes/ (suppliers, users, profiles, auth), auth.py, services.py, models.py, database.py, main.py, .env
 ├── agents/                 # Agentes de IA (estructura preparada)
 ├── workflows/              # Automatizaciones y workflows (estructura preparada)
 ├── skills/                 # Habilidades: code-review, data-analysis, research

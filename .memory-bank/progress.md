@@ -241,3 +241,26 @@
 **Fase 7 — Panel principal actualizado (`index.html`)**
 - [x] Barra de navegación superior con enlaces a Proveedores y Analizador de Incidencias
 - [x] Diseño coherente con el resto de páginas (misma cabecera, paleta de colores)
+
+### 🚀 Backend — Autenticación y Protección de Rutas AUTH-01
+
+**Fase 8 — Autenticación JWT (`services/api/auth.py`, services, routes)**
+- [x] Dependencias instaladas: `python-jose[cryptography]`, `libpass[bcrypt]`, `python-dotenv`
+- [x] Archivo `.env` con `SECRET_KEY` y `ACCESS_TOKEN_EXPIRE_MINUTES`
+- [x] Tablas `users` y `profiles` añadidas a TinyDB en `database.py`
+- [x] **`auth.py`**: configuración JWT (HS256), hashing bcrypt, dependencias `get_current_user` y `require_admin`
+- [x] **`services.py`**: capa de servicios con CRUD de usuarios y perfiles en TinyDB
+- [x] **`routes/users.py`**: router `/users` con CRUD completo, control de roles (admin/manager/user mediante Enum), contraseñas hasheadas, `POST /users` crea perfil vinculado si se reciben datos opcionales
+- [x] **`routes/profiles.py`**: router `/profiles` con `GET /me` y `PUT /me` (protegidos, solo dueño)
+- [x] **`routes/auth.py`**: router `/auth` con `POST /login` (devuelve JWT) y `GET /me` (protegido, devuelve email + role + perfil)
+- [x] **Protección de rutas existentes**: todos los endpoints de `/suppliers` protegidos vía `dependencies=[Depends(get_current_user)]`
+- [x] **Protección de incidents**: `POST /api/incidents/analyze` y `GET /api/incidents/results/export` protegidos con `Depends(get_current_user)`
+- [x] **Rutas públicas**: health check, login, registro (`POST /users`), frontend estático
+- [x] **Control de acceso 403**: solo admin puede cambiar roles, solo admin puede listar/eliminar usuarios ajenos
+- [x] **Verificación completa** (curl + Swagger /docs):
+  - Registro `POST /users` → 201 con usuario + perfil (sin contraseña)
+  - Login `POST /auth/login` → 200 con JWT
+  - Rutas protegidas sin token → 401
+  - Rutas protegidas con token válido → 200
+  - Login con credenciales incorrectas → 401
+  - `GET /auth/me` → 200 con email, role y perfil vinculado
