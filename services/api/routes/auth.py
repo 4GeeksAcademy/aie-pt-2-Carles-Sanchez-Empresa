@@ -4,8 +4,10 @@ routes/auth.py — Endpoints de autenticación (TrackFlow).
 Gestiona el login (emisión de JWT) y la información del usuario autenticado.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from json import JSONDecodeError
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, ValidationError
 
 from auth import create_access_token, get_current_user, verify_password
 from database import users_table, UserQuery
@@ -18,7 +20,8 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 class LoginRequest(BaseModel):
     """Credenciales de inicio de sesión."""
-    email: str
+    email: str | None = None
+    username: str | None = None
     password: str
 
 
@@ -39,7 +42,7 @@ class AuthMeResponse(BaseModel):
 # ───────────────────── Endpoints ─────────────────────
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest):
+async def login(request: Request):
     """
     Inicio de sesión.
 
@@ -48,8 +51,44 @@ async def login(payload: LoginRequest):
     El token debe incluirse en las peticiones protegidas como:
         Authorization: Bearer <token>
     """
-    # Buscar usuario por email
-    user = get_user_by_email(payload.email.strip().lower())
+    async def _extract_credentials() -> tuple[str, str]:
+        """
+        Extrae credenciales en ambos formatos soportados:
+          - OAuth2 password flow (form-urlencoded): username + password
+          - JSON tradicional: email + password (o username + password)
+        """
+        content_type = (request.headers.get("content-type") or "").lower()
+
+        if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+            form = await request.form()
+            raw_username = str(form.get("username") or "").strip().lower()
+            raw_password = str(form.get("password") or "")
+            if not raw_username or not raw_password:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Faltan campos requeridos: username y password",
+                )
+            return raw_username, raw_password
+
+        try:
+            payload = LoginRequest.model_validate(await request.json())
+        except (ValidationError, JSONDecodeError, ValueError):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Body JSON inválido. Use email/password o username/password",
+            )
+        login_id = (payload.email or payload.username or "").strip().lower()
+        if not login_id or not payload.password:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Faltan credenciales de acceso",
+            )
+        return login_id, payload.password
+
+    login_id, password = await _extract_credentials()
+
+    # Buscar usuario por email (en OAuth2 usamos username como identificador)
+    user = get_user_by_email(login_id)
 
     if user is None:
         raise HTTPException(
@@ -60,7 +99,7 @@ async def login(payload: LoginRequest):
 
     # Verificar contraseña
     hashed = user.get("hashed_password", "")
-    if not verify_password(payload.password, hashed):
+    if not verify_password(password, hashed):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email o contraseña incorrectos",
