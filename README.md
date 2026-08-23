@@ -74,34 +74,41 @@ ai-engineering-company-project-monorepo/
 
 ## Running the project
 
-### 📊 Backoffice — Incident Analyzer (API + Frontend)
+### 📊 TrackFlow Backoffice + API (recommended flow)
 
-The **Incident Analyzer** lets you upload a CSV file with shipment incidents and get validation results and metrics. Both API and frontend are served from the same server.
-
-```bash
-# Start the server (FastAPI serves both API and frontend)
-cd services/api
-python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-- **Open in browser**: `http://localhost:8000` (or Codespaces HTTPS URL on port 8000)
-- **API health check**: `GET /api/health`
-- **Analyze incidents**: Click *"📊 Analizar incidencias"* in the menu, upload a CSV, and click *Analizar*.
-- **Test with sample data**: Use `services/api/tests/sample.csv`
-
-### 📦 Backoffice — Operational Panel (HTML / esbuild)
+The backoffice frontend and backend API are both served by FastAPI on port `8000`.
 
 ```bash
-# Build and watch (generates js/app.js from src/ui/handlers.ts)
+# 1) Build backoffice bundle
 cd uis/backoffice
-npm run watch
+npm install
+npm run build
 
-# In another terminal, serve the static files
-cd uis/backoffice
-python3 -m http.server 5500
-
-# Open: http://localhost:5500
+# 2) Start API (serves both API and frontend)
+cd ../../services/api
+uv sync
+uv run seed   # optional sample suppliers
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+Then open:
+
+- `http://localhost:8000/register` to create an account
+- `http://localhost:8000/login` to sign in
+- `http://localhost:8000/` for the main backoffice panel
+- `http://localhost:8000/suppliers.html` for supplier directory
+- `http://localhost:8000/incidents.html` for incident analyzer
+- `http://localhost:8000/account/profile` for profile page
+
+Legacy `.html` routes (`/login.html`, `/register.html`, `/profile.html`) still work as aliases.
+
+Useful API routes:
+
+- `GET /api/health` (public)
+- `POST /auth/login` (public)
+- `POST /users` (public register)
+- `POST /api/incidents/analyze` (protected)
+- `GET /suppliers` (protected)
 
 ### 🌐 Corporate Website (React + Vite)
 
@@ -119,6 +126,15 @@ npm install
 npm run dev
 ```
 
+Auth-enabled routes in the tracker:
+
+- `/login`
+- `/register`
+- `/account/profile`
+- `/` and `/candidates/[id]` (protected)
+
+The tracker shares users with FastAPI auth and uses an internal Next.js auth proxy (`/api/auth-proxy/*`) to avoid CORS in Codespaces.
+
 ---
 
 ## How to open in Codespaces
@@ -127,8 +143,7 @@ When running in GitHub Codespaces, each service is available at a unique HTTPS U
 
 | Service | Local port | Codespaces URL pattern |
 |---|---|---|
-| Incident Analyzer (API + frontend) | 8000 | `https://<codespace-name>-8000.app.github.dev` |
-| Backoffice (static) | 5500 | `https://<codespace-name>-5500.app.github.dev` |
+| TrackFlow API + Backoffice | 8000 | `https://<codespace-name>-8000.app.github.dev` |
 | Website (Vite) | 5173 | `https://<codespace-name>-5173.app.github.dev` |
 | Talent Pipeline (Next.js) | 3000 | `https://<codespace-name>-3000.app.github.dev` |
 
