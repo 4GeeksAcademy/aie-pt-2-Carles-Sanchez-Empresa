@@ -251,6 +251,148 @@
     { id: "CAR-DHL", name: "DHL Express", operatesIn: ["United States", "Spain"], baseRateUSD: 12, ratePerKgUSD: 2, ratePerKmUSD: 0.1, avgDeliveryDays: 1, onTimeRate: 95, maxWeightKg: 50, handlesFragile: true, acceptsPriority: ["Express", "Same-day"] }
   ];
 
+  // ../../src/services/auth.ts
+  var STORAGE_KEY = "trackflow_token";
+  var API_ORIGIN = "";
+  function getToken() {
+    return localStorage.getItem(STORAGE_KEY);
+  }
+  function setToken(token) {
+    localStorage.setItem(STORAGE_KEY, token);
+  }
+  function clearToken() {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+  function getAuthHeaders() {
+    const token = getToken();
+    if (!token) return {};
+    return { Authorization: `Bearer ${token}` };
+  }
+  function requireAuth() {
+    const token = getToken();
+    if (!token) {
+      const currentPath = window.location.pathname;
+      window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
+    }
+  }
+  function handleAuthError(err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("No se pudieron validar")) {
+      clearToken();
+      window.location.href = "/login?reason=session_expired";
+    }
+    throw err;
+  }
+  async function login(email, password) {
+    const res = await fetch(`${API_ORIGIN}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) {
+      let detail = `Error ${res.status}`;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+      }
+      throw new Error(detail);
+    }
+    const data = await res.json();
+    setToken(data.access_token);
+    return data.access_token;
+  }
+  async function register(data) {
+    const registerPayload = {
+      email: data.email,
+      password: data.password
+    };
+    if (data.name) registerPayload.name = data.name;
+    if (data.phone) registerPayload.phone = data.phone;
+    if (data.address) registerPayload.address = data.address;
+    const regRes = await fetch(`${API_ORIGIN}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(registerPayload)
+    });
+    if (!regRes.ok) {
+      let detail = `Error ${regRes.status}`;
+      try {
+        const body = await regRes.json();
+        detail = body.detail || detail;
+      } catch {
+      }
+      throw new Error(detail);
+    }
+    return login(data.email, data.password);
+  }
+  async function getAuthMe() {
+    const res = await fetch(`${API_ORIGIN}/auth/me`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (!res.ok) {
+      if (res.status === 401) {
+        clearToken();
+        window.location.href = "/login?reason=session_expired";
+      }
+      let detail = `Error ${res.status}`;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+      }
+      throw new Error(detail);
+    }
+    return res.json();
+  }
+  async function getProfile() {
+    const res = await fetch(`${API_ORIGIN}/profiles/me`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (!res.ok) {
+      if (res.status === 401) {
+        clearToken();
+        window.location.href = "/login?reason=session_expired";
+      }
+      let detail = `Error ${res.status}`;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+      }
+      throw new Error(detail);
+    }
+    return res.json();
+  }
+  async function updateProfile(data) {
+    const res = await fetch(`${API_ORIGIN}/profiles/me`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      if (res.status === 401) {
+        clearToken();
+        window.location.href = "/login?reason=session_expired";
+      }
+      let detail = `Error ${res.status}`;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+      }
+      throw new Error(detail);
+    }
+    return res.json();
+  }
+  function logout() {
+    clearToken();
+    window.location.href = "/login";
+  }
+
   // ../../src/ui/handlers.ts
   var state = {
     products: [...sampleProducts],
@@ -376,6 +518,17 @@
     show("resultValidCarrier", validateCarrier(state.carriers[0]));
   };
   window.applyDataChanges = applyDataChanges;
+  window.login = login;
+  window.register = register;
+  window.logout = logout;
+  window.getToken = getToken;
+  window.clearToken = clearToken;
+  window.getAuthHeaders = getAuthHeaders;
+  window.requireAuth = requireAuth;
+  window.handleAuthError = handleAuthError;
+  window.getAuthMe = getAuthMe;
+  window.getProfile = getProfile;
+  window.updateProfile = updateProfile;
   function getTopCarriers(shipments, topN) {
     const result = findTopCarriers(shipments, topN);
     if (result.length === 0) {
