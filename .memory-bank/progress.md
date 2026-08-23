@@ -264,3 +264,25 @@
   - Rutas protegidas con token válido → 200
   - Login con credenciales incorrectas → 401
   - `GET /auth/me` → 200 con email, role y perfil vinculado
+
+### 🔐 Frontend Auth Unificado — Backoffice + Talent Pipeline
+
+**Fase 9 — Backoffice auth UX hardening**
+- [x] Protección temprana en páginas protegidas (`index.html`, `incidents.html`, `suppliers.html`, `profile.html`) antes de pintar contenido.
+- [x] Validación de expiración JWT (`exp`) además de presencia de token.
+- [x] Prevención de flash de contenido en rutas protegidas.
+- [x] Corrección de error JS `(intermediate value) is not a function` en guards de cabecera.
+- [x] Rutas limpias de auth/perfil habilitadas en FastAPI: `/login`, `/register`, `/account/profile`.
+- [x] Alias legacy mantenidos para compatibilidad: `/login.html`, `/register.html`, `/profile.html`.
+
+**Fase 10 — Talent Pipeline Tracker auth integration**
+- [x] Login y registro en Next.js (`/login`, `/register`) usando los mismos endpoints de FastAPI (`/auth/login`, `/users`).
+- [x] Gestión de perfil en `/account/profile` con `GET /auth/me` y `PUT /profiles/me`.
+- [x] Guard de autenticación en cliente (`AuthGuard`) aplicado desde `app/layout.tsx`.
+- [x] Ciclo de token implementado: guardar token, adjuntar `Authorization: Bearer`, logout, limpieza en 401 y redirección a login.
+- [x] Navegación actualizada con acceso a perfil y cierre de sesión.
+
+**Fase 11 — Resolución de CORS en Codespaces (tracker)**
+- [x] Implementado proxy de autenticación same-origin en Next.js: `app/api/auth-proxy/[...path]/route.ts`.
+- [x] `services/auth.ts` del tracker migra llamadas de auth/perfil a `/api/auth-proxy/*`.
+- [x] Eliminación de dependencia de llamadas cross-origin directas desde `-3000` a `-8000` para login/registro/perfil.

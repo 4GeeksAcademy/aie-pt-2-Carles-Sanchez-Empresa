@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrackFlow — Registro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#10B981',
+          }
+        }
+      }
+    };
+
+    // ── Si ya hay sesión válida, redirigir inmediatamente sin mostrar el registro ──
+    (function () {
+      function decodeBase64Url(base64Url) {
+        var normalized = String(base64Url || '').replace(/-/g, '+').replace(/_/g, '/');
+        while (normalized.length % 4 !== 0) normalized += '=';
+        return atob(normalized);
+      }
+
+      function isExpiredJwt(token) {
+        if (!token || typeof token !== 'string') return true;
+        var parts = token.split('.');
+        if (parts.length !== 3) return true;
+        try {
+          var payload = JSON.parse(decodeBase64Url(parts[1]));
+          if (typeof payload.exp !== 'number') return true;
+          var now = Math.floor(Date.now() / 1000);
+          return payload.exp <= now;
+        } catch (e) {
+          return true;
+        }
+      }
+
+      var token = null;
+      try { token = localStorage.getItem('trackflow_token'); } catch (e) {}
+      if (token && !isExpiredJwt(token)) {
+        window.location.href = '/';
+        return;
+      }
+
+      if (token) {
+        try { localStorage.removeItem('trackflow_token'); } catch (e) {}
+      }
+    })();
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
+
+  <header class="bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6 shadow-lg">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
+        <p class="text-blue-100 mt-1">Panel de administración</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 flex items-center justify-center p-6">
+    <div class="w-full max-w-md">
+
+      <!-- Tarjeta de registro -->
+      <div class="bg-white rounded-xl shadow-md border border-gray-200 p-8">
+        <div class="text-center mb-6">
+          <div class="text-5xl mb-3">📝</div>
+          <h2 class="text-2xl font-bold text-gray-800">Crear cuenta</h2>
+          <p class="text-gray-500 text-sm mt-1">Regístrate para acceder al panel de TrackFlow</p>
+        </div>
+
+        <form id="registerForm" class="space-y-4">
+          <!-- Nombre (opcional) -->
+          <div>
+            <label for="nameField" class="block text-sm font-medium text-gray-700 mb-1">
+              Nombre <span class="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <input
+              id="nameField"
+              type="text"
+              autocomplete="name"
+              placeholder="Tu nombre"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label for="emailField" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input
+              id="emailField"
+              type="email"
+              autocomplete="email"
+              required
+              placeholder="tu@email.com"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            />
+            <p id="emailError" class="hidden text-red-500 text-xs mt-1"></p>
+          </div>
+
+          <!-- Teléfono (opcional) -->
+          <div>
+            <label for="phoneField" class="block text-sm font-medium text-gray-700 mb-1">
+              Teléfono <span class="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <input
+              id="phoneField"
+              type="tel"
+              autocomplete="tel"
+              placeholder="+34 600 000 000"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            />
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label for="passwordField" class="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+            <input
+              id="passwordField"
+              type="password"
+              autocomplete="new-password"
+              required
+              minlength="6"
+              placeholder="Mínimo 6 caracteres"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            />
+            <p id="passwordError" class="hidden text-red-500 text-xs mt-1"></p>
+          </div>
+
+          <!-- Confirmar contraseña -->
+          <div>
+            <label for="confirmField" class="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña *</label>
+            <input
+              id="confirmField"
+              type="password"
+              autocomplete="new-password"
+              required
+              placeholder="Repite la contraseña"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            />
+            <p id="confirmError" class="hidden text-red-500 text-xs mt-1"></p>
+          </div>
+
+          <!-- Error general -->
+          <div id="registerError" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm"></div>
+
+          <!-- Submit -->
+          <button
+            id="registerBtn"
+            type="submit"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-2"
+          >
+            <span id="registerBtnText">Crear cuenta</span>
+            <span id="registerSpinner" class="hidden">
+              <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            </span>
+          </button>
+        </form>
+
+        <p class="text-center text-sm text-gray-500 mt-6">
+          ¿Ya tienes cuenta?
+          <a href="/login" class="text-blue-600 hover:text-blue-800 font-medium underline decoration-blue-300 underline-offset-2">
+            Iniciar sesión
+          </a>
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200">
+    TrackFlow — Panel de administración
+  </footer>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const form = document.getElementById('registerForm');
+    const nameField = document.getElementById('nameField');
+    const emailField = document.getElementById('emailField');
+    const phoneField = document.getElementById('phoneField');
+    const passwordField = document.getElementById('passwordField');
+    const confirmField = document.getElementById('confirmField');
+    const registerBtn = document.getElementById('registerBtn');
+    const registerBtnText = document.getElementById('registerBtnText');
+    const registerSpinner = document.getElementById('registerSpinner');
+    const registerError = document.getElementById('registerError');
+    const emailError = document.getElementById('emailError');
+    const passwordError = document.getElementById('passwordError');
+    const confirmError = document.getElementById('confirmError');
+
+    function hideFieldErrors() {
+      [emailError, passwordError, confirmError].forEach(el => el.classList.add('hidden'));
+    }
+
+    function showFieldError(el, msg) {
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      registerError.classList.add('hidden');
+      hideFieldErrors();
+
+      const email = emailField.value.trim();
+      const password = passwordField.value;
+      const confirm = confirmField.value;
+      const name = nameField.value.trim();
+      const phone = phoneField.value.trim();
+      let hasError = false;
+
+      // Validaciones por campo
+      if (!email || !email.includes('@')) {
+        showFieldError(emailError, 'Introduce un email válido.');
+        hasError = true;
+      }
+      if (!password || password.length < 6) {
+        showFieldError(passwordError, 'La contraseña debe tener al menos 6 caracteres.');
+        hasError = true;
+      }
+      if (password !== confirm) {
+        showFieldError(confirmError, 'Las contraseñas no coinciden.');
+        hasError = true;
+      }
+      if (phone && !/^[\d\s+\-()]{6,20}$/.test(phone)) {
+        showFieldError(emailError, 'El teléfono no tiene un formato válido.');
+        hasError = true;
+      }
+      if (hasError) return;
+
+      // Estado loading
+      registerBtn.disabled = true;
+      registerBtnText.textContent = 'Creando cuenta…';
+      registerSpinner.classList.remove('hidden');
+
+      try {
+        await window.register({
+          email,
+          password,
+          name: name || undefined,
+          phone: phone || undefined,
+        });
+        // Éxito — login automático ya se hizo, redirigir
+        window.location.href = '/';
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Error desconocido';
+        registerError.classList.remove('hidden');
+        registerError.textContent = '❌ ' + msg;
+      } finally {
+        registerBtn.disabled = false;
+        registerBtnText.textContent = 'Crear cuenta';
+        registerSpinner.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

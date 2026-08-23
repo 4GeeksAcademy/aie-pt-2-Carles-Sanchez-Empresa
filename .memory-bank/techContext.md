@@ -118,11 +118,23 @@ destination: "https://playground.4geeks.com/tracker/api/v1/:path*",
 
 Todas las llamadas a la API externa se realizan a través de `/api/proxy/`, evitando problemas de CORS y manteniendo la URL base centralizada en `lib/constants.ts`.
 
+### 3.1 Proxy de autenticación para Next.js (same-origin)
+
+- El tracker incorpora un Route Handler interno en `app/api/auth-proxy/[...path]/route.ts`.
+- Este proxy enruta llamadas de autenticación/perfil a FastAPI (`/auth/*`, `/users`, `/profiles/me`) desde el mismo origen del frontend.
+- Objetivo: evitar errores de CORS en Codespaces cuando el navegador está en `-3000` y la API en `-8000`.
+
 ### 4. Estado local con hooks (sin librerías externas)
 
 - No se usan **Redux, Zustand, Jotai** ni ninguna otra biblioteca de gestión de estado.
 - El estado se gestiona exclusivamente con hooks de React (`useState`, `useEffect`, `useCallback`) a nivel de componente.
 - No hay _prop drilling_; cada componente consume sus propios datos mediante llamadas a la API.
+
+### 4.1 Guard de autenticación en cliente (Tracker)
+
+- La protección de rutas en `uis/talent-pipeline-tracker` se hace en cliente con `components/AuthGuard.tsx` aplicado desde `app/layout.tsx`.
+- El guard valida el token JWT en `localStorage` (`trackflow_token`) y redirige a `/login` si falta o está expirado.
+- `login` y `register` redirigen al listado si ya existe sesión válida.
 
 ### 5. Paleta de colores personalizada (sin Tailwind theme extend)
 
@@ -202,9 +214,13 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
   - `DELETE /suppliers/{id}` — eliminar proveedor
 - **Endpoints — Frontend** (servido desde FastAPI):
   - `GET /` — sirve `index.html` del backoffice (panel de utilidades)
+  - `GET /login` — login del backoffice
+  - `GET /register` — registro del backoffice
+  - `GET /account/profile` — perfil de cuenta del usuario autenticado
   - `GET /incidents.html` — sirve la página de análisis de incidencias
   - `GET /suppliers.html` — sirve la página del directorio de proveedores
   - `GET /js/*` — sirve los archivos JavaScript del backoffice
+  - Alias legacy mantenidos: `/login.html`, `/register.html`, `/profile.html`
 - **Módulos**:
   - `analyzer/_core.py` — 8 reglas de validación, métricas y exportación CSV para incidencias
   - `routes/suppliers.py` — CRUD completo del directorio de proveedores
@@ -266,10 +282,15 @@ Tras un `POST`, `PUT`, `PATCH` o `DELETE`, la interfaz debe reflejar los cambios
 uis/talent-pipeline-tracker/
 ├── app/
 │   ├── layout.tsx          # Layout raíz (Header + Footer)
+│   ├── login/page.tsx      # Login
+│   ├── register/page.tsx   # Registro
+│   ├── account/profile/page.tsx # Gestión de perfil
+│   ├── api/auth-proxy/[...path]/route.ts # Proxy same-origin para auth/perfil
 │   ├── page.tsx            # Listado de candidaturas
 │   └── candidates/[id]/page.tsx  # Detalle de candidatura
 ├── components/             # Componentes reutilizables
 │   ├── Header.tsx
+│   ├── AuthGuard.tsx
 │   ├── StatusBadge.tsx
 │   ├── StageBadge.tsx
 │   ├── LoadingSpinner.tsx
@@ -279,7 +300,8 @@ uis/talent-pipeline-tracker/
 │   ├── constants.ts
 │   └── validation.ts
 ├── services/               # Capa de API
-│   └── api.ts
+│   ├── api.ts
+│   └── auth.ts
 └── types/                  # Tipos TypeScript
     └── index.ts
 ```

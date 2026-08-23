@@ -1,12 +1,17 @@
 # TrackFlow Backoffice (HTML + TypeScript bundle)
 
-This project contains the manual TrackFlow backoffice panel served as static HTML and powered by a browser bundle generated from the monorepo TypeScript source.
+This folder contains the static backoffice pages (`index.html`, `suppliers.html`, `incidents.html`, `login.html`, `register.html`, `profile.html`) and the browser bundle (`js/app.js`) generated from `src/ui/handlers.ts`.
+
+The backoffice is meant to be served by the FastAPI app in `services/api`, not by a standalone frontend dev server.
+
+---
 
 ## Requirements
 
-- Node.js 20 or newer
-- npm 10 or newer
-- Python 3.10+ with `uv` installed
+- Node.js 20+
+- npm 10+
+- Python 3.10+
+- `uv`
 
 Quick check:
 
@@ -16,29 +21,28 @@ npm -v
 uv --version
 ```
 
-## Relevant structure
+---
 
-- `index.html` — static backoffice UI
-- `js/app.js` — browser bundle consumed by the page
-- `package.json` — build and watch scripts for the UI bundle
-- `../../src/` — source of truth for business logic, sample data, and UI handlers
+## Routes you can open in the browser
 
-## Source of truth
+When the API is running on port `8000`, these pages are available:
 
-The business logic is not maintained inside `uis/backoffice/`.
+- `/login` → login
+- `/register` → account creation
+- `/` → backoffice main panel (protected)
+- `/suppliers.html` → supplier directory (protected)
+- `/incidents.html` → incident analyzer (protected)
+- `/account/profile` → current user profile (protected)
 
-- `src/utils/` contains the business logic
-- `src/types/` contains the domain types
-- `src/data/sampleData.ts` contains sample data
-- `src/ui/handlers.ts` is the browser entrypoint bundled for the backoffice
+Legacy routes (`/login.html`, `/register.html`, `/profile.html`) are kept as aliases.
+
+Protected routes require a valid JWT token stored in `localStorage` (`trackflow_token`).
 
 ---
 
-## Step-by-step setup (with FastAPI server) — RECOMMENDED
+## End-to-end launch process (recommended)
 
-This is the recommended way, as the backoffice is served through the same FastAPI server.
-
-### 1. Build the TypeScript bundle
+### 1. Build the backoffice bundle
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
@@ -46,53 +50,34 @@ npm install
 npm run build
 ```
 
-### 2. Start the FastAPI server (with uv)
+### 2. Start the API server (which also serves this UI)
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/services/api
-uv sync          # if you haven't already
-uv run seed      # optional: seed example suppliers
+uv sync
+uv run seed   # optional sample suppliers
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 3. Open in the browser
+### 3. Open and authenticate
 
-[http://localhost:8000](http://localhost:8000)
-
-The FastAPI server serves:
-- `/` → `index.html`
-- `/incidents.html` → incident analyzer
-- `/suppliers.html` → supplier directory
-- `/js/app.js` → compiled TypeScript bundle
+1. Open `http://localhost:8000/register` to create an account.
+2. Then login at `http://localhost:8000/login`.
+3. After login you are redirected to `http://localhost:8000/`.
+4. Navigate to suppliers and incidents from the top navigation.
 
 ---
 
-## Alternative: static HTTP server
+## Development workflow
 
-If you only want to view the static HTML (no API connection), use a simple HTTP server:
-
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build
-python3 -m http.server 8126
-```
-
-[http://127.0.0.1:8126](http://127.0.0.1:8126)
-
-> ⚠️ With this option, the suppliers (`suppliers.html`) and incidents pages will NOT connect to the API.
-
----
-
-## Development: auto-rebuild on changes
-
-Keep this running in a terminal while editing `src/`:
+Use auto-rebuild while editing `src/`:
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
 npm run build:watch
 ```
 
-This regenerates `js/app.js` whenever TypeScript source files change.
+Keep the FastAPI server running in another terminal.
 
 ---
 
@@ -101,64 +86,48 @@ This regenerates `js/app.js` whenever TypeScript source files change.
 | Command | Description |
 |---|---|
 | `npm run build` | Bundles `../../src/ui/handlers.ts` into `js/app.js` |
-| `npm run build:watch` | Rebuilds the bundle automatically on changes |
+| `npm run build:watch` | Rebuilds automatically on file changes |
 
 ---
 
-## Expected status
+## Codespaces access
 
-If everything is correct:
+If you run this in GitHub Codespaces, use the forwarded port URL for `8000`:
 
-- `npm run build` finishes without errors
-- `js/app.js` is generated successfully
-- The FastAPI server starts without errors
-- The backoffice pages load correctly at `http://localhost:8000`
-- Business logic results are visible in the UI, not only in the console
+- `https://<codespace-name>-8000.app.github.dev/login`
+
+You can find the exact URL in the VS Code Ports panel.
 
 ---
 
 ## Troubleshooting
 
-### The page opens but buttons do nothing
+### UI loads but actions do nothing
 
-Usually `js/app.js` has not been generated yet.
+Bundle might be outdated. Rebuild:
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
 npm run build
 ```
 
-Refresh the browser.
+### 401 Unauthorized or automatic redirect to login
 
-### Error `sh: esbuild: not found`
+The token is missing or expired. Login again at `/login`.
 
-Local dependencies are missing.
+### `sh: esbuild: not found`
+
+Install dependencies in backoffice:
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
 npm install
 ```
 
-### Changes in `src/` are not reflected
+### API server is not reachable
 
-Rebuild the bundle:
-
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build
-```
-
-Or keep the watcher running: `npm run build:watch`
-
-### Error `bash: uv: command not found`
+Start/restart FastAPI in `services/api`:
 
 ```bash
-pip install uv
-```
-
-### Server won't start because port is in use
-
-```bash
-# Change the port on the FastAPI server
-uv run uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```

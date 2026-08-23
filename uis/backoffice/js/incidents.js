@@ -1,18 +1,37 @@
 /**
  * incidents.js — Lógica del Analizador de Incidencias TrackFlow.
  *
- * Dependencias: TailwindCSS (CDN en HTML)
+ * Dependencias: TailwindCSS (CDN en HTML), app.js (autenticación)
  * La API se sirve desde el mismo origen (FastAPI sirve tanto API como frontend).
  */
 
+// ── Proteger página ──
+if (typeof requireAuth !== 'undefined') requireAuth();
+
 // ── API base: rutas relativas (mismo servidor) ──
 const API_BASE = "";
+
+// ── API helper con autenticación ──
+async function apiFetch(url, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  const token = typeof getToken !== 'undefined' ? getToken() : null;
+  if (token) {
+    headers['Authorization'] = 'Bearer ' + token;
+  }
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    if (typeof clearToken !== 'undefined') clearToken();
+    if (typeof logout !== 'undefined') logout();
+    else window.location.href = '/login.html?reason=session_expired';
+  }
+  return res;
+}
 
 // ── Estado ──
 let _selectedFile = null;
 let _lastResult = null;
 
-// ── Referencias DOM (cache) ──
+// ── References DOM (cache) ──
 const $ = (id) => document.getElementById(id);
 const dropZone = $("dropZone");
 const dropContent = $("dropContent");
@@ -87,9 +106,8 @@ async function runAnalysis() {
   formData.append("file", _selectedFile);
 
   try {
-    const res = await fetch(`${API_BASE}/api/incidents/analyze`, {
+    const res = await apiFetch(`${API_BASE}/api/incidents/analyze`, {
       method: "POST",
-      mode: "cors",
       body: formData,
     });
 
@@ -266,7 +284,7 @@ $("downloadBtn").addEventListener("click", async function (e) {
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/api/incidents/results/export`);
+    const res = await apiFetch(`${API_BASE}/api/incidents/results/export`);
     if (!res.ok) throw new Error("Error " + res.status);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -301,7 +319,7 @@ function hideError() {
 
 (async function healthCheck() {
   try {
-    const res = await fetch(`/api/health`);
+    const res = await apiFetch(`/api/health`);
     if (res.ok) {
       analyzeStatus.textContent = "✅ Servidor API conectado. Sube un archivo CSV para empezar.";
       analyzeStatus.className = "text-sm text-emerald-600 font-medium";

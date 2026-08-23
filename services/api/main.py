@@ -175,6 +175,42 @@ async def get_suppliers():
     return FileResponse(os.path.join(BACKOFFICE_DIR, "suppliers.html"))
 
 
+@app.get("/login.html")
+async def get_login():
+    """Sirve la página de inicio de sesión."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "login.html"))
+
+
+@app.get("/login")
+async def get_login_clean():
+    """Alias limpio para la página de inicio de sesión."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "login.html"))
+
+
+@app.get("/register.html")
+async def get_register():
+    """Sirve la página de registro."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "register.html"))
+
+
+@app.get("/register")
+async def get_register_clean():
+    """Alias limpio para la página de registro."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "register.html"))
+
+
+@app.get("/profile.html")
+async def get_profile():
+    """Sirve la página de perfil de usuario."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "profile.html"))
+
+
+@app.get("/account/profile")
+async def get_profile_clean():
+    """Alias limpio para la página de perfil de usuario."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "profile.html"))
+
+
 # ──────────────────────────── Entry point ────────────────────────────
 
 if __name__ == "__main__":

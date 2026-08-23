@@ -5,8 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TrackFlow - Verificador de Utilidades</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body.auth-pending {
+      visibility: hidden;
+    }
+
+    .auth-ok body.auth-pending {
+      visibility: visible;
+    }
+  </style>
   <script>
-    tailwind.config = {
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
       theme: {
         extend: {
           colors: {
@@ -15,10 +25,49 @@
           }
         }
       }
-    }
+    };
+
+    // ── Protección inmediata: validar JWT antes de pintar el body ──
+    (function () {
+      try {
+      function decodeBase64Url(base64Url) {
+        var normalized = String(base64Url || '').replace(/-/g, '+').replace(/_/g, '/');
+        while (normalized.length % 4 !== 0) normalized += '=';
+        return atob(normalized);
+      }
+
+      function isExpiredJwt(token) {
+        if (!token || typeof token !== 'string') return true;
+        var parts = token.split('.');
+        if (parts.length !== 3) return true;
+        try {
+          var payload = JSON.parse(decodeBase64Url(parts[1]));
+          if (typeof payload.exp !== 'number') return true;
+          var now = Math.floor(Date.now() / 1000);
+          return payload.exp <= now;
+        } catch (e) {
+          return true;
+        }
+      }
+
+      var loginUrl = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      var token = null;
+      try { token = localStorage.getItem('trackflow_token'); } catch (e) {}
+      if (!token || isExpiredJwt(token)) {
+        try { localStorage.removeItem('trackflow_token'); } catch (e) {}
+        window.location.replace(loginUrl);
+        return;
+      }
+
+      document.documentElement.classList.add('auth-ok');
+      } catch (e) {
+        document.documentElement.classList.add('auth-ok');
+        window.location.replace('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      }
+    })();
   </script>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="auth-pending bg-gray-50 text-gray-800 font-sans">
 
   <header class="bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6 shadow-lg">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
@@ -26,7 +75,8 @@
         <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
         <p class="text-blue-100 mt-1">Verificador manual de utilidades — TypeScript → JavaScript</p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3" id="headerNav">
+        <!-- Enlaces que requieren auth se muestran/ocultan con JS -->
         <a href="suppliers.html"
            class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
           📋 Proveedores
@@ -270,5 +320,45 @@
   </footer>
 
   <script src="./js/app.js"></script>
+  <script>
+    // ── Cabecera dinámica con estado de autenticación ──
+    document.addEventListener('DOMContentLoaded', function () {
+      const headerNav = document.getElementById('headerNav');
+      const token = window.getToken ? window.getToken() : null;
+
+      // Enlaces de proveedores e incidents siempre visibles pero con protección
+      // Añadimos enlaces de auth al final del nav
+      const authLinks = document.createElement('span');
+      authLinks.className = 'flex items-center gap-2 ml-2 pl-2 border-l border-white/30';
+
+      if (token) {
+        // Usuario autenticado
+        authLinks.innerHTML = `
+          <a href="profile.html"
+             class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            👤 Perfil
+          </a>
+          <button onclick="window.logout()"
+                  class="bg-red-400/20 hover:bg-red-400/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            🚪 Salir
+          </button>
+        `;
+      } else {
+        // Usuario no autenticado
+        authLinks.innerHTML = `
+          <a href="login.html"
+             class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            🔐 Iniciar sesión
+          </a>
+          <a href="register.html"
+             class="bg-emerald-400/20 hover:bg-emerald-400/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            📝 Registro
+          </a>
+        `;
+      }
+
+      headerNav.appendChild(authLinks);
+    });
+  </script>
 </body>
 </html>

@@ -1,12 +1,17 @@
 # TrackFlow Backoffice (HTML + bundle TypeScript)
 
-Este proyecto contiene el panel manual de backoffice de TrackFlow servido como HTML estático y alimentado por un bundle de navegador generado desde el código fuente TypeScript del monorepo.
+Esta carpeta contiene las páginas estáticas del backoffice (`index.html`, `suppliers.html`, `incidents.html`, `login.html`, `register.html`, `profile.html`) y el bundle de navegador (`js/app.js`) generado desde `src/ui/handlers.ts`.
+
+El backoffice está pensado para servirse desde la app FastAPI en `services/api`, no desde un servidor frontend independiente.
+
+---
 
 ## Requisitos
 
-- Node.js 20 o superior
-- npm 10 o superior
-- Python 3.10+ con `uv` instalado
+- Node.js 20+
+- npm 10+
+- Python 3.10+
+- `uv`
 
 Comprobación rápida:
 
@@ -16,29 +21,28 @@ npm -v
 uv --version
 ```
 
-## Estructura relevante
+---
 
-- `index.html` — interfaz estática del backoffice
-- `js/app.js` — bundle de navegador consumido por la página
-- `package.json` — scripts de build y watch para la UI
-- `../../src/` — fuente de verdad de la lógica de negocio, datos de ejemplo y handlers de interfaz
+## Rutas para abrir en el navegador
 
-## Fuente de verdad
+Cuando la API está corriendo en el puerto `8000`, tienes disponibles estas páginas:
 
-La lógica de negocio no se mantiene dentro de `uis/backoffice/`.
+- `/login` → inicio de sesión
+- `/register` → registro de cuenta
+- `/` → panel principal del backoffice (protegido)
+- `/suppliers.html` → directorio de proveedores (protegido)
+- `/incidents.html` → analizador de incidencias (protegido)
+- `/account/profile` → perfil del usuario actual (protegido)
 
-- `src/utils/` contiene la lógica de negocio
-- `src/types/` contiene los tipos de dominio
-- `src/data/sampleData.ts` contiene los datos de ejemplo
-- `src/ui/handlers.ts` es el entrypoint de navegador que se empaqueta para el backoffice
+Las rutas legacy (`/login.html`, `/register.html`, `/profile.html`) se mantienen como alias.
+
+Las rutas protegidas requieren un token JWT válido guardado en `localStorage` (`trackflow_token`).
 
 ---
 
-## Puesta en marcha — paso a paso (con servidor FastAPI)
+## Proceso recomendado de arranque (de principio a fin)
 
-Esta es la forma recomendada, ya que el backoffice se sirve a través del mismo servidor FastAPI.
-
-### 1. Compilar el bundle TypeScript
+### 1. Compilar el bundle del backoffice
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
@@ -46,53 +50,34 @@ npm install
 npm run build
 ```
 
-### 2. Iniciar el servidor FastAPI (con uv)
+### 2. Iniciar la API (que también sirve esta UI)
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/services/api
-uv sync          # si no lo has hecho aún
-uv run seed      # opcional: sembrar proveedores de ejemplo
+uv sync
+uv run seed   # opcional: datos de ejemplo para proveedores
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 3. Abrir en el navegador
+### 3. Abrir y autenticarse
 
-[http://localhost:8000](http://localhost:8000)
-
-El servidor FastAPI sirve:
-- `/` → `index.html`
-- `/incidents.html` → analizador de incidencias
-- `/suppliers.html` → directorio de proveedores
-- `/js/app.js` → bundle TypeScript compilado
+1. Abre `http://localhost:8000/register` para crear una cuenta.
+2. Luego inicia sesión en `http://localhost:8000/login`.
+3. Tras el login se redirige a `http://localhost:8000/`.
+4. Navega a proveedores e incidencias desde la barra superior.
 
 ---
 
-## Opción alternativa: servidor HTTP estático
+## Flujo de desarrollo
 
-Si solo quieres ver el HTML estático (sin conectar con la API), puedes usar un servidor HTTP simple:
-
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build
-python3 -m http.server 8126
-```
-
-[http://127.0.0.1:8126](http://127.0.0.1:8126)
-
-> ⚠️ Con esta opción las páginas de proveedores (`suppliers.html`) e incidencias no se conectarán a la API.
-
----
-
-## Desarrollo: recompilar automáticamente
-
-Mantén este comando corriendo en una terminal mientras editas `src/`:
+Usa recompilación automática mientras editas `src/`:
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
 npm run build:watch
 ```
 
-Esto regenera `js/app.js` al detectar cualquier cambio en los archivos fuente TypeScript.
+Mantén el servidor FastAPI corriendo en otra terminal.
 
 ---
 
@@ -101,64 +86,48 @@ Esto regenera `js/app.js` al detectar cualquier cambio en los archivos fuente Ty
 | Comando | Descripción |
 |---|---|
 | `npm run build` | Empaqueta `../../src/ui/handlers.ts` en `js/app.js` |
-| `npm run build:watch` | Recompila el bundle automáticamente al detectar cambios |
+| `npm run build:watch` | Recompila automáticamente al detectar cambios |
 
 ---
 
-## Estado esperado
+## Acceso en Codespaces
 
-Si todo está correcto:
+Si ejecutas esto en GitHub Codespaces, usa la URL del puerto `8000`:
 
-- `npm run build` termina sin errores
-- `js/app.js` se genera correctamente
-- El servidor FastAPI arranca sin errores
-- Las páginas del backoffice cargan correctamente en `http://localhost:8000`
-- Los resultados de la lógica de negocio son visibles en la UI, no solo en consola
+- `https://<codespace-name>-8000.app.github.dev/login`
+
+Puedes ver la URL exacta en el panel Ports de VS Code.
 
 ---
 
 ## Solución de problemas
 
-### La página abre pero los botones no hacen nada
+### La UI carga pero las acciones no hacen nada
 
-Normalmente `js/app.js` todavía no se ha generado.
+El bundle puede estar desactualizado. Recompila:
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
 npm run build
 ```
 
-Recarga el navegador.
+### 401 Unauthorized o redirección automática al login
 
-### Error `sh: esbuild: not found`
+El token falta o expiró. Inicia sesión de nuevo en `/login`.
 
-Faltan dependencias locales.
+### `sh: esbuild: not found`
+
+Instala dependencias en backoffice:
 
 ```bash
 cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
 npm install
 ```
 
-### Los cambios en `src/` no se reflejan
+### No se puede conectar con la API
 
-Reconstruye el bundle:
-
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build
-```
-
-O mantén el watcher activo: `npm run build:watch`
-
-### Error `bash: uv: command not found`
+Inicia/reinicia FastAPI en `services/api`:
 
 ```bash
-pip install uv
-```
-
-### El servidor no arranca por puerto ocupado
-
-```bash
-# Cambia el puerto en el servidor FastAPI
-uv run uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
