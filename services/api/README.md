@@ -70,6 +70,8 @@ uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 | `/suppliers.html` | Supplier UI | Protected |
 | `/incidents.html` | Incident analyzer UI | Protected |
 | `/account/profile` | Current user profile UI | Protected |
+| `/forgot-password` | Password recovery form | Public |
+| `/reset-password` | Password reset form | Public |
 
 Legacy aliases are also available:
 
@@ -88,12 +90,15 @@ Legacy aliases are also available:
 | `GET` | `/api/health` | Health check |
 | `POST` | `/users` | Register user |
 | `POST` | `/auth/login` | Login (returns JWT token) |
+| `POST` | `/auth/forgot-password` | Request password reset link |
+| `POST` | `/auth/reset-password` | Reset password with token |
 
 ### Protected (Bearer token required)
 
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/auth/me` | Current authenticated user |
+| `POST` | `/auth/change-password` | Change password (authenticated) |
 | `GET` | `/profiles/me` | Current user profile |
 | `PUT` | `/profiles/me` | Update current profile |
 | `GET` | `/users` | List users (admin only) |

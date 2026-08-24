@@ -122,7 +122,13 @@
           </button>
         </form>
 
-        <p class="text-center text-sm text-gray-500 mt-6">
+        <p class="text-center text-sm text-gray-500 mt-4">
+          <a href="/forgot-password" class="text-blue-600 hover:text-blue-800 font-medium underline decoration-blue-300 underline-offset-2">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </p>
+
+        <p class="text-center text-sm text-gray-500 mt-4">
           ¿No tienes cuenta?
           <a href="/register" class="text-blue-600 hover:text-blue-800 font-medium underline decoration-blue-300 underline-offset-2">
             Registrarse
@@ -150,9 +156,17 @@
     const params = new URLSearchParams(window.location.search);
     const redirectTo = params.get('redirect') || '/';
 
+    // Si hay reason=password_reset, mostrar mensaje de éxito
+    if (params.get('reason') === 'password_reset') {
+      loginError.classList.remove('hidden');
+      loginError.className = 'bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm';
+      loginError.textContent = '✅ Contraseña actualizada correctamente. Inicia sesión con tu nueva contraseña.';
+    }
+
     // Si hay reason=session_expired, mostrar mensaje
     if (params.get('reason') === 'session_expired') {
       loginError.classList.remove('hidden');
+      loginError.className = 'bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm';
       loginError.textContent = '⏰ Tu sesión ha expirado. Inicia sesión de nuevo.';
     }
 

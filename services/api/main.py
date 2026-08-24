@@ -199,6 +199,30 @@ async def get_register_clean():
     return FileResponse(os.path.join(BACKOFFICE_DIR, "register.html"))
 
 
+@app.get("/forgot-password.html")
+async def get_forgot_password():
+    """Sirve la página de recuperación de contraseña."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "forgot-password.html"))
+
+
+@app.get("/forgot-password")
+async def get_forgot_password_clean():
+    """Alias limpio para la página de recuperación de contraseña."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "forgot-password.html"))
+
+
+@app.get("/reset-password.html")
+async def get_reset_password():
+    """Sirve la página de restablecimiento de contraseña."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "reset-password.html"))
+
+
+@app.get("/reset-password")
+async def get_reset_password_clean():
+    """Alias limpio para la página de restablecimiento de contraseña."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "reset-password.html"))
+
+
 @app.get("/profile.html")
 async def get_profile():
     """Sirve la página de perfil de usuario."""
