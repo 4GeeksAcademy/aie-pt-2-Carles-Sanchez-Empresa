@@ -88,12 +88,15 @@ Alias legacy también disponibles:
 | `GET` | `/api/health` | Health check |
 | `POST` | `/users` | Registro de usuario |
 | `POST` | `/auth/login` | Login (devuelve token JWT) |
+| `POST` | `/auth/forgot-password` | Solicitar enlace de restablecimiento de contraseña |
+| `POST` | `/auth/reset-password` | Restablecer contraseña con token |
 
 ### Protegidas (requieren token Bearer)
 
 | Método | Ruta | Descripción |
 |---|---|---|
 | `GET` | `/auth/me` | Usuario autenticado actual |
+| `POST` | `/auth/change-password` | Cambiar contraseña (autenticado) |
 | `GET` | `/profiles/me` | Perfil del usuario autenticado |
 | `PUT` | `/profiles/me` | Actualizar perfil propio |
 | `GET` | `/users` | Listar usuarios (solo admin) |

@@ -6,6 +6,7 @@ Tablas:
   - suppliers   → Directorio de proveedores
   - users       → Credenciales de usuario (email + password hasheada)
   - profiles    → Perfiles vinculados 1:1 a usuarios
+  - used_tokens → Tokens de restablecimiento invalidados
 """
 
 import os
@@ -24,10 +25,12 @@ suppliers_table = db.table("suppliers")
 # Tablas de autenticación
 users_table = db.table("users")
 profiles_table = db.table("profiles")
+used_tokens_table = db.table("used_tokens")
 
 # Query helper para reutilizar en rutas
 SupplierQuery = Query()
 UserQuery = Query()
+TokenQuery = Query()
 ProfileQuery = Query()
 
 # Nombre del archivo de datos para TinyDB
