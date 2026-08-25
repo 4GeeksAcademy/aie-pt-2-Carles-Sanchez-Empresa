@@ -69,6 +69,7 @@ uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 | `/` | Panel principal del backoffice | Protegido |
 | `/suppliers.html` | UI de proveedores | Protegido |
 | `/incidents.html` | UI de analizador de incidencias | Protegido |
+| `/incidents-manager.html` | UI de gestor centralizado de incidencias | Protegido |
 | `/account/profile` | UI de perfil del usuario actual | Protegido |
 
 Alias legacy también disponibles:
@@ -105,6 +106,11 @@ Alias legacy también disponibles:
 | `DELETE` | `/users/{id}` | Eliminar usuario (solo admin) |
 | `POST` | `/api/incidents/analyze` | Analizar CSV subido |
 | `GET` | `/api/incidents/results/export` | Exportar último análisis en CSV |
+| `POST` | `/api/incidents` | Crear nueva incidencia (gestor) |
+| `GET` | `/api/incidents` | Listar incidencias (`?status=&origin=&branch=`) |
+| `GET` | `/api/incidents/{id}` | Detalle de incidencia por ID |
+| `PATCH` | `/api/incidents/{id}/status` | Actualizar estado (con validación de transiciones) |
+| `GET` | `/api/incidents/summary` | Métricas agregadas (por estado, categoría, origen, sede) |
 | `POST` | `/suppliers` | Crear proveedor |
 | `GET` | `/suppliers` | Listar proveedores (`?country=...&category=...`) |
 | `GET` | `/suppliers/{id}` | Obtener proveedor por ID |

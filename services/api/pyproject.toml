@@ -12,6 +12,7 @@ dependencies = [
     "libpass[bcrypt]>=1.9.3",
     "python-dotenv>=1.2.2",
     "resend>=2.39.0",
+    "trackflow-shared @ file:///workspaces/aie-pt-2-Carles-Sanchez-Empresa/packages/shared-py/",
 ]
 
 [tool.setuptools]

@@ -923,6 +923,7 @@ dependencies = [
     { name = "python-multipart" },
     { name = "resend" },
     { name = "tinydb" },
+    { name = "trackflow-shared" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -935,8 +936,14 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.6" },
     { name = "resend", specifier = ">=2.39.0" },
     { name = "tinydb", specifier = ">=4.8.0" },
+    { name = "trackflow-shared", directory = "/workspaces/aie-pt-2-Carles-Sanchez-Empresa/packages/shared-py" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0" },
 ]
+
+[[package]]
+name = "trackflow-shared"
+version = "0.1.0"
+source = { directory = "/workspaces/aie-pt-2-Carles-Sanchez-Empresa/packages/shared-py" }
 
 [[package]]
 name = "typing-extensions"
