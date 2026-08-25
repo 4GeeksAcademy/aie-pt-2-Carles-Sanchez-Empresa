@@ -2,7 +2,9 @@
 main.py — FastAPI service for TrackFlow.
 
 Módulos:
-    /api/incidents/*      → Analyzer de incidencias (existente)
+    /api/incidents/*      → Incidents manager (nuevo gestor)
+    /api/incidents/analyze → Analyzer de incidencias (existente)
+    /api/incidents/summary → Métricas agregadas (gestor)
     /api/suppliers/*      → Directorio de proveedores (protegido)
     /auth/*               → Autenticación JWT
     /users/*              → Gestión de usuarios
@@ -15,15 +17,16 @@ import io
 import os
 from typing import Optional
 
-from fastapi import Depends, FastAPI, File, UploadFile, HTTPException
+from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from analyzer import analyze_rows, build_results_csv
 from auth import get_current_user
 from routes import (
     auth_router,
+    incidents_router,
     profiles_router,
     suppliers_router,
     users_router,
@@ -55,6 +58,28 @@ app.mount("/js", StaticFiles(directory=os.path.join(BACKOFFICE_DIR, "js")), name
 # Almacén en memoria del último resultado (para la exportación CSV)
 _last_result: dict | None = None
 
+# ──────────────────── Global Error Handler ────────────────────
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Captura cualquier excepción no controlada y devuelve un JSON
+    genérico sin exponer stack traces al cliente.
+
+    HTTPException se maneja normalmente (no se traga).
+    """
+    from fastapi.exceptions import HTTPException as FastAPIHTTPException
+
+    if isinstance(exc, FastAPIHTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+        )
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Error interno del servidor. Contacte al administrador."},
+    )
 
 # ──────────────────────────── Helpers ────────────────────────────
 
@@ -143,6 +168,7 @@ async def get_export(
 # ──────────────────────────── Routers ────────────────────────────
 
 app.include_router(suppliers_router, dependencies=[Depends(get_current_user)])
+app.include_router(incidents_router, dependencies=[Depends(get_current_user)])
 app.include_router(users_router)
 app.include_router(profiles_router)
 app.include_router(auth_router)
@@ -233,6 +259,12 @@ async def get_profile():
 async def get_profile_clean():
     """Alias limpio para la página de perfil de usuario."""
     return FileResponse(os.path.join(BACKOFFICE_DIR, "profile.html"))
+
+
+@app.get("/incidents-manager.html")
+async def get_incidents_manager():
+    """Sirve la página del gestor de incidencias (nuevo)."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "incidents-manager.html"))
 
 
 # ──────────────────────────── Entry point ────────────────────────────

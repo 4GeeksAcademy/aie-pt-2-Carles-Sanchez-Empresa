@@ -27,11 +27,15 @@ users_table = db.table("users")
 profiles_table = db.table("profiles")
 used_tokens_table = db.table("used_tokens")
 
+# Tabla de incidencias
+incidents_table = db.table("incidents")
+
 # Query helper para reutilizar en rutas
 SupplierQuery = Query()
 UserQuery = Query()
 TokenQuery = Query()
 ProfileQuery = Query()
+IncidentQuery = Query()
 
 # Nombre del archivo de datos para TinyDB
 DB_FILENAME = "suppliers_db.json"
