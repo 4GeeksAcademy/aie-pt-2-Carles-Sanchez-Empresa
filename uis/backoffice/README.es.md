@@ -32,6 +32,7 @@ Cuando la API está corriendo en el puerto `8000`, tienes disponibles estas pág
 - `/` → panel principal del backoffice (protegido)
 - `/suppliers.html` → directorio de proveedores (protegido)
 - `/incidents.html` → analizador de incidencias (protegido)
+- `/incidents-manager.html` → gestor centralizado de incidencias (protegido, NUEVO)
 - `/account/profile` → perfil del usuario actual (protegido)
 
 Las rutas legacy (`/login.html`, `/register.html`, `/profile.html`) se mantienen como alias.

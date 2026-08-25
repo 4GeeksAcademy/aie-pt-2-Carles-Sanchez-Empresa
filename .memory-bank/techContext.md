@@ -62,6 +62,14 @@
 | **python-dotenv** | ^1.2.2 | Carga de variables de entorno desde `.env` (SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES) |
 | **uv** | — | Gestor de proyectos Python (alternativa a pip/poetry) |
 
+### Paquete compartido Python — `packages/shared-py/`
+
+| Tecnología | Propósito |
+|---|---|
+| **Python 3.10+** | Lenguaje de ejecución |
+| **Pydantic v2** | Enums con `str, Enum` para estados, categorías, orígenes y sedes |
+| **trackflow-shared** | Paquete instalable vía `file://` path: centraliza enums, validación de transiciones y transformación CSV-legacy para evitar duplicación entre servicios |
+
 ### Estructura del Monorepo
 
 ```
@@ -174,6 +182,13 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
   - `js/app.js` como artefacto final consumido por el navegador
 - El build del backoffice se realiza bundlando `../../src/ui/handlers.ts` con `esbuild`, evitando árboles duplicados de salida por módulo.
 - `src/tsconfig.json` usa `noEmit` para separar claramente validación TypeScript y salida de navegador.
+
+### 10. Gestor de Incidencias — Paquete compartido Python (`packages/shared-py/`)
+
+- Los enums, validaciones y transformaciones CSV de incidencias se centralizan en `trackflow-shared`, un paquete Python instalable localmente.
+- Esto evita la duplicación de lógica entre el analyzer legacy, la API REST y futuros servicios.
+- El submódulo `trackflow_shared.legacy` contiene el código migrado del analyzer original (`_core.py`), que ahora importa desde allí sin duplicar constantes ni funciones.
+- La validación de transiciones de estado (`open → in_progress → resolved/discarded`) es estricta y se aplica tanto en Pydantic (tipos) como en `validate_incident_record()` (reglas de negocio).
 
 ---
 

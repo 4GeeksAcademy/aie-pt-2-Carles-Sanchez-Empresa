@@ -1,0 +1,398 @@
+/**
+ * incidents-manager.js — Gestor Centralizado de Incidencias TrackFlow.
+ *
+ * Tres vistas en un solo HTML (tabs):
+ *   1. Formulario de creación
+ *   2. Listado con filtros y cambio de estado inline
+ *   3. Resumen de métricas agregadas
+ *
+ * Dependencias: Tailwind CSS CDN (cargado en HTML).
+ * Autenticación: JWT en localStorage (trackflow_token).
+ */
+
+"use strict";
+
+// ──────────────────────────── Constantes ────────────────────────────
+
+const API_BASE = "/api/incidents";
+
+const STATUS_LABELS = {
+  open: "Abierta",
+  in_progress: "En progreso",
+  resolved: "Resuelta",
+  discarded: "Descartada",
+};
+
+const STATUS_COLORS = {
+  open: "bg-yellow-100 text-yellow-800",
+  in_progress: "bg-blue-100 text-blue-800",
+  resolved: "bg-green-100 text-green-800",
+  discarded: "bg-gray-100 text-gray-600",
+};
+
+const CATEGORY_LABELS = {
+  lost_parcel: "📦 Paquete perdido",
+  delivery_failure: "🚚 Fallo de entrega",
+  inventory_discrepancy: "📋 Discrepancia inventario",
+  carrier_issue: "🚛 Problema carrier",
+  returns_issue: "🔄 Problema devolución",
+  warehouse_incident: "🏭 Incidencia almacén",
+  system_failure: "💻 Falla sistema",
+  client_complaint: "📞 Queja cliente",
+  other: "❓ Otro",
+};
+
+const ORIGIN_LABELS = {
+  customer: "👤 Cliente",
+  branch: "🏢 Sede",
+  internal: "🔧 Interno",
+};
+
+const BRANCH_LABELS = {
+  central: "🏢 Central (Madrid)",
+  la_warehouse: "🏭 Almacén LA",
+  la_office: "🏢 Oficina LA",
+  zaragoza_warehouse: "🏭 Almacén Zaragoza",
+  zaragoza_office: "🏢 Oficina Zaragoza",
+};
+
+// ──────────────────────────── Utilidades ────────────────────────────
+
+function getToken() {
+  try {
+    return localStorage.getItem("trackflow_token");
+  } catch (e) {
+    return null;
+  }
+}
+
+async function apiFetch(url, options = {}) {
+  const token = getToken();
+  const headers = options.headers || {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  if (!options.noJson) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const res = await fetch(url, { ...options, headers });
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const err = new Error(data?.detail || `Error ${res.status}`);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+
+  return data;
+}
+
+function logout() {
+  try {
+    localStorage.removeItem("trackflow_token");
+  } catch (e) {}
+  window.location.href = "/login";
+}
+window.logout = logout;
+
+// ──────────────────────────── Tabs ────────────────────────────
+
+function switchTab(tab) {
+  document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add("active");
+  document.getElementById(`panel-${tab}`).classList.add("active");
+
+  if (tab === "list") loadList();
+  if (tab === "summary") loadSummary();
+}
+window.switchTab = switchTab;
+
+// ──────────────────────────── Formulario ────────────────────────────
+
+function onOriginChange() {
+  const origin = document.getElementById("fieldOrigin").value;
+  const branchEl = document.getElementById("fieldBranch");
+
+  if (origin === "branch") {
+    branchEl.classList.add("origin-branch-highlight");
+  } else {
+    branchEl.classList.remove("origin-branch-highlight");
+  }
+}
+window.onOriginChange = onOriginChange;
+
+function showFieldError(fieldId, message) {
+  const el = document.getElementById(`field${fieldId}Error`);
+  if (el) {
+    el.textContent = message;
+    el.classList.remove("hidden");
+  }
+}
+
+function clearFieldErrors() {
+  document.querySelectorAll(".field-error").forEach((el) => {
+    el.textContent = "";
+    el.classList.add("hidden");
+  });
+}
+
+function setFormLoading(loading) {
+  const btn = document.getElementById("btnSubmit");
+  const text = document.getElementById("btnSubmitText");
+  const spinner = document.getElementById("btnSubmitSpinner");
+
+  btn.disabled = loading;
+  text.classList.toggle("hidden", loading);
+  spinner.classList.toggle("hidden", !loading);
+}
+
+async function handleSubmit(event) {
+  event.preventDefault();
+  clearFieldErrors();
+
+  const successEl = document.getElementById("formSuccess");
+  const errorEl = document.getElementById("formError");
+  successEl.classList.add("hidden");
+  errorEl.classList.add("hidden");
+
+  const payload = {
+    title: document.getElementById("fieldTitle").value.trim(),
+    description: document.getElementById("fieldDescription").value.trim(),
+    category: document.getElementById("fieldCategory").value,
+    origin: document.getElementById("fieldOrigin").value,
+    branch: document.getElementById("fieldBranch").value,
+  };
+
+  // Validación rápida del lado cliente
+  if (!payload.title) {
+    showFieldError("Title", "El título es obligatorio");
+    return;
+  }
+  if (payload.description.length < 5) {
+    showFieldError("Description", "La descripción debe tener al menos 5 caracteres");
+    return;
+  }
+  if (!payload.category) {
+    showFieldError("Category", "Selecciona una categoría");
+    return;
+  }
+
+  setFormLoading(true);
+
+  try {
+    await apiFetch(API_BASE, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    // Éxito: limpiar formulario y mostrar mensaje
+    document.getElementById("incidentForm").reset();
+    document.getElementById("fieldBranch").classList.remove("origin-branch-highlight");
+
+    successEl.textContent = "✅ Incidencia registrada correctamente";
+    successEl.classList.remove("hidden");
+
+    // Ocultar mensaje tras 4 segundos
+    setTimeout(() => successEl.classList.add("hidden"), 4000);
+  } catch (err) {
+    if (err.data && Array.isArray(err.data)) {
+      // Errores de validación por campo
+      err.data.forEach((item) => {
+        const fieldName = item.field.charAt(0).toUpperCase() + item.field.slice(1);
+        showFieldError(fieldName, item.error);
+      });
+    } else if (err.data && err.data.detail) {
+      errorEl.textContent = `❌ ${err.data.detail}`;
+      errorEl.classList.remove("hidden");
+    } else {
+      errorEl.textContent = "❌ Error al guardar la incidencia. Inténtalo de nuevo.";
+      errorEl.classList.remove("hidden");
+    }
+  } finally {
+    setFormLoading(false);
+  }
+
+  return false;
+}
+window.handleSubmit = handleSubmit;
+
+// ──────────────────────────── Listado ────────────────────────────
+
+function statusBadge(status) {
+  const label = STATUS_LABELS[status] || status;
+  const color = STATUS_COLORS[status] || "bg-gray-100 text-gray-600";
+  return `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium ${color}">${label}</span>`;
+}
+
+async function updateStatusInline(id, newStatus, rowEl) {
+  const oldHtml = rowEl.innerHTML;
+
+  try {
+    rowEl.innerHTML = `<td colspan="7" class="py-3 text-center text-gray-500"><span class="spinner mr-2"></span>Actualizando...</td>`;
+
+    await apiFetch(`${API_BASE}/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: newStatus }),
+    });
+
+    // Recargar la lista para reflejar cambios
+    loadList();
+  } catch (err) {
+    // Rollback visual
+    rowEl.innerHTML = oldHtml;
+    let msg = "Error al actualizar el estado";
+    if (err.data && Array.isArray(err.data)) {
+      msg = err.data.map((e) => e.error).join("; ");
+    } else if (err.data && err.data.detail) {
+      msg = err.data.detail;
+    }
+    alert(`❌ ${msg}`);
+  }
+}
+
+async function loadList() {
+  const loadingEl = document.getElementById("listLoading");
+  const errorEl = document.getElementById("listError");
+  const emptyEl = document.getElementById("listEmpty");
+  const wrapper = document.getElementById("listTableWrapper");
+  const body = document.getElementById("listBody");
+
+  loadingEl.classList.remove("hidden");
+  errorEl.classList.add("hidden");
+  emptyEl.classList.add("hidden");
+  wrapper.classList.add("hidden");
+
+  const params = new URLSearchParams();
+  const status = document.getElementById("listFilterStatus").value;
+  const origin = document.getElementById("listFilterOrigin").value;
+  const branch = document.getElementById("listFilterBranch").value;
+  if (status) params.set("status", status);
+  if (origin) params.set("origin", origin);
+  if (branch) params.set("branch", branch);
+
+  try {
+    const data = await apiFetch(`${API_BASE}?${params.toString()}`);
+
+    if (!data || data.length === 0) {
+      emptyEl.classList.remove("hidden");
+      loadingEl.classList.add("hidden");
+      return;
+    }
+
+    body.innerHTML = data
+      .map((inc) => {
+        const catLabel = CATEGORY_LABELS[inc.category] || inc.category;
+        const originLabel = ORIGIN_LABELS[inc.origin] || inc.origin;
+        const branchLabel = BRANCH_LABELS[inc.branch] || inc.branch;
+
+        // Opciones de transición de estado
+        let statusActions = "";
+        if (inc.status === "open") {
+          statusActions = `
+            <button onclick="updateStatusInline(${inc.id}, 'in_progress', this.closest('tr'))"
+                    class="text-blue-600 hover:text-blue-800 text-xs font-medium mr-2">Iniciar</button>
+            <button onclick="updateStatusInline(${inc.id}, 'discarded', this.closest('tr'))"
+                    class="text-red-600 hover:text-red-800 text-xs font-medium">Descartar</button>
+          `;
+        } else if (inc.status === "in_progress") {
+          statusActions = `
+            <button onclick="updateStatusInline(${inc.id}, 'resolved', this.closest('tr'))"
+                    class="text-green-600 hover:text-green-800 text-xs font-medium mr-2">Resolver</button>
+            <button onclick="updateStatusInline(${inc.id}, 'discarded', this.closest('tr'))"
+                    class="text-red-600 hover:text-red-800 text-xs font-medium">Descartar</button>
+          `;
+        } else {
+          statusActions = `<span class="text-xs text-gray-400 italic">Estado final</span>`;
+        }
+
+        return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+          <td class="py-3 pr-3 text-gray-400 font-mono text-xs">#${inc.id}</td>
+          <td class="py-3 pr-3">
+            <div class="font-medium text-gray-800">${escHtml(inc.title)}</div>
+            <div class="text-xs text-gray-400 truncate max-w-xs">${escHtml(inc.description)}</div>
+          </td>
+          <td class="py-3 pr-3 text-xs text-gray-600">${catLabel}</td>
+          <td class="py-3 pr-3">${statusBadge(inc.status)}</td>
+          <td class="py-3 pr-3 text-xs text-gray-600">${originLabel}</td>
+          <td class="py-3 pr-3 text-xs text-gray-600">${branchLabel}</td>
+          <td class="py-3 whitespace-nowrap">${statusActions}</td>
+        </tr>`;
+      })
+      .join("");
+
+    wrapper.classList.remove("hidden");
+  } catch (err) {
+    errorEl.textContent = `❌ Error al cargar incidencias: ${err.message}`;
+    errorEl.classList.remove("hidden");
+  } finally {
+    loadingEl.classList.add("hidden");
+  }
+}
+window.loadList = loadList;
+window.updateStatusInline = updateStatusInline;
+
+function escHtml(str) {
+  if (!str) return "";
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ──────────────────────────── Resumen ────────────────────────────
+
+async function loadSummary() {
+  const loadingEl = document.getElementById("summaryLoading");
+  const errorEl = document.getElementById("summaryError");
+  const content = document.getElementById("summaryContent");
+
+  loadingEl.classList.remove("hidden");
+  errorEl.classList.add("hidden");
+  content.classList.add("hidden");
+
+  try {
+    const data = await apiFetch(`${API_BASE}/summary`);
+
+    document.getElementById("summaryTotal").textContent = data.total || 0;
+
+    // Por estado
+    renderSummaryGrid("summaryByStatus", data.by_status || {}, STATUS_LABELS);
+    // Por categoría
+    renderSummaryGrid("summaryByCategory", data.by_category || {}, CATEGORY_LABELS);
+    // Por origen
+    renderSummaryGrid("summaryByOrigin", data.by_origin || {}, ORIGIN_LABELS);
+    // Por sede
+    renderSummaryGrid("summaryByBranch", data.by_branch || {}, BRANCH_LABELS);
+
+    content.classList.remove("hidden");
+  } catch (err) {
+    errorEl.textContent = `❌ Error al cargar resumen: ${err.message}`;
+    errorEl.classList.remove("hidden");
+  } finally {
+    loadingEl.classList.add("hidden");
+  }
+}
+window.loadSummary = loadSummary;
+
+function renderSummaryGrid(containerId, data, labels) {
+  const container = document.getElementById(containerId);
+  const keys = Object.keys(data);
+
+  if (keys.length === 0) {
+    container.innerHTML = `<p class="text-sm text-gray-400 col-span-full">Sin datos</p>`;
+    return;
+  }
+
+  container.innerHTML = keys
+    .map((key) => {
+      const label = labels[key] || key;
+      return `<div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+        <p class="text-lg font-bold text-gray-800">${data[key]}</p>
+        <p class="text-xs text-gray-500 mt-0.5">${label}</p>
+      </div>`;
+    })
+    .join("");
+}
