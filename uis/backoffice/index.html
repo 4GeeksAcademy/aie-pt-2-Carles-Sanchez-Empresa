@@ -73,22 +73,26 @@
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
-        <p class="text-blue-100 mt-1">Verificador manual de utilidades — TypeScript → JavaScript</p>
+        <p class="text-blue-100 mt-1" data-i18n="index.header_subtitle">Verificador manual de utilidades — TypeScript → JavaScript</p>
       </div>
       <div class="flex items-center gap-3" id="headerNav">
         <!-- Enlaces que requieren auth se muestran/ocultan con JS -->
         <a href="suppliers.html"
            class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          📋 Proveedores
+          📋 <span data-i18n="index.nav_suppliers">Proveedores</span>
         </a>
         <a href="incidents.html"
            class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          📊 Analizar incidencias
+          📊 <span data-i18n="index.nav_incidents">Analizar incidencias</span>
         </a>
         <a href="incidents-manager.html"
            class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          🚨 Gestor incidencias
+          🚨 <span data-i18n="index.nav_incmgr">Gestor incidencias</span>
         </a>
+        <button onclick="window.__toggleLang()" id="langToggle"
+                class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
+          ES | EN
+        </button>
       </div>
     </div>
   </header>
@@ -99,25 +103,25 @@
     <!-- DATOS DE EJEMPLO -->
     <!-- ════════════════════════════════════════════ -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="index.sample_data">
         <span class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
         Datos de ejemplo
       </h2>
       <div class="flex items-center gap-2 mb-3">
-        <button onclick="applyDataChanges()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition shadow-sm">✅ Aplicar cambios</button>
-        <span id="dataStatus" class="text-xs text-gray-400 italic">Los datos se cargan automáticamente al abrir la página</span>
+        <button onclick="applyDataChanges()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-medium transition shadow-sm" data-i18n="index.apply_changes">✅ Aplicar cambios</button>
+        <span id="dataStatus" class="text-xs text-gray-400 italic" data-i18n="index.auto_load">Los datos se cargan automáticamente al abrir la página</span>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
         <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <p class="font-medium text-gray-600 mb-1">Productos</p>
+          <p class="font-medium text-gray-600 mb-1" data-i18n="index.products">Productos</p>
           <textarea id="sampleProducts" class="text-xs font-mono text-gray-700 w-full h-48 border border-gray-300 rounded p-2 resize-y">[]</textarea>
         </div>
         <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <p class="font-medium text-gray-600 mb-1">Envíos</p>
+          <p class="font-medium text-gray-600 mb-1" data-i18n="index.shipments">Envíos</p>
           <textarea id="sampleShipments" class="text-xs font-mono text-gray-700 w-full h-48 border border-gray-300 rounded p-2 resize-y">[]</textarea>
         </div>
         <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-          <p class="font-medium text-gray-600 mb-1">Transportistas</p>
+          <p class="font-medium text-gray-600 mb-1" data-i18n="index.carriers">Transportistas</p>
           <textarea id="sampleCarriers" class="text-xs font-mono text-gray-700 w-full h-48 border border-gray-300 rounded p-2 resize-y">[]</textarea>
         </div>
       </div>
@@ -127,26 +131,26 @@
     <!-- COLECCIONES -->
     <!-- ════════════════════════════════════════════ -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="index.collections">
         <span class="w-3 h-3 rounded-full bg-blue-500"></span>
         Colecciones — Filtrado y Ordenación
       </h2>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <label class="block text-sm font-medium text-gray-600 mb-2">Filtrar productos por almacén</label>
+          <label class="block text-sm font-medium text-gray-600 mb-2" data-i18n="index.filter_warehouse">Filtrar productos por almacén</label>
           <div class="flex gap-2">
             <select id="warehouseSelect" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
               <option value="Los Angeles">Los Angeles</option>
               <option value="Zaragoza">Zaragoza</option>
             </select>
-            <button onclick="runFilterByWarehouse()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Ejecutar</button>
+            <button onclick="runFilterByWarehouse()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.run">Ejecutar</button>
           </div>
           <pre id="resultWarehouse" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <label class="block text-sm font-medium text-gray-600 mb-2">Filtrar productos por categoría</label>
+          <label class="block text-sm font-medium text-gray-600 mb-2" data-i18n="index.filter_category">Filtrar productos por categoría</label>
           <div class="flex gap-2">
             <select id="categorySelect" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
               <option value="Fashion">Fashion</option>
@@ -155,39 +159,78 @@
               <option value="Home">Home</option>
               <option value="Other">Other</option>
             </select>
-            <button onclick="runFilterByCategory()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Ejecutar</button>
+            <button onclick="runFilterByCategory()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.run">Ejecutar</button>
           </div>
           <pre id="resultCategory" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Productos con stock bajo</p>
-          <button onclick="runLowStock()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Ejecutar</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.low_stock">Productos con stock bajo</p>
+          <button onclick="runLowStock()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.run">Ejecutar</button>
           <pre id="resultLowStock" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <label class="block text-sm font-medium text-gray-600 mb-2">Ordenar productos por stock</label>
+          <label class="block text-sm font-medium text-gray-600 mb-2" data-i18n="index.sort_stock">Ordenar productos por stock</label>
           <div class="flex gap-2">
             <select id="stockOrder" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
-              <option value="asc">Ascendente</option>
-              <option value="desc">Descendente</option>
+              <option value="asc" data-i18n="index.asc">Ascendente</option>
+              <option value="desc" data-i18n="index.desc">Descendente</option>
             </select>
-            <button onclick="runSortByStock()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Ejecutar</button>
+            <button onclick="runSortByStock()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.run">Ejecutar</button>
           </div>
           <pre id="resultSortStock" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50 md:col-span-2">
-          <label class="block text-sm font-medium text-gray-600 mb-2">Ordenar transportistas por fiabilidad (onTimeRate)</label>
+          <label class="block text-sm font-medium text-gray-600 mb-2" data-i18n="index.sort_carriers">Ordenar transportistas por fiabilidad (onTimeRate)</label>
           <div class="flex gap-2">
             <select id="reliabilityOrder" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm max-w-xs">
-              <option value="desc">Descendente (más fiable primero)</option>
-              <option value="asc">Ascendente (menos fiable primero)</option>
+              <option value="desc" data-i18n="index.desc_reliable">Descendente (más fiable primero)</option>
+              <option value="asc" data-i18n="index.asc_reliable">Ascendente (menos fiable primero)</option>
             </select>
-            <button onclick="runSortCarriers()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Ejecutar</button>
+            <button onclick="runSortCarriers()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.run">Ejecutar</button>
           </div>
           <pre id="resultSortCarriers" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- BÚSQUEDA -->
+    <!-- ════════════════════════════════════════════ -->
+    <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="index.search">
+        <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+        Búsqueda
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+          <label class="block text-sm font-medium text-gray-600 mb-2" data-i18n="index.search_sku">Buscar producto por SKU (case-sensitive)</label>
+          <div class="flex gap-2">
+            <input id="skuInput" type="text" value="SHOE-BLK-42" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <button onclick="runFindBySKU()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.search_btn">Buscar</button>
+          </div>
+          <pre id="resultSKU" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
+        </div>
+
+        <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+          <label class="block text-sm font-medium text-gray-600 mb-2" data-i18n="index.search_shipment">Buscar envío por ID</label>
+          <div class="flex gap-2">
+            <input id="shipmentIdInput" type="text" value="SH-2024-8821" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <button onclick="runFindShipmentById()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.search_btn">Buscar</button>
+          </div>
+          <pre id="resultShipmentId" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
+        </div>
+
+        <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
+          <label class="block text-sm font-medium text-gray-600 mb-2" data-i18n="index.search_weight">Búsqueda binaria por peso</label>
+          <div class="flex gap-2">
+            <input id="weightInput" type="number" value="1.5" step="0.1" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <button onclick="runBinarySearch()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.search_btn">Buscar</button>
+          </div>
+          <pre id="resultBinary" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
       </div>
     </section>
@@ -235,53 +278,53 @@
     <!-- TRANSFORMACIONES / REPORTES -->
     <!-- ════════════════════════════════════════════ -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="index.transformations">
         <span class="w-3 h-3 rounded-full bg-amber-500"></span>
         Transformaciones — Scoring y Reportes
       </h2>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Score de transportista para un envío</p>
-          <button onclick="runScoreCarrier()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Calcular</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.score_title">Score de transportista para un envío</p>
+          <button onclick="runScoreCarrier()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.calculate">Calcular</button>
           <pre id="resultScore" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Mejor transportista (score ≥ 50, menor costo)</p>
-          <button onclick="runSelectBest()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Seleccionar</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.best_carrier">Mejor transportista (score ≥ 50, menor costo)</p>
+          <button onclick="runSelectBest()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.select">Seleccionar</button>
           <pre id="resultBest" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Conteo de productos por categoría</p>
-          <button onclick="runCountByCategory()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Contar</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.count_category">Conteo de productos por categoría</p>
+          <button onclick="runCountByCategory()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.count">Contar</button>
           <pre id="resultCountCategory" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Valor total del inventario</p>
-          <button onclick="runInventoryValue()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Calcular</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.inventory_value">Valor total del inventario</p>
+          <button onclick="runInventoryValue()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.calculate">Calcular</button>
           <pre id="resultInventory" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Distancia promedio de envíos</p>
-          <button onclick="runAvgDistance()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Calcular</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.avg_distance">Distancia promedio de envíos</p>
+          <button onclick="runAvgDistance()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.calculate">Calcular</button>
           <pre id="resultAvgDist" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Agrupar envíos por estado</p>
-          <button onclick="runGroupByStatus()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Agrupar</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.group_status">Agrupar envíos por estado</p>
+          <button onclick="runGroupByStatus()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.group">Agrupar</button>
           <pre id="resultGroupStatus" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50 md:col-span-2">
-          <label class="block text-sm font-medium text-gray-600 mb-2">Top N transportistas más usados</label>
+          <label class="block text-sm font-medium text-gray-600 mb-2" data-i18n="index.top_carriers">Top N transportistas más usados</label>
           <div class="flex gap-2">
             <input id="topNInput" type="number" value="3" min="1" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-24">
-            <button onclick="runTopCarriers()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Obtener</button>
+            <button onclick="runTopCarriers()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.get">Obtener</button>
           </div>
           <pre id="resultTopCarriers" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
@@ -292,34 +335,34 @@
     <!-- VALIDACIONES -->
     <!-- ════════════════════════════════════════════ -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="index.validations">
         <span class="w-3 h-3 rounded-full bg-red-500"></span>
         Validaciones de negocio
       </h2>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Validar producto (ejemplo actual)</p>
-          <button onclick="runValidateProduct()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Validar</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.validate_product">Validar producto (ejemplo actual)</p>
+          <button onclick="runValidateProduct()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.validate">Validar</button>
           <pre id="resultValidProduct" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Validar envío (ejemplo actual)</p>
-          <button onclick="runValidateShipment()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Validar</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.validate_shipment">Validar envío (ejemplo actual)</p>
+          <button onclick="runValidateShipment()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.validate">Validar</button>
           <pre id="resultValidShipment" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
 
         <div class="border border-gray-100 rounded-lg p-4 bg-gray-50/50">
-          <p class="text-sm font-medium text-gray-600 mb-2">Validar transportista (ejemplo actual)</p>
-          <button onclick="runValidateCarrier()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Validar</button>
+          <p class="text-sm font-medium text-gray-600 mb-2" data-i18n="index.validate_carrier">Validar transportista (ejemplo actual)</p>
+          <button onclick="runValidateCarrier()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition" data-i18n="index.validate">Validar</button>
           <pre id="resultValidCarrier" class="mt-2 text-xs bg-gray-100 p-2 rounded min-h-[40px] overflow-auto"></pre>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200">
+  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200" data-i18n="index.footer">
     TrackFlow — Panel de verificación manual
   </footer>
 
@@ -333,36 +376,78 @@
       // Enlaces de proveedores e incidents siempre visibles pero con protección
       // Añadimos enlaces de auth al final del nav
       const authLinks = document.createElement('span');
-      authLinks.className = 'flex items-center gap-2 ml-2 pl-2 border-l border-white/30';
+      authLinks.className = 'auth-links flex items-center gap-2';
 
       if (token) {
         // Usuario autenticado
         authLinks.innerHTML = `
+          <span class="w-px h-6 bg-white/20 mx-1"></span>
           <a href="profile.html"
              class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-            👤 Perfil
+            ${window.__('nav.profile')}
           </a>
           <button onclick="window.logout()"
                   class="bg-red-400/20 hover:bg-red-400/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-            🚪 Salir
+            ${window.__('nav.logout')}
           </button>
         `;
       } else {
         // Usuario no autenticado
         authLinks.innerHTML = `
+          <span class="w-px h-6 bg-white/20 mx-1"></span>
           <a href="login.html"
              class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-            🔐 Iniciar sesión
+            ${window.__('login.title')}
           </a>
           <a href="register.html"
              class="bg-emerald-400/20 hover:bg-emerald-400/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-            📝 Registro
+            ${window.__('register.title')}
           </a>
         `;
       }
 
       headerNav.appendChild(authLinks);
     });
+
+    // ── Re-render auth buttons on language change ──
+    window.__onLangChange = function () {
+      const headerNav = document.getElementById('headerNav');
+      // Remove existing auth links (last child)
+      const existing = headerNav.querySelector('.auth-links');
+      if (existing) existing.remove();
+
+      const token = window.getToken ? window.getToken() : null;
+      const authLinks = document.createElement('span');
+      authLinks.className = 'auth-links flex items-center gap-2';
+
+      if (token) {
+        authLinks.innerHTML = `
+          <span class="w-px h-6 bg-white/20 mx-1"></span>
+          <a href="profile.html"
+             class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            ${window.__('nav.profile')}
+          </a>
+          <button onclick="window.logout()"
+                  class="bg-red-400/20 hover:bg-red-400/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            ${window.__('nav.logout')}
+          </button>
+        `;
+      } else {
+        authLinks.innerHTML = `
+          <span class="w-px h-6 bg-white/20 mx-1"></span>
+          <a href="login.html"
+             class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            ${window.__('login.title')}
+          </a>
+          <a href="register.html"
+             class="bg-emerald-400/20 hover:bg-emerald-400/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+            ${window.__('register.title')}
+          </a>
+        `;
+      }
+      headerNav.appendChild(authLinks);
+    };
   </script>
+  <script src="/js/i18n.js"></script>
 </body>
 </html>

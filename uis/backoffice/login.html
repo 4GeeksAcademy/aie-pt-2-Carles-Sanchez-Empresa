@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="i18n-title" content="login.title">
   <title>TrackFlow — Iniciar sesión</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -60,7 +61,13 @@
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
-        <p class="text-blue-100 mt-1">Panel de administración</p>
+        <p class="text-blue-100 mt-1" data-i18n="app.admin_panel">Panel de administración</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="window.__toggleLang()" id="langToggle"
+                class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
+          ES | EN
+        </button>
       </div>
     </div>
   </header>
@@ -72,33 +79,35 @@
       <div class="bg-white rounded-xl shadow-md border border-gray-200 p-8">
         <div class="text-center mb-6">
           <div class="text-5xl mb-3">🔐</div>
-          <h2 class="text-2xl font-bold text-gray-800">Iniciar sesión</h2>
-          <p class="text-gray-500 text-sm mt-1">Accede al panel de administración de TrackFlow</p>
+          <h2 class="text-2xl font-bold text-gray-800" data-i18n="login.title">Iniciar sesión</h2>
+          <p class="text-gray-500 text-sm mt-1" data-i18n="login.subtitle">Accede al panel de administración de TrackFlow</p>
         </div>
 
-        <form id="loginForm" class="space-y-4">
+        <form id="loginForm" class="space-y-4" novalidate>
           <!-- Email -->
           <div>
-            <label for="emailField" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label for="emailField" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="login.email_label">Email</label>
             <input
               id="emailField"
               type="email"
               autocomplete="email"
               required
               placeholder="tu@email.com"
+              data-i18n-placeholder="login.email_placeholder"
               class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
             />
           </div>
 
           <!-- Password -->
           <div>
-            <label for="passwordField" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+            <label for="passwordField" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="login.password_label">Contraseña</label>
             <input
               id="passwordField"
               type="password"
               autocomplete="current-password"
               required
               placeholder="••••••••"
+              data-i18n-placeholder="login.password_placeholder"
               class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
             />
           </div>
@@ -112,7 +121,7 @@
             type="submit"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-2"
           >
-            <span id="loginBtnText">Iniciar sesión</span>
+            <span id="loginBtnText" data-i18n="login.submit">Iniciar sesión</span>
             <span id="loginSpinner" class="hidden">
               <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -123,14 +132,14 @@
         </form>
 
         <p class="text-center text-sm text-gray-500 mt-4">
-          <a href="/forgot-password" class="text-blue-600 hover:text-blue-800 font-medium underline decoration-blue-300 underline-offset-2">
+          <a href="/forgot-password" class="text-blue-600 hover:text-blue-800 font-medium underline decoration-blue-300 underline-offset-2" data-i18n="login.forgot_password">
             ¿Olvidaste tu contraseña?
           </a>
         </p>
 
         <p class="text-center text-sm text-gray-500 mt-4">
-          ¿No tienes cuenta?
-          <a href="/register" class="text-blue-600 hover:text-blue-800 font-medium underline decoration-blue-300 underline-offset-2">
+          <span data-i18n="login.no_account">¿No tienes cuenta?</span>
+          <a href="/register" class="text-blue-600 hover:text-blue-800 font-medium underline decoration-blue-300 underline-offset-2" data-i18n="login.register">
             Registrarse
           </a>
         </p>
@@ -138,10 +147,11 @@
     </div>
   </main>
 
-  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200">
+  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200" data-i18n="app.footer">
     TrackFlow — Panel de administración
   </footer>
 
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     const form = document.getElementById('loginForm');
@@ -160,14 +170,14 @@
     if (params.get('reason') === 'password_reset') {
       loginError.classList.remove('hidden');
       loginError.className = 'bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-emerald-700 text-sm';
-      loginError.textContent = '✅ Contraseña actualizada correctamente. Inicia sesión con tu nueva contraseña.';
+      loginError.textContent = window.__('login.success_password_reset');
     }
 
     // Si hay reason=session_expired, mostrar mensaje
     if (params.get('reason') === 'session_expired') {
       loginError.classList.remove('hidden');
       loginError.className = 'bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm';
-      loginError.textContent = '⏰ Tu sesión ha expirado. Inicia sesión de nuevo.';
+      loginError.textContent = window.__('login.session_expired');
     }
 
     // Si ya hay token, redirigir directamente
@@ -184,17 +194,21 @@
 
       // Validaciones básicas
       if (!email) {
-        showFieldError('Introduce tu email.');
+        showFieldError(window.__('login.error_field_email'));
+        return;
+      }
+      if (!email.includes('@')) {
+        showFieldError(window.__('login.error_field_email'));
         return;
       }
       if (!password) {
-        showFieldError('Introduce tu contraseña.');
+        showFieldError(window.__('login.error_field_password'));
         return;
       }
 
       // Estado loading
       loginBtn.disabled = true;
-      loginBtnText.textContent = 'Iniciando sesión…';
+      loginBtnText.textContent = window.__('login.submitting');
       loginSpinner.classList.remove('hidden');
 
       try {
