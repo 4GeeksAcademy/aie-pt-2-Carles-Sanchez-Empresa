@@ -138,20 +138,25 @@
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
-        <p class="text-blue-100 mt-1">Gestor Centralizado de Incidencias</p>
+        <p class="text-blue-100 mt-1" data-i18n="incmgr.header_subtitle">Gestor Centralizado de Incidencias</p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <a href="/"
            class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          🏠 Volver al inicio
+          🏠 <span data-i18n="incmgr.back_home">Volver al inicio</span>
         </a>
+        <button onclick="window.__toggleLang()" id="langToggle"
+                class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
+          ES | EN
+        </button>
+        <span class="w-px h-6 bg-white/20 mx-1"></span>
         <a href="/account/profile"
            class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          👤 Perfil
+          👤 <span data-i18n="incmgr.profile">Perfil</span>
         </a>
         <button onclick="window.logout()"
                 class="bg-red-400/20 hover:bg-red-400/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          🚪 Cerrar sesión
+          🚪 <span data-i18n="incmgr.logout">Salir</span>
         </button>
       </div>
     </div>
@@ -164,15 +169,15 @@
     <!-- ════════════════════════════════════════════ -->
     <div class="flex gap-2 mb-6 border-b border-gray-200 pb-2">
       <button class="tab-btn active px-5 py-2 rounded-t-lg text-sm font-medium border border-b-0 border-gray-200 bg-white text-blue-600 hover:bg-gray-50 transition"
-              data-tab="form" onclick="switchTab('form')">
+              data-tab="form" onclick="switchTab('form')" data-i18n="incmgr.tab_new">
         ✏️ Nueva incidencia
       </button>
       <button class="tab-btn px-5 py-2 rounded-t-lg text-sm font-medium border border-b-0 border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition"
-              data-tab="list" onclick="switchTab('list')">
+              data-tab="list" onclick="switchTab('list')" data-i18n="incmgr.tab_list">
         📋 Listado
       </button>
       <button class="tab-btn px-5 py-2 rounded-t-lg text-sm font-medium border border-b-0 border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition"
-              data-tab="summary" onclick="switchTab('summary')">
+              data-tab="summary" onclick="switchTab('summary')" data-i18n="incmgr.tab_summary">
         📊 Resumen
       </button>
     </div>
@@ -182,7 +187,7 @@
     <!-- ════════════════════════════════════════════ -->
     <section id="panel-form" class="tab-panel active">
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-w-2xl">
-        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2" data-i18n="incmgr.form_title">
           <span class="w-3 h-3 rounded-full bg-blue-500"></span>
           Registrar nueva incidencia
         </h2>
@@ -190,67 +195,70 @@
         <div id="formSuccess" class="msg-success hidden mb-4"></div>
         <div id="formError" class="msg-error hidden mb-4"></div>
 
-        <form id="incidentForm" class="space-y-4" onsubmit="return handleSubmit(event)">
+        <form id="incidentForm" class="space-y-4" onsubmit="return handleSubmit(event)" novalidate>
           <!-- Título -->
           <div>
-            <label for="fieldTitle" class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+            <label for="fieldTitle" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_title">Título *</label>
             <input type="text" id="fieldTitle" required
                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                   data-i18n-placeholder="incmgr.field_title_placeholder"
                    placeholder="Ej: Paquete retenido en aduana">
             <div id="fieldTitleError" class="field-error hidden"></div>
           </div>
 
           <!-- Descripción -->
           <div>
-            <label for="fieldDescription" class="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+            <label for="fieldDescription" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_description">Descripción *</label>
             <textarea id="fieldDescription" required rows="3"
                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      data-i18n-placeholder="incmgr.field_desc_placeholder"
                       placeholder="Detalle del incidente..."></textarea>
             <div id="fieldDescriptionError" class="field-error hidden"></div>
           </div>
 
           <!-- Categoría -->
           <div>
-            <label for="fieldCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
+            <label for="fieldCategory" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_category">Categoría *</label>
             <select id="fieldCategory" required
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-              <option value="">Seleccionar categoría</option>
-              <option value="lost_parcel">📦 Paquete perdido</option>
-              <option value="delivery_failure">🚚 Fallo de entrega</option>
-              <option value="inventory_discrepancy">📋 Discrepancia de inventario</option>
-              <option value="carrier_issue">🚛 Problema con carrier</option>
-              <option value="returns_issue">🔄 Problema de devolución</option>
-              <option value="warehouse_incident">🏭 Incidencia en almacén</option>
-              <option value="system_failure">💻 Falla de sistema</option>
-              <option value="client_complaint">📞 Queja de cliente</option>
-              <option value="other">❓ Otro</option>
+              <option value="" data-i18n="incmgr.select_category">Seleccionar categoría</option>
+              <option value="lost_parcel">📦 <span data-i18n="incmgr.cat_lost_parcel">Paquete perdido</span></option>
+              <option value="delivery_failure">🚚 <span data-i18n="incmgr.cat_delivery_failure">Fallo de entrega</span></option>
+              <option value="inventory_discrepancy">📋 <span data-i18n="incmgr.cat_inventory_discrepancy">Discrepancia de inventario</span></option>
+              <option value="carrier_issue">🚛 <span data-i18n="incmgr.cat_carrier_issue">Problema con carrier</span></option>
+              <option value="returns_issue">🔄 <span data-i18n="incmgr.cat_returns_issue">Problema de devolución</span></option>
+              <option value="warehouse_incident">🏭 <span data-i18n="incmgr.cat_warehouse_incident">Incidencia en almacén</span></option>
+              <option value="system_failure">💻 <span data-i18n="incmgr.cat_system_failure">Falla de sistema</span></option>
+              <option value="client_complaint">📞 <span data-i18n="incmgr.cat_client_complaint">Queja de cliente</span></option>
+              <option value="other">❓ <span data-i18n="incmgr.cat_other">Otro</span></option>
             </select>
             <div id="fieldCategoryError" class="field-error hidden"></div>
           </div>
 
           <!-- Origen -->
           <div>
-            <label for="fieldOrigin" class="block text-sm font-medium text-gray-700 mb-1">Origen *</label>
+            <label for="fieldOrigin" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_origin">Origen *</label>
             <select id="fieldOrigin" required onchange="onOriginChange()"
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-              <option value="">Seleccionar origen</option>
-              <option value="customer">👤 Cliente</option>
-              <option value="branch">🏢 Sede</option>
-              <option value="internal">🔧 Interno</option>
+              <option value="" data-i18n="incmgr.select_origin">Seleccionar origen</option>
+              <option value="customer">👤 <span data-i18n="incmgr.origin_customer">Cliente</span></option>
+              <option value="branch">🏢 <span data-i18n="incmgr.origin_branch">Sede</span></option>
+              <option value="internal">🔧 <span data-i18n="incmgr.origin_internal">Interno</span></option>
             </select>
+            <div id="fieldOriginError" class="field-error hidden"></div>
           </div>
 
           <!-- Sede -->
           <div>
-            <label for="fieldBranch" class="block text-sm font-medium text-gray-700 mb-1">Sede *</label>
+            <label for="fieldBranch" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_branch">Sede *</label>
             <select id="fieldBranch" required
                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-              <option value="">Seleccionar sede</option>
-              <option value="central">🏢 Central (Madrid)</option>
-              <option value="la_warehouse">🏭 Almacén Los Ángeles</option>
-              <option value="la_office">🏢 Oficina Los Ángeles</option>
-              <option value="zaragoza_warehouse">🏭 Almacén Zaragoza</option>
-              <option value="zaragoza_office">🏢 Oficina Zaragoza</option>
+              <option value="" data-i18n="incmgr.select_branch">Seleccionar sede</option>
+              <option value="central">🏢 <span data-i18n="incmgr.branch_central">Central (Madrid)</span></option>
+              <option value="la_warehouse">🏭 <span data-i18n="incmgr.branch_la_wh">Almacén Los Ángeles</span></option>
+              <option value="la_office">🏢 <span data-i18n="incmgr.branch_la_off">Oficina Los Ángeles</span></option>
+              <option value="zaragoza_warehouse">🏭 <span data-i18n="incmgr.branch_z_wh">Almacén Zaragoza</span></option>
+              <option value="zaragoza_office">🏢 <span data-i18n="incmgr.branch_z_off">Oficina Zaragoza</span></option>
             </select>
             <div id="fieldBranchError" class="field-error hidden"></div>
           </div>
@@ -259,7 +267,7 @@
           <div class="pt-2">
             <button type="submit" id="btnSubmit"
                     class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-              <span id="btnSubmitText">Guardar incidencia</span>
+              <span id="btnSubmitText" data-i18n="incmgr.btn_save">Guardar incidencia</span>
               <span id="btnSubmitSpinner" class="hidden"><span class="spinner"></span></span>
             </button>
           </div>
@@ -272,7 +280,7 @@
     <!-- ════════════════════════════════════════════ -->
     <section id="panel-list" class="tab-panel">
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="incmgr.list_title">
           <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
           Listado de incidencias
         </h2>
@@ -280,36 +288,36 @@
         <!-- Filtros -->
         <div class="flex flex-wrap gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <div>
-            <label class="block text-xs text-gray-500 mb-1">Estado</label>
+            <label class="block text-xs text-gray-500 mb-1" data-i18n="incmgr.filter_status">Estado</label>
             <select id="listFilterStatus" onchange="loadList()"
                     class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-              <option value="">Todos</option>
-              <option value="open">Abierta</option>
-              <option value="in_progress">En progreso</option>
-              <option value="resolved">Resuelta</option>
-              <option value="discarded">Descartada</option>
+              <option value="" data-i18n="incmgr.filter_all">Todos</option>
+              <option value="open" data-i18n="incmgr.status_open">Abierta</option>
+              <option value="in_progress" data-i18n="incmgr.status_in_progress">En progreso</option>
+              <option value="resolved" data-i18n="incmgr.status_resolved">Resuelta</option>
+              <option value="discarded" data-i18n="incmgr.status_discarded">Descartada</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1">Origen</label>
+            <label class="block text-xs text-gray-500 mb-1" data-i18n="incmgr.filter_origin">Origen</label>
             <select id="listFilterOrigin" onchange="loadList()"
                     class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-              <option value="">Todos</option>
-              <option value="customer">Cliente</option>
-              <option value="branch">Sede</option>
-              <option value="internal">Interno</option>
+              <option value="" data-i18n="incmgr.filter_all">Todos</option>
+              <option value="customer" data-i18n="incmgr.origin_customer">Cliente</option>
+              <option value="branch" data-i18n="incmgr.origin_branch">Sede</option>
+              <option value="internal" data-i18n="incmgr.origin_internal">Interno</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs text-gray-500 mb-1">Sede</label>
+            <label class="block text-xs text-gray-500 mb-1" data-i18n="incmgr.filter_branch">Sede</label>
             <select id="listFilterBranch" onchange="loadList()"
                     class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
-              <option value="">Todas</option>
-              <option value="central">Central</option>
-              <option value="la_warehouse">Almacén LA</option>
-              <option value="la_office">Oficina LA</option>
-              <option value="zaragoza_warehouse">Almacén Zaragoza</option>
-              <option value="zaragoza_office">Oficina Zaragoza</option>
+              <option value="" data-i18n="incmgr.filter_all_branches">Todas</option>
+              <option value="central" data-i18n="incmgr.branch_central">Central</option>
+              <option value="la_warehouse" data-i18n="incmgr.branch_la_wh">Almacén LA</option>
+              <option value="la_office" data-i18n="incmgr.branch_la_off">Oficina LA</option>
+              <option value="zaragoza_warehouse" data-i18n="incmgr.branch_z_wh">Almacén Zaragoza</option>
+              <option value="zaragoza_office" data-i18n="incmgr.branch_z_off">Oficina Zaragoza</option>
             </select>
           </div>
         </div>
@@ -317,7 +325,7 @@
         <!-- Estado: loading -->
         <div id="listLoading" class="hidden flex items-center justify-center py-8">
           <span class="spinner mr-2"></span>
-          <span class="text-gray-500 text-sm">Cargando incidencias...</span>
+          <span class="text-gray-500 text-sm" data-i18n="incmgr.loading_list">Cargando incidencias...</span>
         </div>
 
         <!-- Estado: error -->
@@ -326,8 +334,8 @@
         <!-- Estado: vacío -->
         <div id="listEmpty" class="empty-state hidden">
           <p class="text-4xl mb-2">📭</p>
-          <p class="text-lg font-medium">No hay incidencias</p>
-          <p class="text-sm mt-1">No se encontraron incidencias con los filtros seleccionados.</p>
+          <p class="text-lg font-medium" data-i18n="incmgr.no_incidents">No hay incidencias</p>
+          <p class="text-sm mt-1" data-i18n="incmgr.no_incidents_desc">No se encontraron incidencias con los filtros seleccionados.</p>
         </div>
 
         <!-- Tabla -->
@@ -336,13 +344,13 @@
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-gray-200 text-left text-gray-500">
-                  <th class="pb-3 font-medium">ID</th>
-                  <th class="pb-3 font-medium">Título</th>
-                  <th class="pb-3 font-medium">Categoría</th>
-                  <th class="pb-3 font-medium">Estado</th>
-                  <th class="pb-3 font-medium">Origen</th>
-                  <th class="pb-3 font-medium">Sede</th>
-                  <th class="pb-3 font-medium">Acción</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_id">ID</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_title">Título</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_category">Categoría</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_status">Estado</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_origin">Origen</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_branch">Sede</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_action">Acción</th>
                 </tr>
               </thead>
               <tbody id="listBody"></tbody>
@@ -357,7 +365,7 @@
     <!-- ════════════════════════════════════════════ -->
     <section id="panel-summary" class="tab-panel">
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="incmgr.summary_title">
           <span class="w-3 h-3 rounded-full bg-purple-500"></span>
           Resumen de métricas
         </h2>
@@ -365,7 +373,7 @@
         <!-- Estado: loading -->
         <div id="summaryLoading" class="hidden flex items-center justify-center py-8">
           <span class="spinner mr-2"></span>
-          <span class="text-gray-500 text-sm">Cargando métricas...</span>
+          <span class="text-gray-500 text-sm" data-i18n="incmgr.loading_summary">Cargando métricas...</span>
         </div>
 
         <!-- Estado: error -->
@@ -377,31 +385,31 @@
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
               <p class="text-3xl font-bold text-blue-700" id="summaryTotal">0</p>
-              <p class="text-sm text-blue-600 mt-1">Total incidencias</p>
+              <p class="text-sm text-blue-600 mt-1" data-i18n="incmgr.summary_total">Total incidencias</p>
             </div>
           </div>
 
           <!-- Por estado -->
           <div>
-            <h3 class="text-sm font-semibold text-gray-700 mb-2">Por estado</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-2" data-i18n="incmgr.summary_by_status">Por estado</h3>
             <div id="summaryByStatus" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
           </div>
 
           <!-- Por categoría -->
           <div>
-            <h3 class="text-sm font-semibold text-gray-700 mb-2">Por categoría</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-2" data-i18n="incmgr.summary_by_category">Por categoría</h3>
             <div id="summaryByCategory" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
           </div>
 
           <!-- Por origen -->
           <div>
-            <h3 class="text-sm font-semibold text-gray-700 mb-2">Por origen</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-2" data-i18n="incmgr.summary_by_origin">Por origen</h3>
             <div id="summaryByOrigin" class="grid grid-cols-3 gap-3"></div>
           </div>
 
           <!-- Por sede -->
           <div>
-            <h3 class="text-sm font-semibold text-gray-700 mb-2">Por sede</h3>
+            <h3 class="text-sm font-semibold text-gray-700 mb-2" data-i18n="incmgr.summary_by_branch">Por sede</h3>
             <div id="summaryByBranch" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
           </div>
         </div>
@@ -410,6 +418,7 @@
 
   </main>
 
+  <script src="/js/i18n.js"></script>
   <script src="/js/incidents-manager.js"></script>
 </body>
 </html>

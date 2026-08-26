@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="i18n-title" content="register.title">
   <title>TrackFlow — Registro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -59,7 +60,13 @@
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
-        <p class="text-blue-100 mt-1">Panel de administración</p>
+        <p class="text-blue-100 mt-1" data-i18n="app.admin_panel">Panel de administración</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="window.__toggleLang()" id="langToggle"
+                class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
+          ES | EN
+        </button>
       </div>
     </div>
   </header>
@@ -71,14 +78,14 @@
       <div class="bg-white rounded-xl shadow-md border border-gray-200 p-8">
         <div class="text-center mb-6">
           <div class="text-5xl mb-3">📝</div>
-          <h2 class="text-2xl font-bold text-gray-800">Crear cuenta</h2>
-          <p class="text-gray-500 text-sm mt-1">Regístrate para acceder al panel de TrackFlow</p>
+          <h2 class="text-2xl font-bold text-gray-800" data-i18n="register.title">Crear cuenta</h2>
+          <p class="text-gray-500 text-sm mt-1" data-i18n="register.subtitle">Regístrate para acceder al panel de TrackFlow</p>
         </div>
 
-        <form id="registerForm" class="space-y-4">
+        <form id="registerForm" class="space-y-4" novalidate>
           <!-- Nombre (opcional) -->
           <div>
-            <label for="nameField" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="nameField" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="register.name_label">
               Nombre <span class="text-gray-400 font-normal">(opcional)</span>
             </label>
             <input
@@ -86,19 +93,21 @@
               type="text"
               autocomplete="name"
               placeholder="Tu nombre"
+              data-i18n-placeholder="register.name_placeholder"
               class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
             />
           </div>
 
           <!-- Email -->
           <div>
-            <label for="emailField" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <label for="emailField" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="register.email_label">Email *</label>
             <input
               id="emailField"
               type="email"
               autocomplete="email"
               required
               placeholder="tu@email.com"
+              data-i18n-placeholder="register.email_placeholder"
               class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
             />
             <p id="emailError" class="hidden text-red-500 text-xs mt-1"></p>
@@ -106,7 +115,7 @@
 
           <!-- Teléfono (opcional) -->
           <div>
-            <label for="phoneField" class="block text-sm font-medium text-gray-700 mb-1">
+            <label for="phoneField" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="register.phone_label">
               Teléfono <span class="text-gray-400 font-normal">(opcional)</span>
             </label>
             <input
@@ -114,13 +123,14 @@
               type="tel"
               autocomplete="tel"
               placeholder="+34 600 000 000"
+              data-i18n-placeholder="register.phone_placeholder"
               class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
             />
           </div>
 
           <!-- Password -->
           <div>
-            <label for="passwordField" class="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+            <label for="passwordField" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="register.password_label">Contraseña *</label>
             <input
               id="passwordField"
               type="password"
@@ -128,6 +138,7 @@
               required
               minlength="6"
               placeholder="Mínimo 6 caracteres"
+              data-i18n-placeholder="register.password_placeholder"
               class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
             />
             <p id="passwordError" class="hidden text-red-500 text-xs mt-1"></p>
@@ -135,13 +146,14 @@
 
           <!-- Confirmar contraseña -->
           <div>
-            <label for="confirmField" class="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña *</label>
+            <label for="confirmField" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="register.password_label">Confirmar contraseña *</label>
             <input
               id="confirmField"
               type="password"
               autocomplete="new-password"
               required
               placeholder="Repite la contraseña"
+              data-i18n-placeholder="register.password_placeholder"
               class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
             />
             <p id="confirmError" class="hidden text-red-500 text-xs mt-1"></p>
@@ -156,7 +168,7 @@
             type="submit"
             class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-2"
           >
-            <span id="registerBtnText">Crear cuenta</span>
+            <span id="registerBtnText" data-i18n="register.submit">Crear cuenta</span>
             <span id="registerSpinner" class="hidden">
               <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -167,8 +179,8 @@
         </form>
 
         <p class="text-center text-sm text-gray-500 mt-6">
-          ¿Ya tienes cuenta?
-          <a href="/login" class="text-blue-600 hover:text-blue-800 font-medium underline decoration-blue-300 underline-offset-2">
+          <span data-i18n="register.have_account">¿Ya tienes cuenta?</span>
+          <a href="/login" class="text-blue-600 hover:text-blue-800 font-medium underline decoration-blue-300 underline-offset-2" data-i18n="register.login">
             Iniciar sesión
           </a>
         </p>
@@ -176,10 +188,11 @@
     </div>
   </main>
 
-  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200">
+  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200" data-i18n="app.footer">
     TrackFlow — Panel de administración
   </footer>
 
+  <script src="/js/i18n.js"></script>
   <script src="/js/app.js"></script>
   <script>
     const form = document.getElementById('registerForm');
@@ -219,26 +232,26 @@
 
       // Validaciones por campo
       if (!email || !email.includes('@')) {
-        showFieldError(emailError, 'Introduce un email válido.');
+        showFieldError(emailError, window.__('register.error_invalid_email'));
         hasError = true;
       }
       if (!password || password.length < 6) {
-        showFieldError(passwordError, 'La contraseña debe tener al menos 6 caracteres.');
+        showFieldError(passwordError, window.__('register.error_password_length'));
         hasError = true;
       }
       if (password !== confirm) {
-        showFieldError(confirmError, 'Las contraseñas no coinciden.');
+        showFieldError(confirmError, window.__('reset.error_mismatch'));
         hasError = true;
       }
       if (phone && !/^[\d\s+\-()]{6,20}$/.test(phone)) {
-        showFieldError(emailError, 'El teléfono no tiene un formato válido.');
+        showFieldError(emailError, window.__('register.error_invalid_phone'));
         hasError = true;
       }
       if (hasError) return;
 
       // Estado loading
       registerBtn.disabled = true;
-      registerBtnText.textContent = 'Creando cuenta…';
+      registerBtnText.textContent = window.__('register.submitting');
       registerSpinner.classList.remove('hidden');
 
       try {
@@ -251,12 +264,12 @@
         // Éxito — login automático ya se hizo, redirigir
         window.location.href = '/';
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Error desconocido';
+        const msg = err instanceof Error ? err.message : window.__('register.error_unknown');
         registerError.classList.remove('hidden');
         registerError.textContent = '❌ ' + msg;
       } finally {
         registerBtn.disabled = false;
-        registerBtnText.textContent = 'Crear cuenta';
+        registerBtnText.textContent = window.__('register.submit');
         registerSpinner.classList.add('hidden');
       }
     });

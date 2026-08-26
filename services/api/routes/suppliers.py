@@ -5,7 +5,9 @@ CRUD completo con filtros por país y categoría, más operaciones específicas
 para tarifa y estado con validación Pydantic.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
+
+from i18n import get_language_from_request, get_translator
 
 from database import suppliers_table, SupplierQuery
 from models import (
@@ -44,7 +46,7 @@ def _enrich_with_id(doc: dict, doc_id: int) -> dict:
 # ──────────────────────────── Endpoints ────────────────────────────
 
 @router.post("", response_model=SupplierResponse, status_code=201)
-async def create_supplier(payload: SupplierCreate):
+async def create_supplier(payload: SupplierCreate, request: Request):
     """
     Crea un nuevo proveedor.
 
@@ -64,6 +66,7 @@ async def create_supplier(payload: SupplierCreate):
 
 @router.get("", response_model=list[SupplierResponse])
 async def list_suppliers(
+    request: Request,
     country: str = Query(None, description="Filtrar por país (USA o Spain)"),
     category: str = Query(None, description="Filtrar por categoría"),
 ):
@@ -100,15 +103,16 @@ async def list_suppliers(
 
 
 @router.get("/{supplier_id}", response_model=SupplierResponse)
-async def get_supplier(supplier_id: int):
+async def get_supplier(supplier_id: int, request: Request):
     """
     Obtiene un proveedor por su ID.
 
     Devuelve 404 si no existe.
     """
+    t = get_translator(get_language_from_request(request))
     doc = suppliers_table.get(doc_id=supplier_id)
     if doc is None:
-        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+        raise HTTPException(status_code=404, detail=t("supplier_not_found"))
 
     doc_dict = dict(doc)
     doc_dict["id"] = supplier_id
@@ -116,7 +120,7 @@ async def get_supplier(supplier_id: int):
 
 
 @router.patch("/{supplier_id}/rate", response_model=SupplierResponse)
-async def update_supplier_rate(supplier_id: int, payload: SupplierUpdateRate):
+async def update_supplier_rate(supplier_id: int, payload: SupplierUpdateRate, request: Request):
     """
     Actualiza la tarifa de un proveedor.
 
@@ -124,9 +128,10 @@ async def update_supplier_rate(supplier_id: int, payload: SupplierUpdateRate):
     - Rechaza valores <= 0 con 422 (validación Pydantic).
     - Devuelve 404 si el proveedor no existe.
     """
+    t = get_translator(get_language_from_request(request))
     doc = suppliers_table.get(doc_id=supplier_id)
     if doc is None:
-        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+        raise HTTPException(status_code=404, detail=t("supplier_not_found"))
 
     now = generate_timestamp()
     suppliers_table.update(
@@ -141,16 +146,17 @@ async def update_supplier_rate(supplier_id: int, payload: SupplierUpdateRate):
 
 
 @router.patch("/{supplier_id}/status", response_model=SupplierResponse)
-async def update_supplier_status(supplier_id: int, payload: SupplierUpdateStatus):
+async def update_supplier_status(supplier_id: int, payload: SupplierUpdateStatus, request: Request):
     """
     Actualiza el estado de un proveedor (active/suspended).
 
     - Rechaza valores no permitidos con 422 (validación Pydantic + Enum).
     - Devuelve 404 si el proveedor no existe.
     """
+    t = get_translator(get_language_from_request(request))
     doc = suppliers_table.get(doc_id=supplier_id)
     if doc is None:
-        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+        raise HTTPException(status_code=404, detail=t("supplier_not_found"))
 
     now = generate_timestamp()
     suppliers_table.update(
@@ -165,15 +171,16 @@ async def update_supplier_status(supplier_id: int, payload: SupplierUpdateStatus
 
 
 @router.delete("/{supplier_id}", status_code=200)
-async def delete_supplier(supplier_id: int):
+async def delete_supplier(supplier_id: int, request: Request):
     """
     Elimina un proveedor por su ID.
 
     Devuelve 404 si no existe.
     """
+    t = get_translator(get_language_from_request(request))
     doc = suppliers_table.get(doc_id=supplier_id)
     if doc is None:
-        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+        raise HTTPException(status_code=404, detail=t("supplier_not_found"))
 
     suppliers_table.remove(doc_ids=[supplier_id])
-    return {"message": "Proveedor eliminado correctamente", "id": supplier_id}
+    return {"message": t("supplier_deleted"), "id": supplier_id}

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="i18n-title" content="incidents.title">
   <title>TrackFlow - Analizador de Incidencias</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -73,20 +74,25 @@
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div>
         <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
-        <p class="text-blue-100 mt-1">Analizador de incidencias</p>
+        <p class="text-blue-100 mt-1" data-i18n="incidents.header_subtitle">Analizador de incidencias</p>
       </div>
       <div class="flex items-center gap-2">
         <a href="/"
            class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          ⬅ Volver al panel
+          ⬅ <span data-i18n="incidents.back_home">Volver al panel</span>
         </a>
+        <button onclick="window.__toggleLang()" id="langToggle"
+                class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
+          ES | EN
+        </button>
+        <span class="w-px h-6 bg-white/20 mx-1"></span>
         <a href="/account/profile"
            class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-          👤 Perfil
+          👤 <span data-i18n="incidents.profile">Perfil</span>
         </a>
         <button onclick="window.logout()"
                 class="bg-red-400/20 hover:bg-red-400/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-          🚪 Salir
+          🚪 <span data-i18n="incidents.logout">Salir</span>
         </button>
       </div>
     </div>
@@ -98,7 +104,7 @@
     <!-- CARGA DE ARCHIVO -->
     <!-- ════════════════════════════════════════════ -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+      <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="incidents.select_file">
         <span class="w-3 h-3 rounded-full bg-blue-500"></span>
         1. Selecciona un archivo CSV de incidencias
       </h2>
@@ -113,8 +119,8 @@
            onclick="document.getElementById('fileInput').click()">
         <div id="dropContent">
           <div class="text-5xl mb-3">📄</div>
-          <p class="text-gray-600 font-medium">Arrastra un archivo CSV aquí o haz clic para seleccionarlo</p>
-          <p class="text-gray-400 text-sm mt-1">Solo archivos con extensión .csv</p>
+          <p class="text-gray-600 font-medium" data-i18n="incidents.drop_hint">Arrastra un archivo CSV aquí o haz clic para seleccionarlo</p>
+          <p class="text-gray-400 text-sm mt-1" data-i18n="incidents.csv_only">Solo archivos con extensión .csv</p>
         </div>
         <div id="fileInfo" class="hidden">
           <div class="text-5xl mb-3">📊</div>
@@ -122,7 +128,7 @@
           <p id="fileSize" class="text-gray-400 text-sm"></p>
           <button onclick="event.stopPropagation(); resetUpload()"
                   class="mt-3 text-red-500 hover:text-red-700 text-sm font-medium transition">
-            ❌ Cambiar archivo
+            ❌ <span data-i18n="incidents.change_file">Cambiar archivo</span>
           </button>
         </div>
       </div>
@@ -135,7 +141,7 @@
                 onclick="runAnalysis()"
                 class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                        text-white px-6 py-3 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2">
-          🔍 Analizar incidencias
+          🔍 <span data-i18n="incidents.analyze">Analizar incidencias</span>
         </button>
         <span id="analyzeStatus" class="text-sm text-gray-400 italic"></span>
       </div>
@@ -148,7 +154,7 @@
 
       <!-- Resumen general -->
       <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="incidents.summary">
           <span class="w-3 h-3 rounded-full bg-green-500"></span>
           2. Resumen del análisis
         </h2>
@@ -157,15 +163,15 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 text-center">
             <p class="text-3xl font-bold text-blue-700" id="resTotal">0</p>
-            <p class="text-blue-600 text-sm font-medium">Total registros</p>
+            <p class="text-blue-600 text-sm font-medium" data-i18n="incidents.total_records">Total registros</p>
           </div>
           <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-200 text-center">
             <p class="text-3xl font-bold text-emerald-700" id="resValid">0</p>
-            <p class="text-emerald-600 text-sm font-medium">Válidos</p>
+            <p class="text-emerald-600 text-sm font-medium" data-i18n="incidents.valid">Válidos</p>
           </div>
           <div class="bg-red-50 rounded-xl p-4 border border-red-200 text-center">
             <p class="text-3xl font-bold text-red-700" id="resInvalid">0</p>
-            <p class="text-red-600 text-sm font-medium">Inválidos</p>
+            <p class="text-red-600 text-sm font-medium" data-i18n="incidents.invalid">Inválidos</p>
           </div>
         </div>
 
@@ -173,14 +179,14 @@
         <div id="rulesSection" class="hidden mb-6">
           <h3 class="text-md font-semibold text-gray-700 mb-3 flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-red-400"></span>
-            Registros inválidos — detalle por tipo
+            <span data-i18n="incidents.invalid_details">Registros inválidos — detalle por tipo</span>
           </h3>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="bg-gray-100 text-gray-600 uppercase text-xs">
-                  <th class="text-left px-4 py-2 font-semibold">Regla</th>
-                  <th class="text-right px-4 py-2 font-semibold">Incidencias</th>
+                  <th class="text-left px-4 py-2 font-semibold" data-i18n="incidents.rule_th">Regla</th>
+                  <th class="text-right px-4 py-2 font-semibold" data-i18n="incidents.incidents_th">Incidencias</th>
                 </tr>
               </thead>
               <tbody id="rulesBody" class="divide-y divide-gray-100"></tbody>
@@ -198,7 +204,7 @@
       <!-- MÉTRICAS -->
       <!-- ════════════════════════════════════════════ -->
       <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="incidents.metrics">
           <span class="w-3 h-3 rounded-full bg-amber-500"></span>
           3. Métricas sobre registros válidos
         </h2>
@@ -265,17 +271,17 @@
       <!-- BOTÓN DE DESCARGA -->
       <!-- ════════════════════════════════════════════ -->
       <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="incidents.export_title">
           <span class="w-3 h-3 rounded-full bg-purple-500"></span>
           4. Exportar resultados
         </h2>
-        <p class="text-sm text-gray-500 mb-4">
+        <p class="text-sm text-gray-500 mb-4" data-i18n="incidents.export_desc">
           Descarga un archivo CSV con todas las métricas del análisis.
           <span class="text-gray-400 italic">No se incluyen datos sensibles como correos electrónicos.</span>
         </p>
         <a id="downloadBtn"
            class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-sm font-semibold transition shadow-sm cursor-pointer">
-          ⬇️ Descargar CSV
+          ⬇️ <span data-i18n="incidents.download_csv">Descargar CSV</span>
         </a>
       </section>
     </div>
@@ -288,10 +294,11 @@
 
   </main>
 
-  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200">
+  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200" data-i18n="app.footer">
     TrackFlow — Analizador de incidencias
   </footer>
 
+  <script src="./js/i18n.js"></script>
   <script src="./js/app.js"></script>
   <script src="./js/incidents.js"></script>
 </body>

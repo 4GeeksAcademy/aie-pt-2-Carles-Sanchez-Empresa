@@ -23,6 +23,16 @@ const STATUS_LABELS = {
   discarded: "Descartada",
 };
 
+function statusLabel(status) {
+  const labels = {
+    open: window.__ ? window.__('incmgr.status_open') : STATUS_LABELS.open,
+    in_progress: window.__ ? window.__('incmgr.status_in_progress') : STATUS_LABELS.in_progress,
+    resolved: window.__ ? window.__('incmgr.status_resolved') : STATUS_LABELS.resolved,
+    discarded: window.__ ? window.__('incmgr.status_discarded') : STATUS_LABELS.discarded,
+  };
+  return labels[status] || status;
+}
+
 const STATUS_COLORS = {
   open: "bg-yellow-100 text-yellow-800",
   in_progress: "bg-blue-100 text-blue-800",
@@ -42,11 +52,35 @@ const CATEGORY_LABELS = {
   other: "❓ Otro",
 };
 
+function categoryLabel(key) {
+  const labels = {
+    lost_parcel: window.__ ? window.__('incmgr.cat_lost_parcel') : CATEGORY_LABELS.lost_parcel,
+    delivery_failure: window.__ ? window.__('incmgr.cat_delivery_failure') : CATEGORY_LABELS.delivery_failure,
+    inventory_discrepancy: window.__ ? window.__('incmgr.cat_inventory_discrepancy') : CATEGORY_LABELS.inventory_discrepancy,
+    carrier_issue: window.__ ? window.__('incmgr.cat_carrier_issue') : CATEGORY_LABELS.carrier_issue,
+    returns_issue: window.__ ? window.__('incmgr.cat_returns_issue') : CATEGORY_LABELS.returns_issue,
+    warehouse_incident: window.__ ? window.__('incmgr.cat_warehouse_incident') : CATEGORY_LABELS.warehouse_incident,
+    system_failure: window.__ ? window.__('incmgr.cat_system_failure') : CATEGORY_LABELS.system_failure,
+    client_complaint: window.__ ? window.__('incmgr.cat_client_complaint') : CATEGORY_LABELS.client_complaint,
+    other: window.__ ? window.__('incmgr.cat_other') : CATEGORY_LABELS.other,
+  };
+  return labels[key] || key;
+}
+
 const ORIGIN_LABELS = {
   customer: "👤 Cliente",
   branch: "🏢 Sede",
   internal: "🔧 Interno",
 };
+
+function originLabel(key) {
+  const labels = {
+    customer: window.__ ? window.__('incmgr.origin_customer') : ORIGIN_LABELS.customer,
+    branch: window.__ ? window.__('incmgr.origin_branch') : ORIGIN_LABELS.branch,
+    internal: window.__ ? window.__('incmgr.origin_internal') : ORIGIN_LABELS.internal,
+  };
+  return labels[key] || key;
+}
 
 const BRANCH_LABELS = {
   central: "🏢 Central (Madrid)",
@@ -55,6 +89,17 @@ const BRANCH_LABELS = {
   zaragoza_warehouse: "🏭 Almacén Zaragoza",
   zaragoza_office: "🏢 Oficina Zaragoza",
 };
+
+function branchLabel(key) {
+  const labels = {
+    central: window.__ ? window.__('incmgr.branch_central') : BRANCH_LABELS.central,
+    la_warehouse: window.__ ? window.__('incmgr.branch_la_wh') : BRANCH_LABELS.la_warehouse,
+    la_office: window.__ ? window.__('incmgr.branch_la_off') : BRANCH_LABELS.la_office,
+    zaragoza_warehouse: window.__ ? window.__('incmgr.branch_z_wh') : BRANCH_LABELS.zaragoza_warehouse,
+    zaragoza_office: window.__ ? window.__('incmgr.branch_z_off') : BRANCH_LABELS.zaragoza_office,
+  };
+  return labels[key] || key;
+}
 
 // ──────────────────────────── Utilidades ────────────────────────────
 
@@ -169,15 +214,23 @@ async function handleSubmit(event) {
 
   // Validación rápida del lado cliente
   if (!payload.title) {
-    showFieldError("Title", "El título es obligatorio");
+    showFieldError("Title", window.__ ? window.__('incmgr.error_title_required') : "El título es obligatorio");
     return;
   }
   if (payload.description.length < 5) {
-    showFieldError("Description", "La descripción debe tener al menos 5 caracteres");
+    showFieldError("Description", window.__ ? window.__('incmgr.error_desc_length') : "La descripción debe tener al menos 5 caracteres");
     return;
   }
   if (!payload.category) {
-    showFieldError("Category", "Selecciona una categoría");
+    showFieldError("Category", window.__ ? window.__('incmgr.error_category_required') : "Selecciona una categoría");
+    return;
+  }
+  if (!payload.origin) {
+    showFieldError("Origin", window.__ ? window.__('incmgr.error_origin_required') : "Selecciona un origen");
+    return;
+  }
+  if (!payload.branch) {
+    showFieldError("Branch", window.__ ? window.__('incmgr.error_branch_required') : "Selecciona una sede");
     return;
   }
 
@@ -193,7 +246,7 @@ async function handleSubmit(event) {
     document.getElementById("incidentForm").reset();
     document.getElementById("fieldBranch").classList.remove("origin-branch-highlight");
 
-    successEl.textContent = "✅ Incidencia registrada correctamente";
+    successEl.textContent = window.__ ? window.__('incmgr.success_created') : "✅ Incidencia registrada correctamente";
     successEl.classList.remove("hidden");
 
     // Ocultar mensaje tras 4 segundos
@@ -209,7 +262,7 @@ async function handleSubmit(event) {
       errorEl.textContent = `❌ ${err.data.detail}`;
       errorEl.classList.remove("hidden");
     } else {
-      errorEl.textContent = "❌ Error al guardar la incidencia. Inténtalo de nuevo.";
+      errorEl.textContent = window.__ ? window.__('incmgr.error_save') : "❌ Error al guardar la incidencia. Inténtalo de nuevo.";
       errorEl.classList.remove("hidden");
     }
   } finally {
@@ -223,7 +276,7 @@ window.handleSubmit = handleSubmit;
 // ──────────────────────────── Listado ────────────────────────────
 
 function statusBadge(status) {
-  const label = STATUS_LABELS[status] || status;
+  const label = statusLabel(status);
   const color = STATUS_COLORS[status] || "bg-gray-100 text-gray-600";
   return `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium ${color}">${label}</span>`;
 }
@@ -232,7 +285,7 @@ async function updateStatusInline(id, newStatus, rowEl) {
   const oldHtml = rowEl.innerHTML;
 
   try {
-    rowEl.innerHTML = `<td colspan="7" class="py-3 text-center text-gray-500"><span class="spinner mr-2"></span>Actualizando...</td>`;
+    rowEl.innerHTML = `<td colspan="7" class="py-3 text-center text-gray-500"><span class="spinner mr-2"></span>${window.__ ? window.__('incmgr.updating_status') : 'Actualizando...'}</td>`;
 
     await apiFetch(`${API_BASE}/${id}/status`, {
       method: "PATCH",
@@ -244,7 +297,7 @@ async function updateStatusInline(id, newStatus, rowEl) {
   } catch (err) {
     // Rollback visual
     rowEl.innerHTML = oldHtml;
-    let msg = "Error al actualizar el estado";
+    let msg = window.__ ? window.__('incmgr.error_updating') : "Error al actualizar el estado";
     if (err.data && Array.isArray(err.data)) {
       msg = err.data.map((e) => e.error).join("; ");
     } else if (err.data && err.data.detail) {
@@ -285,28 +338,28 @@ async function loadList() {
 
     body.innerHTML = data
       .map((inc) => {
-        const catLabel = CATEGORY_LABELS[inc.category] || inc.category;
-        const originLabel = ORIGIN_LABELS[inc.origin] || inc.origin;
-        const branchLabel = BRANCH_LABELS[inc.branch] || inc.branch;
+        const catLabel = categoryLabel(inc.category);
+        const originLabelText = originLabel(inc.origin);
+        const branchLabelText = branchLabel(inc.branch);
 
         // Opciones de transición de estado
         let statusActions = "";
         if (inc.status === "open") {
           statusActions = `
             <button onclick="updateStatusInline(${inc.id}, 'in_progress', this.closest('tr'))"
-                    class="text-blue-600 hover:text-blue-800 text-xs font-medium mr-2">Iniciar</button>
+                    class="text-blue-600 hover:text-blue-800 text-xs font-medium mr-2">${window.__ ? window.__('incmgr.action_start') : 'Iniciar'}</button>
             <button onclick="updateStatusInline(${inc.id}, 'discarded', this.closest('tr'))"
-                    class="text-red-600 hover:text-red-800 text-xs font-medium">Descartar</button>
+                    class="text-red-600 hover:text-red-800 text-xs font-medium">${window.__ ? window.__('incmgr.action_discard') : 'Descartar'}</button>
           `;
         } else if (inc.status === "in_progress") {
           statusActions = `
             <button onclick="updateStatusInline(${inc.id}, 'resolved', this.closest('tr'))"
-                    class="text-green-600 hover:text-green-800 text-xs font-medium mr-2">Resolver</button>
+                    class="text-green-600 hover:text-green-800 text-xs font-medium mr-2">${window.__ ? window.__('incmgr.action_resolve') : 'Resolver'}</button>
             <button onclick="updateStatusInline(${inc.id}, 'discarded', this.closest('tr'))"
-                    class="text-red-600 hover:text-red-800 text-xs font-medium">Descartar</button>
+                    class="text-red-600 hover:text-red-800 text-xs font-medium">${window.__ ? window.__('incmgr.action_discard') : 'Descartar'}</button>
           `;
         } else {
-          statusActions = `<span class="text-xs text-gray-400 italic">Estado final</span>`;
+          statusActions = `<span class="text-xs text-gray-400 italic">${window.__ ? window.__('incmgr.final_status') : 'Estado final'}</span>`;
         }
 
         return `<tr class="border-b border-gray-100 hover:bg-gray-50">
@@ -317,8 +370,8 @@ async function loadList() {
           </td>
           <td class="py-3 pr-3 text-xs text-gray-600">${catLabel}</td>
           <td class="py-3 pr-3">${statusBadge(inc.status)}</td>
-          <td class="py-3 pr-3 text-xs text-gray-600">${originLabel}</td>
-          <td class="py-3 pr-3 text-xs text-gray-600">${branchLabel}</td>
+          <td class="py-3 pr-3 text-xs text-gray-600">${originLabelText}</td>
+          <td class="py-3 pr-3 text-xs text-gray-600">${branchLabelText}</td>
           <td class="py-3 whitespace-nowrap">${statusActions}</td>
         </tr>`;
       })
@@ -359,17 +412,17 @@ async function loadSummary() {
     document.getElementById("summaryTotal").textContent = data.total || 0;
 
     // Por estado
-    renderSummaryGrid("summaryByStatus", data.by_status || {}, STATUS_LABELS);
+    renderSummaryGrid("summaryByStatus", data.by_status || {}, statusLabel);
     // Por categoría
-    renderSummaryGrid("summaryByCategory", data.by_category || {}, CATEGORY_LABELS);
+    renderSummaryGrid("summaryByCategory", data.by_category || {}, categoryLabel);
     // Por origen
-    renderSummaryGrid("summaryByOrigin", data.by_origin || {}, ORIGIN_LABELS);
+    renderSummaryGrid("summaryByOrigin", data.by_origin || {}, originLabel);
     // Por sede
-    renderSummaryGrid("summaryByBranch", data.by_branch || {}, BRANCH_LABELS);
+    renderSummaryGrid("summaryByBranch", data.by_branch || {}, branchLabel);
 
     content.classList.remove("hidden");
   } catch (err) {
-    errorEl.textContent = `❌ Error al cargar resumen: ${err.message}`;
+    errorEl.textContent = `❌ ${window.__ ? window.__('incmgr.error_load_summary') : 'Error al cargar resumen'}: ${err.message}`;
     errorEl.classList.remove("hidden");
   } finally {
     loadingEl.classList.add("hidden");
@@ -377,18 +430,18 @@ async function loadSummary() {
 }
 window.loadSummary = loadSummary;
 
-function renderSummaryGrid(containerId, data, labels) {
+function renderSummaryGrid(containerId, data, labelFn) {
   const container = document.getElementById(containerId);
   const keys = Object.keys(data);
 
   if (keys.length === 0) {
-    container.innerHTML = `<p class="text-sm text-gray-400 col-span-full">Sin datos</p>`;
+    container.innerHTML = `<p class="text-sm text-gray-400 col-span-full">${window.__ ? window.__('incmgr.no_data') : 'Sin datos'}</p>`;
     return;
   }
 
   container.innerHTML = keys
     .map((key) => {
-      const label = labels[key] || key;
+      const label = typeof labelFn === 'function' ? labelFn(key) : (labelFn[key] || key);
       return `<div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
         <p class="text-lg font-bold text-gray-800">${data[key]}</p>
         <p class="text-xs text-gray-500 mt-0.5">${label}</p>
