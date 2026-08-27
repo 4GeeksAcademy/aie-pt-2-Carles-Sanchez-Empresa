@@ -42,7 +42,7 @@
 - **Archivo:** `uis/talent-pipeline-tracker/services/api.ts` — líneas 49-50
 - **Categoría:** 5 · Filtración de datos sensibles
 - **Problema:** `console.error("API Error ...:", body)` imprime el cuerpo completo de la respuesta en la consola del navegador. Si el backend devuelve datos personales (emails, teléfonos, IDs internos) en el cuerpo del error, estos quedarán expuestos en la consola del cliente.
-- **Corrección sugerida:** Registrar solo el código de estado y un mensaje genérico. Nunca volcar el cuerpo completo.
+- **Corrección aplicada:** `2026-08-27` — Se eliminó `body` del segundo argumento de `console.error()`, reemplazándolo por un mensaje genérico `"consulta la respuesta completa en la excepción"`. El error completo sigue disponible en el `throw new Error(...)` para quien lo necesite en debugging. ✅
 
 ---
 
@@ -200,7 +200,7 @@
 - **Archivo:** `uis/talent-pipeline-tracker/services/api.ts` — línea 21
 - **Categoría:** 5 · Filtración de datos sensibles (bajo)
 - **Problema:** `console.log(\`🌐 ${options?.method || "GET"} ${url}\`)` imprime en consola del navegador todas las URLs de API solicitadas, incluyendo tokens en query parameters si los hubiera y exponiendo la estructura interna de la API. No debería estar activo en producción.
-- **Corrección sugerida:** Eliminar el `console.log` o envolverlo en un flag de depuración (`if (process.env.NODE_ENV !== "production")`).
+- **Corrección aplicada:** `2026-08-27` — Se envolvió el `console.log` en `if (process.env.NODE_ENV !== "production") { ... }` para que solo se ejecute en desarrollo/entornos no productivos. ✅
 
 ### M-10. `email_service.py` imprime errores con `print()` en lugar de `logging`
 - **Archivo:** `services/api/email_service.py` — líneas 48, 52
