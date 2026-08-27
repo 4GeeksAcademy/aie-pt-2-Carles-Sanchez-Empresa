@@ -18,7 +18,9 @@ async function request<T>(
   url: string,
   options?: RequestInit,
 ): Promise<T> {
-  console.log(`🌐 ${options?.method || "GET"} ${url}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`🌐 ${options?.method || "GET"} ${url}`);
+  }
   const token = typeof window !== "undefined" ? getToken() : null;
 
   const res = await fetch(url, {
@@ -40,7 +42,7 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    console.error(`API Error ${res.status}:`, body);
+    console.error(`API Error ${res.status} — consulta la respuesta completa en la excepción`);
     throw new Error(`Error ${res.status}: ${res.statusText}${body ? ` — ${body}` : ""}`);
   }
 
