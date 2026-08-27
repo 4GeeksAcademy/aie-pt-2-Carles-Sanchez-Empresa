@@ -14,8 +14,11 @@ Módulos:
 
 import csv
 import io
+import logging
 import os
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -161,7 +164,8 @@ async def post_analyze(
         raw = await file.read()
         content = raw.decode("utf-8-sig")  # tolera BOM
     except Exception as e:
-        raise HTTPException(status_code=400, detail=t("csv_read_error").format(e))
+        logger.exception("Error al leer fichero CSV")
+        raise HTTPException(status_code=400, detail=t("csv_read_error"))
 
     if not content.strip():
         raise HTTPException(status_code=400, detail=t("csv_empty"))
@@ -172,7 +176,8 @@ async def post_analyze(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=t("csv_parse_error").format(e))
+        logger.exception("Error al parsear CSV")
+        raise HTTPException(status_code=400, detail=t("csv_parse_error"))
 
     # ── Análisis ──
     result = analyze_rows(rows)

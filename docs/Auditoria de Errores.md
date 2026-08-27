@@ -27,10 +27,10 @@
 - **Corrección aplicada:** `2026-08-27` — Se reemplazó `except: pass` por `logger.exception(...)` que registra la traza completa del error sin exponerla al usuario. Se añadió `import logging` y se creó el logger del módulo. El flujo sigue sin romperse (el usuario siempre ve confirmación), pero ahora hay trazabilidad del error cuando falla el envío. ✅
 
 ### C-2. Exposición de errores en crudo vía formato `.format(e)`
-- **Archivo:** `services/api/main.py` — líneas 118 y 123
+- **Archivo:** `services/api/main.py` — líneas 164 y 175
 - **Categoría:** 4 · Exposición de errores en crudo
 - **Problema:** Los mensajes de error se construyen con `.format(e)`, lo que inserta la representación textual de la excepción (`str(e)`) directamente en la respuesta HTTP. Esto puede exponer trazas internas, rutas de archivos del servidor o detalles de implementación al cliente.
-- **Corrección sugerida:** Usar mensajes genéricos y registrar el error completo con `logging.exception()`.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó `.format(e)` en ambas líneas (csv_read_error y csv_parse_error) por `logger.exception()` para registrar la traza completa en servidor, mientras que las traducciones i18n se cambiaron a mensajes genéricos sin placeholder `{}`. Se añadió `import logging` y `logger = logging.getLogger(__name__)` en el módulo. Las claves `csv_read_error` y `csv_parse_error` en los ficheros `en.py` y `es.py` se actualizaron eliminando el `{}` y usando texto descriptivo genérico. ✅
 
 ### C-3. Sin estados de carga/error en la web corporativa
 - **Archivo:** `uis/website/src/components/application/ApplicationForm.tsx` — líneas 163-173
