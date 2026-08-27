@@ -60,6 +60,10 @@ function applyDataChanges(): void {
     const newShipments = JSON.parse((document.getElementById('sampleShipments') as HTMLTextAreaElement).value);
     const newCarriers = JSON.parse((document.getElementById('sampleCarriers') as HTMLTextAreaElement).value);
 
+    if (!Array.isArray(newProducts) || !Array.isArray(newShipments) || !Array.isArray(newCarriers)) {
+      throw new Error('Uno o más datos no son arrays válidos');
+    }
+
     state.products.length = 0;
     state.shipments.length = 0;
     state.carriers.length = 0;

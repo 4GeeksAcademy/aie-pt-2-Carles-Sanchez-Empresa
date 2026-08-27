@@ -107,6 +107,7 @@ function getToken() {
   try {
     return localStorage.getItem("trackflow_token");
   } catch (e) {
+    console.warn("[incmgr] localStorage no disponible al leer token", e);
     return null;
   }
 }
@@ -477,6 +478,7 @@ window.loadSummary = loadSummary;
 
 function renderSummaryGrid(containerId, data, labelFn) {
   const container = document.getElementById(containerId);
+  if (!container || !data) return;
   const keys = Object.keys(data);
 
   if (keys.length === 0) {

@@ -108,7 +108,7 @@ Useful API routes:
 - `POST /auth/login` (public)
 - `POST /users` (public register)
 - `POST /api/incidents/analyze` (protected)
-- `GET /suppliers` (protected)
+- `GET /api/suppliers` (protected)
 
 ### 🌐 Corporate Website (React + Vite)
 

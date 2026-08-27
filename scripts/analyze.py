@@ -20,7 +20,7 @@ import csv
 # ── Ruta al módulo compartido (services/api/analyzer) ──
 _SHARED_DIR = os.path.join(os.path.dirname(__file__), "..", "services", "api")
 if _SHARED_DIR not in sys.path:
-    sys.path.insert(0, os.path.abspath(_SHARED_DIR))
+    sys.path.insert(0, _SHARED_DIR)
 
 from analyzer import (                                                    # noqa: E402
     VALID_COUNTRIES,

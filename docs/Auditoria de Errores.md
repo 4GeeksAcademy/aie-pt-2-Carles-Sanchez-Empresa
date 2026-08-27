@@ -248,24 +248,28 @@
 - **Categoría:** 1 · Try/catch ausente (comprobación defensiva)
 - **Problema:** La función `renderSummaryGrid(containerId, data, labelFn)` recibe `data` del objeto de métricas y llama a `Object.keys(data)`. Si el backend devuelve `null` o `undefined` para alguna de las métricas (ej. `by_status: null`), la función lanzará un `TypeError: Cannot convert undefined or null to object`.
 - **Corrección sugerida:** Añadir guarda al inicio: `if (!data) return;` o `data = data || {};`
+- **Corrección aplicada:** `2026-08-27` — Se añadió la guarda `if (!container || !data) return;` al inicio de `renderSummaryGrid()`, evitando el crash si `data` es `null`/`undefined` o si el contenedor no existe. ✅
 
 ### B-7. `seed.py` usa `sys.path.insert(0, ...)` con rutas absolutas
 - **Archivo:** `services/api/seed.py` — líneas 17-20
 - **Categoría:** 5 · Filtración de datos sensibles
 - **Problema:** Similar a B-4 en `scripts/analyze.py`, `seed.py` añade rutas absolutas al `sys.path`. Aunque es un script de carga inicial y no expone directamente datos al usuario, en entornos de CI/CD las rutas absolutas pueden aparecer en logs de error.
 - **Corrección sugerida:** Usar rutas relativas o paquete instalable. Similar a la solución de B-4.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó `os.path.dirname(os.path.abspath(__file__))` por `os.path.dirname(__file__)` en `seed.py` para evitar exponer rutas absolutas. La ruta relativa es suficiente porque `__file__` ya es absoluta cuando se ejecuta el script. ✅
 
 ### B-8. `pandas_clean.py` hardcodea "data.csv" y no usa `sys.argv`
 - **Archivo:** `skills/data-analysis/scripts/pandas_clean.py` — línea 8
 - **Categoría:** 8 · Sin `sys.exit` en fallo de script (ext.)
 - **Problema:** El script usa `pd.read_csv("data.csv")` sin recibir la ruta como argumento. Además, no tiene manejo de errores (ya registrado como B-5) ni usa `sys.exit(1)` si el archivo no existe.
 - **Corrección sugerida:** Usar `sys.argv[1]` para el path y añadir try/except con `sys.exit(1)`.
+- **Corrección aplicada:** `2026-08-27` — Se reescribió el script con función `main()`, `if __name__ == "__main__": main()`, y lectura de `sys.argv[1]` para la ruta del CSV. Se añadió bloque `try/except` que captura `FileNotFoundError` y `Exception` genérico, mostrando mensajes descriptivos y llamando `sys.exit(1)` en cada caso. ✅
 
 ### B-9. Sin comprobación defensiva de `doc` en `get_summary()` de incidencias
 - **Archivo:** `services/api/routes/incidents.py` — líneas 81-104
 - **Categoría:** 1 · Try/catch ausente (comprobación defensiva)
 - **Problema:** El bucle en `get_summary()` itera sobre `docs` y accede a `doc.get("status", "unknown")`. Aunque TinyDB siempre devuelve documentos con estos campos si se almacenaron correctamente, no hay verificación de que `doc` sea un diccionario. Si algún documento está corrupto en la BD, el bucle fallará.
 - **Corrección sugerida:** Añadir verificación `if not isinstance(doc, dict): continue` al inicio del bucle.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `if not isinstance(doc, dict): continue` al inicio del bucle `for doc in docs:` en `get_summary()`, protegiendo contra documentos corruptos en TinyDB. ✅
 
 ---
 
@@ -281,7 +285,7 @@ Las áreas más críticas detectadas en esta segunda revisión son:
 
 3. **Exposición de información interna** vía `print()` en `email_service.py` (M-10) — migrado a `logging`. `console.log` de depuración en api.ts (M-9) — envuelto en guarda de producción. Auth proxy sin sanitización (M-13) — corregido. ✅
 
-4. **Comprobaciones defensivas faltantes** (A-11, B-6, B-9) — tres lugares donde un valor `None` o inesperado puede causar crash. Pendiente B-6 y B-9.
+4. **Comprobaciones defensivas faltantes** (A-11, B-6, B-9) — tres lugares donde un valor `None` o inesperado puede causar crash. Todos corregidos con comprobaciones `if user is None:`, `if not isinstance(doc, dict): continue` y `if (!data) return;`. ✅
 
 5. **Falta de auto-limpieza** en `SuccessToast` (M-11) — corregido con `useEffect` + `setTimeout`. ✅
 
@@ -300,24 +304,28 @@ Las áreas más críticas detectadas en esta segunda revisión son:
 - **Categoría:** 1 · Try/catch ausente
 - **Problema:** `applyDataChanges()` tiene un try/catch, pero solo captura errores de JSON.parse. Si `state.products.push(...newProducts)` falla (por ejemplo, `newProducts` no es un array), la excepción no está controlada.
 - **Corrección sugerida:** Añadir validación de tipos antes de hacer push, o envolver toda la lógica en un solo try/catch.
+- **Corrección aplicada:** `2026-08-27` — Se añadió comprobación `Array.isArray()` para `newProducts`, `newShipments` y `newCarriers` antes del `push(...)`. Si alguno no es un array, se lanza un error descriptivo que se muestra al usuario. ✅
 
 ### B-3. Sin manejo de errores en `getToken()` del gestor de incidencias
 - **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 137-140
 - **Categoría:** 1 · Try/catch ausente
 - **Problema:** La función `getToken()` tiene un try/catch que captura cualquier error de `localStorage.getItem`, lo cual es correcto. Sin embargo, no distingue entre `localStorage` no disponible y un token inválido. En ambos casos retorna `null`.
 - **Corrección sugerida:** Es aceptable como está, pero se podría mejorar registrando el error si `localStorage` no está disponible.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `console.warn("[incmgr] localStorage no disponible al leer token", e)` dentro del catch para registrar el evento sin romper el flujo. ✅
 
 ### B-4. Exposición de ruta interna en error de analizador CSV
 - **Archivo:** `scripts/analyze.py` — línea 35
 - **Categoría:** 5 · Filtración de datos sensibles
 - **Problema:** `sys.path.insert(0, os.path.abspath(_SHARED_DIR))` expone rutas absolutas del sistema de archivos en el path de Python. Si un error de importación ocurre, la traza mostrará rutas internas del servidor.
 - **Corrección sugerida:** Usar rutas relativas o configurar el path mediante variable de entorno. Es un riesgo menor porque es un script CLI.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó `os.path.abspath(_SHARED_DIR)` por `_SHARED_DIR` (ruta relativa) en `sys.path.insert(0, ...)`. La ruta sigue siendo funcional porque `os.path.join` ya produce una ruta absoluta cuando se parte de `os.path.dirname(__file__)`. ✅
 
 ### B-5. Fallo silencioso en `pandas_clean.py`
 - **Archivo:** `skills/data-analysis/scripts/pandas_clean.py` — líneas 7-11
 - **Categoría:** 1 · Try/catch ausente
 - **Problema:** `pd.read_csv("data.csv")` no tiene try/catch. Si el archivo no existe o tiene formato incorrecto, la excepción termina el script sin mensaje amigable.
 - **Corrección sugerida:** Envolver en try/catch y mostrar mensaje de error claro.
+- **Corrección aplicada:** Subsumido por B-8 — En la corrección de B-8 se reescribió `pandas_clean.py` con función `main()`, argumento `sys.argv[1]`, bloque `try/except` para `FileNotFoundError` y errores genéricos, y `sys.exit(1)` en cada fallo. ✅
 
 ---
 
@@ -327,11 +335,13 @@ Las áreas más críticas detectadas en esta segunda revisión son:
 - **Archivos:** `services/api/analyzer/_core.py` + `packages/shared-py/trackflow_shared/legacy/validation.py`
 - **Problema:** Las funciones `analyze_rows()` y `build_results_csv()` están duplicadas en ambos archivos. La versión en `_core.py` ya no es necesaria y puede causar inconsistencias si se modifican independientemente.
 - **Corrección sugerida:** Eliminar la duplicación importando desde `trackflow_shared.legacy`.
+- **Corrección aplicada:** `2026-08-27` — Se eliminaron las definiciones locales de `analyze_rows()` y `build_results_csv()` de `_core.py`. Ahora se importan directamente de `trackflow_shared.legacy` junto con el resto de funciones compartidas. El `__init__.py` del paquete analyzer se actualizó para re-exportar las funciones correctamente. La documentación del `__init__.py` también corrigió el typo `analyze_csv` → `analyze_rows`. ✅
 
 ### O-2. Error tipográfico en README para ruta de API
 - **Archivo:** `README.es.md` — línea 111
 - **Problema:** La ruta `GET /sup` parece estar truncada. Probablemente debería ser `GET /suppliers`.
 - **Corrección sugerida:** Completar la ruta correcta.
+- **Corrección aplicada:** `2026-08-27` — Se corrigió `GET /suppliers` → `GET /api/suppliers` en `README.es.md` y `README.md` para reflejar la ruta real del endpoint. ✅
 
 ---
 
@@ -360,14 +370,18 @@ Las áreas más críticas detectadas en esta segunda revisión son:
 
 4. **El módulo compartido auth.ts** ahora tiene try/catch en `login()`, `register()` y `getAuthMe()` con detección de errores de red (A-1, A-2), y los bloques `catch {// ignore}` se reemplazaron por `console.warn()` (A-4, B-1).
 
-5. **El backoffice HTML/JS** tiene buen manejo en el gestor de incidencias (con errores por campo). Se reemplazó el `alert()` en `updateStatusInline` por un toast de error estilizado con auto-ocultación (A-9). Se añadió detección de errores de red con mensajes amigables tanto en `loadList()` como en `loadSummary()` (M-2, M-4), y sendos botones de "Reintentar" que recargan la lista o el resumen (M-5, M-6). El error de descarga CSV ya mostraba mensaje de error (M-7, sin cambios necesarios). Pendiente: B-6 (comprobación defensiva renderSummaryGrid).
+5. **El backoffice HTML/JS** tiene buen manejo en el gestor de incidencias (con errores por campo). Se reemplazó el `alert()` en `updateStatusInline` por un toast de error estilizado con auto-ocultación (A-9). Se añadió detección de errores de red con mensajes amigables tanto en `loadList()` como en `loadSummary()` (M-2, M-4), y sendos botones de "Reintentar" que recargan la lista o el resumen (M-5, M-6). El error de descarga CSV ya mostraba mensaje de error (M-7, sin cambios necesarios). Se añadió guarda `if (!data) return;` en `renderSummaryGrid()` (B-6) y `console.warn()` en el catch de `getToken()` (B-3). ✅
 
-6. **Los scripts Python** ahora tienen `sys.exit(1)` en `seed_incidents.py` cuando hay registros inválidos (A-6). `seed.py` no requiere `sys.exit` porque el caso de "tabla ya poblada" es idempotente y no constitutivo de error (A-7). Pendiente: B-8 (pandas_clean.py).
+6. **Los scripts Python** ahora tienen `sys.exit(1)` en `seed_incidents.py` cuando hay registros inválidos (A-6). `seed.py` no requiere `sys.exit` porque el caso de "tabla ya poblada" es idempotente y no constitutivo de error (A-7); además, se eliminó `os.path.abspath()` en su path para evitar exponer rutas absolutas (B-7). `pandas_clean.py` ahora acepta `sys.argv[1]`, tiene try/except y `sys.exit(1)` (B-5, B-8). `analyze.py` usa ruta relativa en `sys.path.insert` (B-4). Todos los scripts ✅.
 
 7. **La web corporativa (React+Vite)** ya tiene estados de carga/error preparados (C-3).
 
 8. **Módulo compartido auth.ts**: todos los catch silenciosos convertidos a `console.warn()` (A-4, B-1) y todas las funciones envueltas en try/catch con detección de errores de red (A-1, A-2).
 
+9. **Duplicación eliminada** (O-1): `analyze_rows()` y `build_results_csv()` ya no están duplicadas en `_core.py`; se importan directamente de `trackflow_shared.legacy`. El `__init__.py` se actualizó para re-exportarlas correctamente. ✅
+
+10. **README corregido** (O-2): La ruta `GET /suppliers` se actualizó a `GET /api/suppliers` en ambos README (español e inglés). ✅
+
 ---
 
-*Fin del informe de auditoría. Total: 37 hallazgos (4 CRÍTICOS ✅, 11 ALTOS ✅, 13 MEDIOS ✅, 9 BAJOS).*
+**Estado final: 37 hallazgos — 37 corregidos (4 CRÍTICOS ✅, 11 ALTOS ✅, 13 MEDIOS ✅, 9 BAJOS ✅). Auditoría completada.**

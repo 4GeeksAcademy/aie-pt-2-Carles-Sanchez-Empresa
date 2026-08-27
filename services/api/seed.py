@@ -15,7 +15,7 @@ import sys
 import os
 
 # Añadir el directorio actual al path para importar módulos de services/api/
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(__file__))
 
 from datetime import datetime, timezone
 from database import suppliers_table
