@@ -136,6 +136,10 @@ export const es: Translations = {
     revisionText: "Revisa todos los datos antes de enviar tu solicitud.",
     limpiar: "Limpiar",
     enviar: "Enviar solicitud",
+    enviando: "Enviando…",
+    errorTitle: "Error al enviar la solicitud",
+    errorUnexpected: "Ha ocurrido un error inesperado. Inténtalo de nuevo más tarde.",
+    dismissError: "Descartar",
     successTitle: "¡Gracias por tu interés en TrackFlow!",
     successBody:
       "Hemos recibido tu solicitud. Nuestro equipo comercial revisará tu información y te contactará en las próximas 24-48 horas para agendar una llamada y conocer tus necesidades logísticas en detalle.",

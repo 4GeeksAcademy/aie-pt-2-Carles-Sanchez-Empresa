@@ -134,6 +134,10 @@ export const en = {
     revisionText: "Please review all data before submitting your request.",
     limpiar: "Clear",
     enviar: "Send request",
+    enviando: "Sending…",
+    errorTitle: "Error submitting request",
+    errorUnexpected: "An unexpected error occurred. Please try again later.",
+    dismissError: "Dismiss",
     successTitle: "Thank you for your interest in TrackFlow!",
     successBody:
       "We have received your request. Our sales team will review your information and contact you within 24-48 hours to schedule a call and learn about your logistics needs in detail.",

@@ -41,6 +41,8 @@ export function ApplicationForm() {
   const [formData, setFormData] = useState<ApplicationFormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [successVisible, setSuccessVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const remainingComments = useMemo(() => getRemainingCharacters(formData.comentarios), [formData.comentarios]);
   const productWarning = useMemo(
@@ -82,10 +84,13 @@ export function ApplicationForm() {
     setFormData(initialFormData);
     setErrors({});
     setSuccessVisible(false);
+    setSubmitError(null);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
+    setSubmitError(null);
+
     const nextErrors = validateApplicationForm(formData, t.validation);
     const hasErrors = Object.keys(nextErrors).length > 0;
 
@@ -95,8 +100,22 @@ export function ApplicationForm() {
       return;
     }
 
-    setSuccessVisible(true);
-    window.scrollTo(0, 0);
+    setSubmitting(true);
+    try {
+      // ── Simular envío: aquí se conectaría con la API real ──
+      // TODO: Reemplazar por llamada real a backend cuando esté disponible
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      setSuccessVisible(true);
+      window.scrollTo(0, 0);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : t.form.errorUnexpected;
+      setSubmitError(message);
+      window.scrollTo(0, 0);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -344,6 +363,24 @@ export function ApplicationForm() {
         {productWarning}
       </div>
 
+      <div
+        role="alert"
+        aria-live="assertive"
+        className={`mt-6 rounded-2xl border border-red-400 bg-red-50 px-6 py-4 text-sm text-red-800 ${
+          submitError ? "" : "hidden"
+        }`}
+      >
+        <p className="mb-1 font-semibold">{t.form.errorTitle}</p>
+        <p className="mb-3">{submitError}</p>
+        <button
+          type="button"
+          onClick={() => setSubmitError(null)}
+          className="rounded-lg border border-red-400 bg-white px-3 py-1 text-xs font-medium text-red-700 transition hover:bg-red-100"
+        >
+          {t.form.dismissError}
+        </button>
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-[#2f4a62]">{t.form.revisionText}</p>
         <div className="flex gap-3">
@@ -356,9 +393,20 @@ export function ApplicationForm() {
           </button>
           <button
             type="submit"
-            className="inline-flex items-center justify-center rounded-xl bg-[#14263a] px-5 py-3 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a]"
+            disabled={submitting}
+            className="inline-flex items-center justify-center rounded-xl bg-[#14263a] px-5 py-3 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {t.form.enviar}
+            {submitting ? (
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                {t.form.enviando}
+              </span>
+            ) : (
+              t.form.enviar
+            )}
           </button>
         </div>
       </div>
