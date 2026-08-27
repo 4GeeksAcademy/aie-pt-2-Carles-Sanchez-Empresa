@@ -104,26 +104,33 @@ interface UserCreateResponse {
  * Devuelve el token.
  */
 export async function login(email: string, password: string): Promise<string> {
-  const res = await fetch(`${API_ORIGIN}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+  try {
+    const res = await fetch(`${API_ORIGIN}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-  if (!res.ok) {
-    let detail = `Error ${res.status}`;
-    try {
-      const body = await res.json();
-      detail = body.detail || detail;
-    } catch {
-      // ignore
+    if (!res.ok) {
+      let detail = `Error ${res.status}`;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+        console.warn("[auth] No se pudo parsear el cuerpo de error en login (código HTTP", res.status, ")");
+      }
+      throw new Error(detail);
     }
-    throw new Error(detail);
-  }
 
-  const data: LoginResponse = await res.json();
-  setToken(data.access_token);
-  return data.access_token;
+    const data: LoginResponse = await res.json();
+    setToken(data.access_token);
+    return data.access_token;
+  } catch (err) {
+    if (err instanceof TypeError && err.message === "Failed to fetch") {
+      throw new Error("No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.");
+    }
+    throw err;
+  }
 }
 
 /**
@@ -142,60 +149,74 @@ export async function register(data: {
   phone?: string;
   address?: string;
 }): Promise<string> {
-  // 1. Crear usuario
-  const registerPayload: Record<string, unknown> = {
-    email: data.email,
-    password: data.password,
-  };
-  if (data.name) registerPayload.name = data.name;
-  if (data.phone) registerPayload.phone = data.phone;
-  if (data.address) registerPayload.address = data.address;
+  try {
+    // 1. Crear usuario
+    const registerPayload: Record<string, unknown> = {
+      email: data.email,
+      password: data.password,
+    };
+    if (data.name) registerPayload.name = data.name;
+    if (data.phone) registerPayload.phone = data.phone;
+    if (data.address) registerPayload.address = data.address;
 
-  const regRes = await fetch(`${API_ORIGIN}/users`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(registerPayload),
-  });
+    const regRes = await fetch(`${API_ORIGIN}/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(registerPayload),
+    });
 
-  if (!regRes.ok) {
-    let detail = `Error ${regRes.status}`;
-    try {
-      const body = await regRes.json();
-      detail = body.detail || detail;
-    } catch {
-      // ignore
+    if (!regRes.ok) {
+      let detail = `Error ${regRes.status}`;
+      try {
+        const body = await regRes.json();
+        detail = body.detail || detail;
+      } catch {
+        console.warn("[auth] No se pudo parsear el cuerpo de error en register (código HTTP", regRes.status, ")");
+      }
+      throw new Error(detail);
     }
-    throw new Error(detail);
-  }
 
-  // 2. Login automático con las mismas credenciales
-  return login(data.email, data.password);
+    // 2. Login automático con las mismas credenciales
+    return login(data.email, data.password);
+  } catch (err) {
+    if (err instanceof TypeError && err.message === "Failed to fetch") {
+      throw new Error("No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.");
+    }
+    throw err;
+  }
 }
 
 /**
  * Obtiene la información del usuario autenticado: GET /auth/me.
  */
 export async function getAuthMe(): Promise<AuthMeResponse> {
-  const res = await fetch(`${API_ORIGIN}/auth/me`, {
-    headers: { ...getAuthHeaders() },
-  });
+  try {
+    const res = await fetch(`${API_ORIGIN}/auth/me`, {
+      headers: { ...getAuthHeaders() },
+    });
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      clearToken();
-      window.location.href = "/login?reason=session_expired";
+    if (!res.ok) {
+      if (res.status === 401) {
+        clearToken();
+        window.location.href = "/login?reason=session_expired";
+      }
+      let detail = `Error ${res.status}`;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+        console.warn("[auth] No se pudo parsear el cuerpo de error en getAuthMe (código HTTP", res.status, ")");
+      }
+      throw new Error(detail);
     }
-    let detail = `Error ${res.status}`;
-    try {
-      const body = await res.json();
-      detail = body.detail || detail;
-    } catch {
-      // ignore
+
+    return res.json();
+  } catch (err) {
+    if (err instanceof TypeError && err.message === "Failed to fetch") {
+      throw new Error("No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.");
     }
-    throw new Error(detail);
+    throw err;
   }
-
-  return res.json();
 }
 
 /**

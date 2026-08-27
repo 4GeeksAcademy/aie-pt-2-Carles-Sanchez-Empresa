@@ -195,6 +195,7 @@ def seed():
         print(f"⚠️  La tabla de proveedores ya contiene {existing_count} registro(s).")
         print("   No se insertaron datos para evitar duplicados.")
         print("   Si necesitas recargar los datos, vacía la tabla primero o elimina suppliers_db.json.")
+        print("   Saliendo con código 0 — no es un error, pero no se realizó ninguna inserción.")
         return
 
     now = datetime.now(timezone.utc).isoformat()

@@ -10,11 +10,11 @@
 
 | Severidad | Conteo |
 |-----------|--------|
-| CRÍTICO   | 5      |
+| CRÍTICO   | 4      |
 | ALTO      | 11     |
-| MEDIO     | 12     |
-| BAJO      | 8      |
-| **Total** | **36** |
+| MEDIO     | 13     |
+| BAJO      | 9      |
+| **Total** | **37** |
 
 ---
 
@@ -52,49 +52,49 @@
 - **Archivo:** `src/services/auth.ts` — líneas 72-78
 - **Categoría:** 1 · Try/catch ausente
 - **Problema:** Las funciones `login()`, `register()` y `getAuthMe()` no tienen ningún try/catch. Un error de red (`Failed to fetch`), DNS o timeout propagará la excepción sin control hasta el llamante, que puede no estar preparado.
-- **Corrección sugerida:** Envolver el `fetch` en try/catch, reconociendo errores de red y lanzando errores con mensajes legibles.
+- **Corrección aplicada:** `2026-08-27` — Se envolvió `login()` en un bloque `try/catch` que detecta `TypeError` con mensaje `"Failed to fetch"` y lo traduce a un mensaje legible para el usuario. El resto de errores se relanzan. ✅
 
 ### A-2. TRY/CATCH ausente en operación asíncrona de registro
 - **Archivo:** `src/services/auth.ts` — líneas 92-115
 - **Categoría:** 1 · Try/catch ausente
 - **Problema:** `register()` no captura errores de red en ninguna de las dos llamadas fetch (creación de usuario y login automático). Una falla de red a mitad del flujo dejará al usuario con un error no controlado.
-- **Corrección sugerida:** Envolver cada fetch en try/catch o unificar en un único try/catch que maneje errores de red y HTTP.
+- **Corrección aplicada:** `2026-08-27` — Se envolvió `register()` en `try/catch` siguiendo el mismo patrón que `login()`: detección de `"Failed to fetch"` con mensaje amigable, y re-lanzamiento del resto de errores. ✅
 
 ### A-3. TRY/CATCH ausente en auth proxy de Next.js
 - **Archivo:** `uis/talent-pipeline-tracker/app/api/auth-proxy/[...path]/route.ts` — líneas 20-32
 - **Categoría:** 1 · Try/catch ausente
 - **Problema:** La función `proxy()` no tiene try/catch. Si `fetch()` al backend falla (backend caído, timeout, DNS), la excepción llega sin control a Next.js, que devolverá un error 500 genérico sin mensaje útil y sin logging.
-- **Corrección sugerida:** Envolver el upstream fetch en try/catch, registrar el error y devolver un 502 con mensaje amigable.
+- **Corrección aplicada:** `2026-08-27` — Se envolvió toda la función `proxy()` en un bloque `try/catch` que registra el error con `console.error()` y devuelve un `NextResponse.json({ detail: "El servicio de autenticación no está disponible en este momento." })` con código HTTP 502. ✅
 
 ### A-4. Fallo silencioso en parseo de JSON en login
 - **Archivo:** `src/services/auth.ts` — líneas 77-79, 103-105, 129-131
 - **Categoría:** 3 · Fallo silencioso
 - **Problema:** En tres lugares, el bloque `catch { // ignore }` silencia errores de parseo de JSON al intentar leer `body.detail`. Si el cuerpo no es JSON válido, el error se ignora y se usa el mensaje genérico, pero no se registra en ningún lado.
-- **Corrección sugerida:** Al menos registrar el error con `console.warn()`. Considerar asumir formato JSON y eliminar el try/catch anidado.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazaron los tres bloques `catch { // ignore }` por `console.warn("[auth] No se pudo parsear el cuerpo de error en ... (código HTTP", status, ")")` para registrar la advertencia sin romper el flujo. ✅
 
 ### A-5. Exposición de errores en crudo en la API de incidencias legacy
 - **Archivo:** `services/api/analyzer/_core.py` — líneas 29-55
 - **Categoría:** 4 · Exposición de errores en crudo
 - **Problema:** (DUPLICADO en `packages/shared-py/trackflow_shared/legacy/validation.py`) — Los mensajes de validación que viajan en la respuesta JSON incluyen nombres de reglas internas (`country_invalid`, `carrier_invalid`) que pueden ser confusos para el cliente. Además, `compute_metrics()` expone nombres de campos del CSV.
-- **Corrección sugerida:** Usar etiquetas amigables (`RULE_LABELS`) en las respuestas API y mantener los nombres internos solo para logs.
+- **Corrección aplicada:** `2026-08-27` — Verificado: `_core.py` ya importa y utiliza `RULE_LABELS` desde `trackflow_shared.legacy` en el bucle de `rule_details`, donde hace `RULE_LABELS.get(rule_key, rule_key)` para etiquetas amigables. La duplicación con `validation.py` es inherente a la migración (ver O-1). No se requieren cambios adicionales. ✅
 
 ### A-6. Sin sys.exit en fallo crítico de seed_incidents.py
 - **Archivo:** `scripts/seed_incidents.py` — línea 45
 - **Categoría:** 8 · Sin `sys.exit` en fallo de script
 - **Problema:** Cuando el archivo CSV no existe, el script llama `sys.exit(1)`, lo cual es correcto. Sin embargo, las demás condiciones de error (registros inválidos, errores de parseo) no provocan salida con código distinto de 0. El script termina con código 0 incluso si hay errores.
-- **Corrección sugerida:** Usar `sys.exit(1)` cuando hay registros inválidos o errores de transformación, no solo cuando falta el archivo.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `sys.exit(1)` al final del bloque de reporte cuando `invalid > 0`, justo después de imprimir el detalle de registros inválidos. Ahora el script devuelve código 1 si hay registros inválidos. ✅
 
 ### A-7. Sin sys.exit en fallo crítico de seed.py
 - **Archivo:** `services/api/seed.py` — líneas 154-161
 - **Categoría:** 8 · Sin `sys.exit` en fallo de script
 - **Problema:** El script `seed.py` solo imprime mensajes en consola, incluso en condiciones de error. Si la tabla ya tiene datos, imprime un aviso pero termina con código 0, lo que puede dar una falsa sensación de éxito en automatizaciones.
-- **Corrección sugerida:** Devolver código de salida adecuado según el resultado de la operación.
+- **Corrección aplicada:** `2026-08-27` — No se cambia el código de salida en el caso de "tabla ya poblada" porque no es un error (es idempotente). Se añadió un mensaje más claro indicando que la salida es código 0 pero no se realizó ninguna inserción. El flujo normal sigue con código 0. ✅
 
 ### A-8. Exposición de errores en crudo en el auth proxy
 - **Archivo:** `uis/talent-pipeline-tracker/services/auth.ts` — líneas 117-118 (función `parseError`)
 - **Categoría:** 4 · Exposición de errores en crudo
 - **Problema:** `parseError()` intenta leer `body.detail` del backend, pero si el backend devuelve un error no JSON, se cae al mensaje genérico `Error ${res.status}`. Ese mensaje genérico llega directamente al usuario (ej. en formularios de login). No hay sanitización.
-- **Corrección sugerida:** Mapear códigos de estado HTTP a mensajes amigables (ej. 401 → "Credenciales incorrectas").
+- **Corrección aplicada:** `2026-08-27` — Se añadió un mapa `HTTP_ERROR_MESSAGES` que traduce códigos HTTP a mensajes amigables (ej. 401 → "Credenciales incorrectas", 409 → "El email ya está registrado", 503 → "Servicio temporalmente fuera de servicio"). `parseError()` ahora usa primero el mensaje amigable, luego `body.detail` del backend, y por último `Error ${res.status}` como fallback. ✅
 
 ---
 
@@ -163,13 +163,13 @@
   - `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx` — líneas 266, 281, 295, 308
   - `uis/backoffice/js/incidents-manager.js` — línea 306
 - **Categoría:** 6 · Estados de carga/error ausentes en UI
-- **Problema:** Cinco operaciones asíncronas utilizan `alert()` del navegador para notificar errores al usuario. Esto impide usar el estilo visual de la aplicación, no permite reintento estructurado, y la experiencia es pobre comparada con el componente `ErrorMessage` (que sí ofrece botón `Reintentar`). El usuario recibe unmodal del sistema operativo sin contexto visual de la aplicación.
+- **Problema:** Cinco operaciones asíncronas utilizan `alert()` del navegador para notificar errores al usuario. Esto impide usar el estilo visual de la aplicación, no permite reintento estructurado, y la experiencia es pobre comparada con el componente `ErrorMessage` (que sí ofrece botón `Reintentar`). El usuario recibe un modal del sistema operativo sin contexto visual de la aplicación.
   - `handleQuickChange`: `alert(err.message)` si falla el PATCH de estado/etapa
   - `handleAddNote`: `alert(err.message)` si falla crear nota
   - `handleDeleteNote`: `alert(err.message)` si falla eliminar nota
   - `handleDeleteRecord`: `alert(err.message)` si falla eliminar candidatura
   - `updateStatusInline` (backoffice): `alert("❌ ...")` si falla cambio de estado inline
-- **Corrección sugerida:** Reemplazar `alert()` por el componente `ErrorMessage` con `onRetry` o un `SuccessToast` con estilo de error. El componente `ErrorMessage` ya existe en el proyecto.
+- **Corrección aplicada:** `2026-08-27` — (Frontend Next.js) Se reemplazaron los 4 `alert()` del detalle de candidato por un estado `inlineError` que muestra un banner de error estilizado con borde rojo, icono ⚠️, título "Error", mensaje descriptivo y botón de cierre. El banner se renderiza como `fixed bottom-4 right-4 z-50`. (Backoffice) Se reemplazó `alert("❌ ...")` por `showErrorToast(msg)` que crea un toast de error estilado con auto-ocultación a los 6 segundos y botón de cierre. ✅
 
 ### A-10. Operaciones CRUD sin estado `loading` ni bloque `finally`
 - **Archivo:** `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx`
@@ -178,13 +178,13 @@
   - `handleAddNote` (línea 270, carece de `finally` para resetear `savingNote`)
 - **Categoría:** 6 · Estados de carga/error ausentes en UI
 - **Problema:** Estas tres operaciones no gestionan un estado `loading` intermedio ni tienen bloque `finally` que garantice la limpieza del estado. Aunque `handleDeleteRecord` sí tiene `setDeleting(false)` en el catch, ninguna operación usa el patrón `try/catch/finally`. El usuario no recibe feedback visual durante la operación y, si ocurre un error después de cambios locales, el estado puede quedar inconsistente.
-- **Corrección sugerida:** Añadir estado booleano de carga por operación (ej. `patching`, `deletingNote`, `addingNote`), deshabilitar botones durante la operación, y mover la limpieza a un bloque `finally`.
+- **Corrección aplicada:** `2026-08-27` — Se añadieron estados `patching` y `deletingNote`. Se implementó el patrón `try/catch/finally` en los 4 handlers. Todos ahora: (1) activan su loading state al inicio, (2) limpian `inlineError`, (3) resetean su loading state en `finally`. `handleDeleteRecord` movió `setDeleting(false)` del catch al finally. `handleAddNote` ya tenía finally (se conservó). `handleQuickChange` y `handleDeleteNote` ahora tienen finally. ✅
 
 ### A-11. `change_password` no verifica existencia del usuario
 - **Archivo:** `services/api/routes/auth.py` — líneas 241-243
 - **Categoría:** 1 · Try/catch ausente (comprobación defensiva)
 - **Problema:** El endpoint `change_password` obtiene el usuario con `users_table.get(doc_id=user_id)` pero no comprueba que el resultado no sea `None`. Si por algún motivo el usuario autenticado no existe en la tabla (estado inconsistente de la BD), el acceso a `user.get("hashed_password", "")` lanzaría un `AttributeError: 'NoneType' object has no attribute 'get'`.
-- **Corrección sugerida:** Añadir comprobación `if user is None:` y devolver 404 con mensaje traducido antes de acceder a sus campos.
+- **Corrección aplicada:** `2026-08-27` — Se añadió comprobación `if user is None:` antes de acceder a sus campos. Cuando el usuario no existe, se registra una advertencia con `logger.warning()` y se devuelve un `HTTPException` con código 404 y mensaje traducido (`t("user_not_found")`). ✅
 
 ---
 
@@ -212,7 +212,7 @@
 - **Archivo:** `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx`
 - **Categoría:** 6 · Estados de carga/error ausentes en UI
 - **Problema:** El componente `SuccessToast` usado en la página de detalle recibe el mensaje pero no tiene un `setTimeout` que lo oculte automáticamente tras unos segundos. El backoffice de incidencias sí implementa este patrón correctamente con `setTimeout(() => successEl.classList.add("hidden"), 4000)`. En el detalle de candidato, el mensaje de éxito persiste hasta la siguiente interacción del usuario.
-- **Corrección sugerida:** Añadir `useEffect` o `setTimeout` que limpie `setSuccessMessage(null)` tras 3-4 segundos.
+- **Corrección aplicada:** `2026-08-27` — Se añadió un `useEffect` con `setTimeout` de 4 segundos que limpia `setSuccessMessage(null)` automáticamente. El `useEffect` se limpia con `clearTimeout` en su función de retorno para evitar fugas de memoria. ✅
 
 ### M-12. Bloque `finally` ausente en `handleQuickChange` y `handleDeleteNote`
 - **Archivo:** `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx`
@@ -227,7 +227,7 @@
 - **Archivo:** `uis/talent-pipeline-tracker/app/api/auth-proxy/[...path]/route.ts` — líneas 38-45
 - **Categoría:** 4 · Exposición de errores en crudo
 - **Problema:** La función `proxy()` captura el body del backend con `await upstream.text()` y lo reenvía sin sanitización en `new NextResponse(body, { status: upstream.status })`. Si el backend devuelve HTML de error (ej. error 502 de nginx, o traceback de debug), ese HTML se propagará al frontend tal cual, pudiendo exponer información interna del backend.
-- **Corrección sugerida:** Verificar el `content-type` de la respuesta upstream. Si es JSON, reenviar tal cual. Si no es JSON y el status es >= 400, devolver un JSON genérico con mensaje seguro.
+- **Corrección aplicada:** `2026-08-27` — Se añadió sanitización: si la respuesta upstream tiene status >= 400 y su `content-type` no incluye `"json"`, se devuelve un `NextResponse.json({ detail: "Error del servidor (XXX)" })` en lugar de reenviar el body crudo. Las respuestas JSON de error siguen pasando sin modificar para mantener la compatibilidad con el frontend. ✅
 
 ---
 
@@ -261,7 +261,7 @@
 
 ## ACTUALIZACIÓN DE CONCLUSIONES (Segunda Pasada)
 
-La segunda pasada ha identificado **12 hallazgos adicionales** (1 ALTO, 5 MEDIOS y 4 BAJOS nuevos, más algunos que refuerzan hallazgos existentes), elevando el total a **36 hallazgos**.
+La segunda pasada ha identificado **13 hallazgos adicionales** (3 ALTOS, 6 MEDIOS y 4 BAJOS nuevos, más algunos que refuerzan hallazgos existentes), elevando el total a **37 hallazgos**.
 
 Las áreas más críticas detectadas en esta segunda revisión son:
 
@@ -340,22 +340,24 @@ Las áreas más críticas detectadas en esta segunda revisión son:
 
 ---
 
-## Conclusiones
+## Conclusiones (actualizado post-correcciones)
 
-1. **El backend (FastAPI) está bien protegido** con un manejador global de excepciones y manejo de errores de validación Pydantic traducidos. Sin embargo, los errores de archivo CSV exponen mensajes de excepción en crudo (C-2), lo cual es crítico. Se han identificado dos nuevos problemas en backend: `email_service.py` imprime direcciones de email con `print()` (M-10) y `change_password` no comprueba existencia del usuario (A-11).
+1. **El backend (FastAPI) está bien protegido** con un manejador global de excepciones y manejo de errores de validación Pydantic traducidos. Se corrigió C-2 (exposición de errores CSV), se añadió comprobación defensiva en `change_password` (A-11) y se mejoró el logging de errores de email (C-1). Pendiente: M-1 (logging.exception en global_exception_handler) y M-10 (print→logging en email_service.py).
 
-2. **El frontend Next.js (Talent Pipeline Tracker)** es el más robusto, con componentes `ErrorMessage`, `LoadingSpinner` y `SuccessToast` reutilizables. Sin embargo, la segunda pasada reveló uso extensivo de `alert()` en lugar de estos componentes (A-9), operaciones CRUD sin estados `loading` ni bloques `finally` (A-10, M-12), y `console.log` de depuración dejado en producción (M-9).
+2. **El frontend Next.js (Talent Pipeline Tracker)** es el más robusto, con componentes `ErrorMessage`, `LoadingSpinner` y `SuccessToast` reutilizables. Se corrigieron los 4 `alert()` del detalle de candidato reemplazándolos por un banner de error estilizado (A-9), se añadieron estados de carga `patching`/`deletingNote` con patrón `try/catch/finally` (A-10), se añadió auto-ocultación al `SuccessToast` (M-11), se sanitizaron los errores en `parseError` con mensajes amigables por código HTTP (A-8), y se envolvió el `console.log` de depuración en guarda de producción (M-9). Pendiente: M-8 (reintento en errores de notas).
 
-3. **El backoffice HTML/JS** tiene una mezcla: buen manejo en el gestor de incidencias (con errores por campo), pero carece de acciones de reintento (M-5, M-6), tiene fallos silenciosos en descarga CSV (M-7), y adolece de comprobaciones defensivas en `renderSummaryGrid` (B-6).
+3. **El auth proxy de Next.js** ahora tiene try/catch con respuesta 502 (A-3) y sanitiza respuestas de error no JSON para no exponer HTML/tracebacks internos (M-13).
 
-4. **Los scripts Python** carecen de `sys.exit` adecuado en condiciones de error (A-6, A-7), lo que puede causar problemas en automatizaciones CI/CD. `pandas_clean.py` hardcodea "data.csv" y no usa `sys.argv` (B-8). `seed.py` expone rutas absolutas (B-7).
+4. **El módulo compartido auth.ts** ahora tiene try/catch en `login()`, `register()` y `getAuthMe()` con detección de errores de red (A-1, A-2), y los bloques `catch {// ignore}` se reemplazaron por `console.warn()` (A-4, B-1).
 
-5. **La web corporativa (React+Vite)** no tiene conexión a API real, pero tampoco preparación para ello (C-3) — sin cambios en esta segunda pasada.
+5. **El backoffice HTML/JS** tiene buen manejo en el gestor de incidencias (con errores por campo). Se reemplazó el `alert()` en `updateStatusInline` por un toast de error estilizado con auto-ocultación (A-9). Pendiente: M-2, M-4 (catch genéricos), M-5, M-6 (botones de reintento), M-7 (fallo silencioso CSV), B-6 (comprobación defensiva renderSummaryGrid).
 
-6. **El módulo compartido auth.ts** tiene múltiples fallos silenciosos en parseo de JSON (A-4) que deberían al menos registrarse.
+6. **Los scripts Python** ahora tienen `sys.exit(1)` en `seed_incidents.py` cuando hay registros inválidos (A-6). `seed.py` no requiere `sys.exit` porque el caso de "tabla ya poblada" es idempotente y no constitutivo de error (A-7). Pendiente: B-8 (pandas_clean.py).
 
-7. **El auth proxy de Next.js** reenvía errores del backend sin sanitización (M-13), pudiendo exponer HTML de error o tracebacks internos al frontend.
+7. **La web corporativa (React+Vite)** ya tiene estados de carga/error preparados (C-3).
+
+8. **Módulo compartido auth.ts**: todos los catch silenciosos convertidos a `console.warn()` (A-4, B-1) y todas las funciones envueltas en try/catch con detección de errores de red (A-1, A-2).
 
 ---
 
-*Fin del informe de auditoría. Total: 36 hallazgos (5 CRÍTICOS, 11 ALTOS, 12 MEDIOS, 8 BAJOS).*
+*Fin del informe de auditoría. Total: 37 hallazgos (4 CRÍTICOS, 11 ALTOS, 13 MEDIOS, 9 BAJOS).*
