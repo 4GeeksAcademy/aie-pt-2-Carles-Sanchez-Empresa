@@ -36,7 +36,7 @@
 - **Archivo:** `uis/website/src/components/application/ApplicationForm.tsx` — líneas 163-173
 - **Categoría:** 6 · Estados de carga/error ausentes en UI
 - **Problema:** `handleSubmit` llama a `validateApplicationForm()` y muestra errores de validación locales, pero NO hay ninguna llamada a una API real. No hay estado de carga (`loading`), ni manejo de errores de red. Si en el futuro se conecta a un backend, la UI no tendrá protección contra errores.
-- **Corrección sugerida:** Añadir estados `loading` y `error` con renderizado condicional, y envolver la lógica asíncrona en try/catch.
+- **Corrección aplicada:** `2026-08-27` — Se añadieron estados `submitting` (booleano) y `submitError` (string | null) en el componente. El `handleSubmit` se volvió `async` con patrón `try/catch/finally`. Durante el envío, el botón se deshabilita (`disabled`) con opacidad reducida y muestra un spinner SVG animado + texto "Enviando…". Si ocurre un error, se muestra un banner con borde rojo, título descriptivo, mensaje del error y botón "Descartar". Se añadieron 4 nuevas claves de traducción (`enviando`, `errorTitle`, `errorUnexpected`, `dismissError`) en `es.ts` y `en.ts`. La función `clearForm` también resetea `submitError`. ✅
 
 ### C-4. Filtración de datos sensibles en log de errores de API
 - **Archivo:** `uis/talent-pipeline-tracker/services/api.ts` — líneas 49-50
