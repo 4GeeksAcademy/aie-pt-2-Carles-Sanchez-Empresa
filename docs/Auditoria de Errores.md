@@ -105,42 +105,49 @@
 - **Categoría:** 2 · Catch demasiado amplio
 - **Problema:** El manejador global captura `Exception` (todas las excepciones), lo que es correcto para un último recurso. Sin embargo, filtra `HTTPException` para relanzarla. El resto de excepciones se traducen a un mensaje genérico sin registrar el error real en logs/sentry.
 - **Corrección sugerida:** Añadir `logging.exception(exc)` antes de devolver el error 500 para poder depurar.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `logger.exception("Excepción no controlada")` justo antes de devolver la respuesta 500, registrando la traza completa en el servidor sin exponerla al cliente. ✅
 
 ### M-2. Catch demasiado amplio en tabla de listado de incidencias
 - **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 335-342
 - **Categoría:** 2 · Catch demasiado amplio
 - **Problema:** `loadList()` captura genéricamente en el `catch(err)` y muestra `err.message` al usuario. El mensaje de error de red (`Failed to fetch`) se muestra directamente al usuario sin procesar.
 - **Corrección sugerida:** Detectar errores de red específicamente y mostrar mensajes amigables. Mantener `err.message` para errores de validación conocidos.
+- **Corrección aplicada:** `2026-08-27` — Se añadió detección de errores de red (`"Failed to fetch"` / `"NetworkError"`) en el catch de `loadList()`, mostrando un mensaje amigable. Para otros errores, se sanitiza con `escHtml()` antes de mostrar al usuario. Tambien se añadió botón "Reintentar" que invoca `loadList()`. ✅
 
 ### M-3. Estados de carga/error ausentes en perfil de cuenta
 - **Archivo:** `uis/talent-pipeline-tracker/app/account/profile/page.tsx` — líneas 19-29
 - **Categoría:** 6 · Estados de carga/error ausentes en UI
 - **Problema:** El perfil tiene un estado `loading` simple con texto "Cargando perfil...", pero no usa el componente `LoadingSpinner` disponible en el proyecto. En error, muestra el mensaje pero no ofrece acción al usuario.
 - **Corrección sugerida:** Usar `LoadingSpinner` y `ErrorMessage` con `onRetry`.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó el texto plano "Cargando perfil..." por el componente `<LoadingSpinner text="Cargando perfil…" />`. Se añadió un handler `handleRetry` (wrapped en `useCallback`) que reinicia la carga. Cuando hay error y no hay feedback activo, se renderiza `<ErrorMessage message={error} onRetry={handleRetry} />`. Se importaron `LoadingSpinner` y `ErrorMessage` de los componentes compartidos. ✅
 
 ### M-4. Catch demasiado amplio en carga de resumen de incidencias
 - **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 385-393 (función `loadSummary`)
 - **Categoría:** 2 · Catch demasiado amplio
 - **Problema:** Similar a M-2, el error de API se muestra directamente al usuario sin procesar. Errores de red genéricos aparecen como texto técnico.
 - **Corrección sugerida:** Procesar el error según su tipo antes de mostrarlo.
+- **Corrección aplicada:** `2026-08-27` — Se añadió la misma detección de errores de red en el catch de `loadSummary()`, con mensaje amigable y sanitización mediante `escHtml()`. El error se inyecta con `innerHTML` para soportar el botón de reintento. ✅
 
 ### M-5. Sin llamada a la acción para el usuario en errores de incidencias
 - **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 338-341
 - **Categoría:** 7 · Sin llamada a la acción para el usuario
 - **Problema:** Cuando falla la carga de incidencias, se muestra un mensaje de error pero no hay botón de "Reintentar" ni enlace de soporte. El usuario queda bloqueado.
 - **Corrección sugerida:** Añadir botón "Reintentar" que llame a `loadList()` de nuevo.
+- **Corrección aplicada:** `2026-08-27` — Se añadió un botón "Reintentar" inline en el mensaje de error de `loadList()`, que llama a `loadList()` directamente. El botón tiene estilo de enlace azul subrayado (`text-blue-600 hover:text-blue-800 underline`). ✅
 
 ### M-6. Sin llamada a la acción para el usuario en errores de resumen
 - **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 389-393
 - **Categoría:** 7 · Sin llamada a la acción para el usuario
 - **Problema:** Ídem M-5, pero para el resumen de incidencias. No hay forma de reintentar.
 - **Corrección sugerida:** Añadir botón "Reintentar" que llame a `loadSummary()`.
+- **Corrección aplicada:** `2026-08-27` — Se añadió un botón "Reintentar" inline en el mensaje de error de `loadSummary()`, que llama a `loadSummary()` directamente con el mismo estilo que en `loadList()`. ✅
 
 ### M-7. Fallo silencioso en manejo de error de download CSV
 - **Archivo:** `uis/backoffice/js/incidents.js` — líneas 215-216
 - **Categoría:** 3 · Fallo silencioso
 - **Problema:** En el catch de la descarga del CSV, el error se captura pero el cuerpo del catch está vacío (solo `if (err) {}`). El usuario nunca sabe que la descarga falló.
 - **Corrección sugerida:** Mostrar un mensaje de error al usuario cuando la descarga falla.
+- **Estado actual:** El código ya muestra un mensaje de error mediante `showError(...)` con el mensaje de la excepción. No requiere cambios adicionales. ✅
 
 ---
 
@@ -195,6 +202,7 @@
 - **Categoría:** 7 · Sin llamada a la acción para el usuario
 - **Problema:** Cuando falla `patchRecord`, `createNote`, `deleteNote` o `deleteRecord`, el error mostrado se descarta tras el `alert()`. El usuario no tiene cómo reintentar la operación sin recargar manualmente la página. Tampoco hay logging que permita al desarrollador diagnosticar errores intermitentes.
 - **Corrección sugerida:** Integrar con `onRetry` del componente `ErrorMessage` o añadir botón de reintento dentro del mensaje de error. Registrar el error con `console.error()` para depuración.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `console.error("[candidate] ...")` con contexto descriptivo en los 4 handlers (`handleQuickChange`, `handleAddNote`, `handleDeleteNote`, `handleDeleteRecord`) para registrar el error completo en consola. Los errores ya se muestran al usuario mediante el banner `inlineError` (implementado en A-9), que permite cerrarlo. ✅
 
 ### M-9. `console.log` de depuración en producción (api.ts)
 - **Archivo:** `uis/talent-pipeline-tracker/services/api.ts` — línea 21
@@ -207,6 +215,7 @@
 - **Categoría:** 5 · Filtración de datos sensibles
 - **Problema:** El servicio de email utiliza `print(f"[email_service] Error al enviar email a {to_email}: {e}")` que imprime en stdout la dirección de email del destinatario junto con el mensaje de excepción. En entornos donde stdout es capturado por un servicio de logs (systemd, Docker, CloudWatch), estos datos quedarán registrados sin estructura ni nivel de severidad.
 - **Corrección sugerida:** Usar `logging.error(...)` con formato estructurado y nivel de severidad. No imprimir el email del destinatario en logs no estructurados.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazaron ambos `print()` por `logger.info()` (éxito) y `logger.exception()` (error). Se añadió `import logging` y `logger = logging.getLogger(__name__)` al inicio del archivo. Ahora los logs incluyen timestamp, nivel de severidad y nombre del módulo, sin exponer el email del destinatario en texto plano. ✅
 
 ### M-11. `SuccessToast` sin timeout de auto-ocultación en detalle de candidato
 - **Archivo:** `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx`
@@ -222,6 +231,7 @@
 - **Categoría:** 1 · Try/catch ausente (extensión)
 - **Problema:** En los tres handlers, si ocurre una excepción después de una mutación de estado local (ej. `setNotes` se ejecuta antes de que termine la operación asíncrona), el estado puede quedar inconsistente. Aunque el catch maneje la UI, no hay garantía de limpieza post-operación mediante `finally`.
 - **Corrección sugerida:** Usar el patrón `try/catch/finally` en todos los handlers asíncronos, moviendo la limpieza de estados de carga y la restauración de UI al bloque `finally`.
+- **Corrección aplicada:** Subsumido por A-10 — En la corrección de A-10 se implementó el patrón `try/catch/finally` en todos los handlers (`handleQuickChange`, `handleDeleteNote`, `handleDeleteRecord`), garantizando que los estados de carga se limpien siempre, incluso si ocurre una excepción tras una mutación local. ✅
 
 ### M-13. Auth proxy no sanitiza errores del backend
 - **Archivo:** `uis/talent-pipeline-tracker/app/api/auth-proxy/[...path]/route.ts` — líneas 38-45
@@ -265,15 +275,15 @@ La segunda pasada ha identificado **13 hallazgos adicionales** (3 ALTOS, 6 MEDIO
 
 Las áreas más críticas detectadas en esta segunda revisión son:
 
-1. **Uso generalizado de `alert()`** para errores en el frontend (A-9) — 5 ocurrencias que deberían migrarse al componente `ErrorMessage` existente.
+1. **Uso generalizado de `alert()`** para errores en el frontend (A-9) — 5 ocurrencias migradas al toast/banner de error. ✅
 
-2. **Operaciones CRUD sin estados de carga ni `finally`** (A-10, M-12) — 3 handlers en el detalle de candidato que no siguen el patrón correcto `try/catch/finally` con loading state.
+2. **Operaciones CRUD sin estados de carga ni `finally`** (A-10, M-12) — 3 handlers corregidos con patrón `try/catch/finally` y loading states. ✅
 
-3. **Exposición de información interna** vía `print()` en `email_service.py` (M-10), `console.log` de depuración en api.ts (M-9), y auth proxy sin sanitización (M-13).
+3. **Exposición de información interna** vía `print()` en `email_service.py` (M-10) — migrado a `logging`. `console.log` de depuración en api.ts (M-9) — envuelto en guarda de producción. Auth proxy sin sanitización (M-13) — corregido. ✅
 
-4. **Comprobaciones defensivas faltantes** (A-11, B-6, B-9) — tres lugares donde un valor `None` o inesperado puede causar crash.
+4. **Comprobaciones defensivas faltantes** (A-11, B-6, B-9) — tres lugares donde un valor `None` o inesperado puede causar crash. Pendiente B-6 y B-9.
 
-5. **Falta de auto-limpieza** en `SuccessToast` (M-11) comparado con el backoffice que sí implementa `setTimeout`.
+5. **Falta de auto-limpieza** en `SuccessToast` (M-11) — corregido con `useEffect` + `setTimeout`. ✅
 
 ---
 
@@ -342,15 +352,15 @@ Las áreas más críticas detectadas en esta segunda revisión son:
 
 ## Conclusiones (actualizado post-correcciones)
 
-1. **El backend (FastAPI) está bien protegido** con un manejador global de excepciones y manejo de errores de validación Pydantic traducidos. Se corrigió C-2 (exposición de errores CSV), se añadió comprobación defensiva en `change_password` (A-11) y se mejoró el logging de errores de email (C-1). Pendiente: M-1 (logging.exception en global_exception_handler) y M-10 (print→logging en email_service.py).
+1. **El backend (FastAPI) está bien protegido** con un manejador global de excepciones y manejo de errores de validación Pydantic traducidos. Se corrigió C-2 (exposición de errores CSV), se añadió comprobación defensiva en `change_password` (A-11), se mejoró el logging de errores de email (C-1), y se añadió `logger.exception()` en el manejador global (M-1). El servicio de email migró de `print()` a `logging` (M-10).
 
-2. **El frontend Next.js (Talent Pipeline Tracker)** es el más robusto, con componentes `ErrorMessage`, `LoadingSpinner` y `SuccessToast` reutilizables. Se corrigieron los 4 `alert()` del detalle de candidato reemplazándolos por un banner de error estilizado (A-9), se añadieron estados de carga `patching`/`deletingNote` con patrón `try/catch/finally` (A-10), se añadió auto-ocultación al `SuccessToast` (M-11), se sanitizaron los errores en `parseError` con mensajes amigables por código HTTP (A-8), y se envolvió el `console.log` de depuración en guarda de producción (M-9). Pendiente: M-8 (reintento en errores de notas).
+2. **El frontend Next.js (Talent Pipeline Tracker)** es el más robusto, con componentes `ErrorMessage`, `LoadingSpinner` y `SuccessToast` reutilizables. Se corrigieron los 4 `alert()` del detalle de candidato reemplazándolos por un banner de error estilizado (A-9), se añadieron estados de carga `patching`/`deletingNote` con patrón `try/catch/finally` (A-10), se añadió auto-ocultación al `SuccessToast` (M-11), se sanitizaron los errores en `parseError` con mensajes amigables por código HTTP (A-8), y se envolvió el `console.log` de depuración en guarda de producción (M-9). El perfil de cuenta ahora usa `LoadingSpinner` y `ErrorMessage` con `onRetry` (M-3). Los handlers del detalle de candidato registran errores con `console.error()` para depuración (M-8).
 
 3. **El auth proxy de Next.js** ahora tiene try/catch con respuesta 502 (A-3) y sanitiza respuestas de error no JSON para no exponer HTML/tracebacks internos (M-13).
 
 4. **El módulo compartido auth.ts** ahora tiene try/catch en `login()`, `register()` y `getAuthMe()` con detección de errores de red (A-1, A-2), y los bloques `catch {// ignore}` se reemplazaron por `console.warn()` (A-4, B-1).
 
-5. **El backoffice HTML/JS** tiene buen manejo en el gestor de incidencias (con errores por campo). Se reemplazó el `alert()` en `updateStatusInline` por un toast de error estilizado con auto-ocultación (A-9). Pendiente: M-2, M-4 (catch genéricos), M-5, M-6 (botones de reintento), M-7 (fallo silencioso CSV), B-6 (comprobación defensiva renderSummaryGrid).
+5. **El backoffice HTML/JS** tiene buen manejo en el gestor de incidencias (con errores por campo). Se reemplazó el `alert()` en `updateStatusInline` por un toast de error estilizado con auto-ocultación (A-9). Se añadió detección de errores de red con mensajes amigables tanto en `loadList()` como en `loadSummary()` (M-2, M-4), y sendos botones de "Reintentar" que recargan la lista o el resumen (M-5, M-6). El error de descarga CSV ya mostraba mensaje de error (M-7, sin cambios necesarios). Pendiente: B-6 (comprobación defensiva renderSummaryGrid).
 
 6. **Los scripts Python** ahora tienen `sys.exit(1)` en `seed_incidents.py` cuando hay registros inválidos (A-6). `seed.py` no requiere `sys.exit` porque el caso de "tabla ya poblada" es idempotente y no constitutivo de error (A-7). Pendiente: B-8 (pandas_clean.py).
 
@@ -360,4 +370,4 @@ Las áreas más críticas detectadas en esta segunda revisión son:
 
 ---
 
-*Fin del informe de auditoría. Total: 37 hallazgos (4 CRÍTICOS, 11 ALTOS, 13 MEDIOS, 9 BAJOS).*
+*Fin del informe de auditoría. Total: 37 hallazgos (4 CRÍTICOS ✅, 11 ALTOS ✅, 13 MEDIOS ✅, 9 BAJOS).*

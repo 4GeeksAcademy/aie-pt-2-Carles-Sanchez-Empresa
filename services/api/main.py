@@ -81,6 +81,8 @@ async def global_exception_handler(request: Request, exc: Exception):
             content={"detail": exc.detail},
         )
 
+    logger.exception("Excepción no controlada")
+
     t = get_translator(get_language_from_request(request))
     return JSONResponse(
         status_code=500,

@@ -407,7 +407,16 @@ async function loadList() {
 
     wrapper.classList.remove("hidden");
   } catch (err) {
-    errorEl.textContent = `❌ Error al cargar incidencias: ${err.message}`;
+    let friendlyMsg = err.message;
+    if (friendlyMsg === "Failed to fetch" || friendlyMsg.includes("NetworkError")) {
+      friendlyMsg = window.__ ? window.__('incmgr.error_network') : "No se pudo conectar con el servidor. Verifica tu conexión.";
+    }
+    errorEl.innerHTML = `
+      ❌ Error al cargar incidencias: ${escHtml(friendlyMsg)}
+      <button onclick="loadList()" class="ml-3 text-sm font-medium text-blue-600 hover:text-blue-800 underline">
+        Reintentar
+      </button>
+    `;
     errorEl.classList.remove("hidden");
   } finally {
     loadingEl.classList.add("hidden");
@@ -450,7 +459,15 @@ async function loadSummary() {
 
     content.classList.remove("hidden");
   } catch (err) {
-    errorEl.textContent = `❌ ${window.__ ? window.__('incmgr.error_load_summary') : 'Error al cargar resumen'}: ${err.message}`;
+    let friendlyMsg = err.message;
+    if (friendlyMsg === "Failed to fetch" || friendlyMsg.includes("NetworkError")) {
+      friendlyMsg = window.__ ? window.__('incmgr.error_network') : "No se pudo conectar con el servidor. Verifica tu conexión.";
+    }
+    errorEl.innerHTML = `❌ ${window.__ ? window.__('incmgr.error_load_summary') : 'Error al cargar resumen'}: ${escHtml(friendlyMsg)}
+      <button onclick="loadSummary()" class="ml-3 text-sm font-medium text-blue-600 hover:text-blue-800 underline">
+        Reintentar
+      </button>
+    `;
     errorEl.classList.remove("hidden");
   } finally {
     loadingEl.classList.add("hidden");
