@@ -111,6 +111,8 @@ async def get_summary():
     by_branch: dict[str, int] = {}
 
     for doc in docs:
+        if not isinstance(doc, dict):
+            continue
         s = doc.get("status", "unknown")
         by_status[s] = by_status.get(s, 0) + 1
 

@@ -343,3 +343,24 @@
 - [x] `GET /api/incidents/9999` → **404** "No se encontró la incidencia con id 9999"
 - [x] `POST /api/incidents` con datos válidos → **201** creada
 - [x] `POST /api/incidents` con datos inválidos (title vacío, desc corta, categoría inválida) → **422** con errores por campo
+
+---
+
+### 🔍 Auditoría de Gestión de Errores — `docs/Auditoria de Errores.md`
+- [x] Auditoría completa del repositorio (src/, services/api/, uis/, scripts/, skills/, packages/, agents/)
+- [x] **37 hallazgos identificados** y categorizados por severidad:
+  - 4 CRÍTICOS (C-1 a C-4) — ✅ corregidos
+  - 11 ALTOS (A-1 a A-11) — ✅ corregidos
+  - 13 MEDIOS (M-1 a M-13) — ✅ corregidos
+  - 9 BAJOS (B-1 a B-9) — ✅ corregidos
+  - 2 Observaciones (O-1, O-2) — ✅ corregidas
+- [x] Documento `docs/Auditoria de Errores.md` con todos los hallazgos documentados y timestamps de corrección
+- [x] Correcciones aplicadas a lo largo de todo el código:
+  - **Backend Python**: logging con trace completo, manejo de errores por campo 400, sys.exit(1) en scripts, comprobaciones defensivas
+  - **Next.js (talent-pipeline-tracker)**: try/catch con detección de red, ErrorMessage/LoadingSpinner, auto-dismiss SuccessToast, finally blocks
+  - **Backoffice HTML/JS**: alert() → showErrorToast, botones "Reintentar", guards null/Array.isArray
+  - **Frontend TS (src/)**: catch silenciosos → console.warn(), validación de arrays
+  - **shared-py**: duplicación eliminada en analyzer/_core.py, import desde trackflow_shared.legacy
+  - **READMEs**: ruta `GET /suppliers` → `GET /api/suppliers` corregida
+- [x] Todos los archivos compilados sin errores (get_errors limpio en Python y TypeScript)
+- [x] Repositorio memory bank actualizado con estado final de la auditoría

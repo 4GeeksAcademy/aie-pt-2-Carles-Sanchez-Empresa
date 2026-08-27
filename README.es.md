@@ -108,7 +108,7 @@ Rutas API útiles:
 - `POST /auth/login` (pública)
 - `POST /users` (registro público)
 - `POST /api/incidents/analyze` (protegida)
-- `GET /suppliers` (protegida)
+- `GET /api/suppliers` (protegida)
 
 ### 🌐 Web Corporativa (React + Vite)
 
