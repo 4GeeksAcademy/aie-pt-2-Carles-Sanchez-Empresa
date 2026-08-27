@@ -4,10 +4,13 @@ routes/auth.py — Endpoints de autenticación (TrackFlow).
 Gestiona el login (emisión de JWT) y la información del usuario autenticado.
 """
 
+import logging
 from json import JSONDecodeError
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ValidationError
+
+logger = logging.getLogger(__name__)
 
 from auth import (
     create_access_token,
@@ -194,8 +197,10 @@ async def forgot_password(payload: ForgotPasswordRequest, request: Request):
         try:
             send_reset_email(to_email=email, token=token, lang=lang)
         except Exception:
-            # El email no debe romper el flujo — el usuario ve el mensaje de confirmación igualmente
-            pass
+            logger.exception(
+                "Error al enviar email de restablecimiento a %s", email
+            )
+            # No se interrumpe el flujo — el usuario ve confirmación igualmente
 
     return {"message": t("forgot_password_success")}
 

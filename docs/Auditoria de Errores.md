@@ -24,7 +24,7 @@
 - **Archivo:** `services/api/routes/auth.py` — línea 160
 - **Categoría:** 3 · Fallo silencioso
 - **Problema:** El bloque `except: pass` dentro de `forgot_password` silencia completamente cualquier error al enviar el email, incluyendo errores de configuración (API key inválida, red caída, etc.). El usuario siempre ve un mensaje de éxito aunque el email nunca se haya enviado.
-- **Corrección sugerida:** Registrar el error con `logging.error()` y, en producción, notificar al administrador. Nunca silenciar completamente la excepción.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó `except: pass` por `logger.exception(...)` que registra la traza completa del error sin exponerla al usuario. Se añadió `import logging` y se creó el logger del módulo. El flujo sigue sin romperse (el usuario siempre ve confirmación), pero ahora hay trazabilidad del error cuando falla el envío. ✅
 
 ### C-2. Exposición de errores en crudo vía formato `.format(e)`
 - **Archivo:** `services/api/main.py` — líneas 118 y 123
