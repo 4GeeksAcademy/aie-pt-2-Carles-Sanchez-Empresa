@@ -276,6 +276,7 @@ export default function CandidateDetailPage() {
       setRecord(updated);
       setSuccessMessage("Cambio aplicado correctamente");
     } catch (err) {
+      console.error("[candidate] Error en cambio rápido:", err);
       setInlineError(err instanceof Error ? err.message : "Error al actualizar");
     } finally {
       setPatching(false);
@@ -294,6 +295,7 @@ export default function CandidateDetailPage() {
       const nts = await getNotes(record.id);
       setNotes(nts);
     } catch (err) {
+      console.error("[candidate] Error al añadir nota:", err);
       setInlineError(err instanceof Error ? err.message : "Error al añadir nota");
     } finally {
       setSavingNote(false);
@@ -310,6 +312,7 @@ export default function CandidateDetailPage() {
       await deleteNote(record.id, noteId);
       setNotes((prev) => prev.filter((n) => n.id !== noteId));
     } catch (err) {
+      console.error("[candidate] Error al eliminar nota:", err);
       setInlineError(err instanceof Error ? err.message : "Error al eliminar nota");
     } finally {
       setDeletingNote(false);
@@ -326,6 +329,7 @@ export default function CandidateDetailPage() {
       await deleteRecord(record.id);
       router.push("/");
     } catch (err) {
+      console.error("[candidate] Error al eliminar candidatura:", err);
       setInlineError(err instanceof Error ? err.message : "Error al eliminar");
     } finally {
       setDeleting(false);

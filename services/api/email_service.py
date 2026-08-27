@@ -5,11 +5,14 @@ Envía emails de restablecimiento de contraseña mediante la API de Resend.
 La API key se carga desde la variable de entorno RESEND_API_TOKEN.
 """
 
+import logging
 import os
 from pathlib import Path
 
 import resend
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Carga el .env desde la raíz del proyecto
 dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
@@ -45,10 +48,10 @@ def send_reset_email(to_email: str, token: str, lang: str = "es") -> None:
             "subject": t("email_subject_reset"),
             "html": html_body,
         })
-        print(f"[email_service] Email enviado a {to_email}: {response}")
+        logger.info("Email enviado a %s: %s", to_email, response)
     except Exception as e:
         # En desarrollo, no queremos que falle el flujo si el email no se envía
-        print(f"[email_service] Error al enviar email a {to_email}: {e}")
+        logger.exception("Error al enviar email a %s", to_email)
 
 
 def _build_email_html(reset_url: str, t, lang: str = "es") -> str:
