@@ -100,6 +100,10 @@ def seed():
         for err in errors:
             print(f"  {err['incident_id']}: {', '.join(err['failures'])}")
 
+    if invalid > 0:
+        print(f"\n⚠️  Se encontraron {invalid} registro(s) inválido(s). El script termina con código de error.")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     seed()

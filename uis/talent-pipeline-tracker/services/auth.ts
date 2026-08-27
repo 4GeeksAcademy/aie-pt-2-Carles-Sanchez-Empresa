@@ -111,13 +111,26 @@ export function isValidPhoneForRegister(phone: string): boolean {
   return /^[\d\s+\-()]{6,20}$/.test(phone);
 }
 
+const HTTP_ERROR_MESSAGES: Record<number, string> = {
+  400: "Datos inválidos. Revisa la información ingresada.",
+  401: "Credenciales incorrectas. Verifica tu email y contraseña.",
+  403: "No tienes permiso para realizar esta acción.",
+  404: "El recurso solicitado no existe.",
+  409: "El recurso ya existe (posiblemente el email ya está registrado).",
+  422: "Los datos enviados no son válidos.",
+  429: "Demasiadas solicitudes. Inténtalo de nuevo en unos segundos.",
+  500: "Error interno del servidor. Inténtalo más tarde.",
+  502: "El servicio no está disponible en este momento.",
+  503: "El servicio está temporalmente fuera de servicio.",
+};
+
 async function parseError(res: Response): Promise<string> {
-  const defaultMessage = `Error ${res.status}`;
+  const friendlyMessage = HTTP_ERROR_MESSAGES[res.status];
   try {
     const body = (await res.json()) as AuthErrorBody;
-    return body.detail || defaultMessage;
+    return body.detail || friendlyMessage || `Error ${res.status}`;
   } catch {
-    return defaultMessage;
+    return friendlyMessage || `Error ${res.status}`;
   }
 }
 

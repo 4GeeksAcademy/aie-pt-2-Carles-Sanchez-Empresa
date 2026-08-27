@@ -246,6 +246,13 @@ async def change_password(
     user_id = current_user["id"]
     user = users_table.get(doc_id=user_id)
 
+    if user is None:
+        logger.warning("Usuario autenticado (id=%s) no encontrado en la tabla users", user_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=t("user_not_found"),
+        )
+
     if not verify_password(payload.current_password, user.get("hashed_password", "")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
