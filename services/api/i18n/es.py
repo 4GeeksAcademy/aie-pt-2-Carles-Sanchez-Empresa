@@ -41,7 +41,7 @@ messages = {
     "csv_extension_required": "El fichero debe tener extensión .csv",
     "csv_read_error": "Error al leer el fichero. Revisa el archivo e inténtalo de nuevo.",
     "csv_empty": "El fichero está vacío.",
-    "csv_parse_error": "Error al parsear el CSV. Revisa el formato e inténtalo de nuevo."
+    "csv_parse_error": "Error al parsear el CSV. Revisa el formato e inténtalo de nuevo.",
     "csv_empty_rows": "El archivo CSV está vacío o solo tiene encabezados.",
     "no_analysis_found": "No hay ningún análisis previo. Realiza un POST /api/incidents/analyze primero.",
 

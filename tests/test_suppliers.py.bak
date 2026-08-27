@@ -1,0 +1,383 @@
+"""
+test_suppliers.py — Pruebas unitarias para endpoints de proveedores (TrackFlow).
+
+Cubre: CRUD completo de proveedores con filtros, actualización de tarifa y estado.
+
+Endpoints:
+  - POST   /suppliers          Crear proveedor
+  - GET    /suppliers          Listar (con filtros opcionales)
+  - GET    /suppliers/{id}     Obtener por ID
+  - PATCH  /suppliers/{id}/rate    Actualizar tarifa
+  - PATCH  /suppliers/{id}/status  Actualizar estado
+  - DELETE /suppliers/{id}     Eliminar
+"""
+
+import pytest
+from fastapi import HTTPException
+
+
+# ───────────────────── Helpers ─────────────────────
+
+class MockRequest:
+    def __init__(self, lang="es"):
+        self._headers = {"X-Language": lang}
+        self._query_params = {}
+
+    @property
+    def headers(self):
+        return self._headers
+
+    @property
+    def query_params(self):
+        return self._query_params
+
+
+# ───────────────────── Fixtures ─────────────────────
+
+@pytest.fixture
+def sample_supplier(mock_db, request):
+    """Crea un proveedor de prueba en la BD temporal."""
+    from models import SupplierStatus
+    from routes.suppliers import create_supplier, SupplierCreate
+
+    payload = SupplierCreate(
+        name="Test Carrier Inc.",
+        country="USA",
+        categories=["carrier_last_mile"],
+        rate_per_shipment=5.50,
+        currency="USD",
+        status=SupplierStatus.ACTIVE,
+        service_zone="West Coast",
+        contact_email="test@carrier.com",
+        notes="Proveedor de prueba",
+    )
+    req = MockRequest()
+    result = create_supplier(payload, req)
+    return result  # SupplierResponse
+
+
+@pytest.fixture
+def sample_supplier_es(mock_db):
+    """Crea un proveedor español de prueba."""
+    from models import SupplierStatus
+    from routes.suppliers import create_supplier, SupplierCreate
+
+    payload = SupplierCreate(
+        name="Transportes España SL",
+        country="Spain",
+        categories=["carrier_international", "warehouse_supplies"],
+        rate_per_shipment=3.20,
+        currency="EUR",
+        status=SupplierStatus.ACTIVE,
+        service_zone="Aragón",
+    )
+    req = MockRequest()
+    return create_supplier(payload, req)
+
+
+# ═══════════════════════════════════════════════════════
+#  CREATE SUPPLIER
+# ═══════════════════════════════════════════════════════
+
+class TestCreateSupplier:
+    """Pruebas para POST /suppliers."""
+
+    def test_create_supplier_ok(self, mock_db):
+        """
+        S-H1: create_supplier_ok
+        Datos válidos → 201, proveedor creado con todos los campos e ID
+        """
+        from routes.suppliers import create_supplier, SupplierCreate
+        from models import SupplierStatus
+
+        payload = SupplierCreate(
+            name="New Carrier",
+            country="Spain",
+            categories=["carrier_last_mile"],
+            rate_per_shipment=10.00,
+            currency="EUR",
+            status=SupplierStatus.ACTIVE,
+        )
+        req = MockRequest()
+        result = create_supplier(payload, req)
+
+        assert result.name == "New Carrier"
+        assert result.country == "Spain"
+        assert result.rate_per_shipment == 10.00
+        assert result.currency == "EUR"
+        assert result.status.value == "active"
+        assert result.id > 0
+        assert result.updated_at is not None
+
+    def test_create_supplier_rate_zero_fails(self, mock_db):
+        """
+        S-F1: create_supplier_rate_zero
+        Tarifa <= 0 → ValidationError de Pydantic
+        """
+        from models import SupplierCreate, SupplierStatus
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            SupplierCreate(
+                name="Bad Carrier",
+                country="USA",
+                categories=["carrier_last_mile"],
+                rate_per_shipment=0,
+                currency="USD",
+                status=SupplierStatus.ACTIVE,
+            )
+
+    def test_create_supplier_invalid_country(self, mock_db):
+        """
+        S-F2: create_supplier_invalid_country
+        País no soportado → ValueError en model_validator
+        """
+        from models import SupplierCreate, SupplierStatus
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            SupplierCreate(
+                name="Bad Carrier",
+                country="France",  # No soportado
+                categories=["carrier_last_mile"],
+                rate_per_shipment=5.0,
+                currency="EUR",
+                status=SupplierStatus.ACTIVE,
+            )
+
+    def test_create_supplier_currency_mismatch(self, mock_db):
+        """
+        S-F3: create_supplier_currency_mismatch
+        USA + EUR → ValidationError (validación cruzada)
+        """
+        from models import SupplierCreate, SupplierStatus
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            SupplierCreate(
+                name="Bad Carrier",
+                country="USA",
+                categories=["carrier_last_mile"],
+                rate_per_shipment=5.0,
+                currency="EUR",  # Debe ser USD
+                status=SupplierStatus.ACTIVE,
+            )
+
+
+# ═══════════════════════════════════════════════════════
+#  LIST SUPPLIERS
+# ═══════════════════════════════════════════════════════
+
+class TestListSuppliers:
+    """Pruebas para GET /suppliers."""
+
+    def test_list_suppliers_all(self, sample_supplier, sample_supplier_es, mock_db):
+        """
+        S-H2: list_suppliers_all
+        Sin filtros → todos los proveedores
+        """
+        from routes.suppliers import list_suppliers
+        req = MockRequest()
+        results = list_suppliers(req)
+
+        assert len(results) >= 2
+        names = [s.name for s in results]
+        assert "Test Carrier Inc." in names
+        assert "Transportes España SL" in names
+
+    def test_list_suppliers_filter_country(self, sample_supplier, sample_supplier_es, mock_db):
+        """
+        S-E1: list_suppliers_filter_country
+        ?country=Spain → solo proveedores españoles
+        """
+        from routes.suppliers import list_suppliers
+        req = MockRequest()
+        # Mock query_params
+        from unittest.mock import PropertyMock
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(type(req), 'query_params', {"country": "Spain"})
+            results = list_suppliers(req, country="Spain")
+
+        assert len(results) == 1
+        assert results[0].country == "Spain"
+
+    def test_list_suppliers_filter_category(self, sample_supplier, sample_supplier_es, mock_db):
+        """
+        S-E2: list_suppliers_filter_category
+        ?category=carrier_international → solo los que tienen esa categoría
+        """
+        from routes.suppliers import list_suppliers
+        results = list_suppliers(MockRequest(), category="carrier_international")
+
+        assert len(results) == 1
+        assert "carrier_international" in results[0].categories
+
+    def test_list_suppliers_filter_no_match(self, mock_db):
+        """
+        S-E3: list_suppliers_no_match
+        Filtro que no coincide → lista vacía (nunca 404)
+        """
+        from routes.suppliers import list_suppliers
+        results = list_suppliers(MockRequest(), country="Spain")
+        assert results == []
+
+    def test_list_suppliers_filter_country_and_category(self, sample_supplier, sample_supplier_es, mock_db):
+        """
+        S-H3: list_suppliers_combined_filters
+        ?country=USA&category=carrier_last_mile → 1 resultado
+        """
+        from routes.suppliers import list_suppliers
+        results = list_suppliers(MockRequest(), country="USA", category="carrier_last_mile")
+        assert len(results) == 1
+        assert results[0].country == "USA"
+
+
+# ═══════════════════════════════════════════════════════
+#  GET SUPPLIER
+# ═══════════════════════════════════════════════════════
+
+class TestGetSupplier:
+    """Pruebas para GET /suppliers/{id}."""
+
+    def test_get_supplier_ok(self, sample_supplier, mock_db):
+        """
+        S-H4: get_supplier_ok
+        ID existente → 200, datos correctos
+        """
+        from routes.suppliers import get_supplier
+        result = get_supplier(sample_supplier.id, MockRequest())
+
+        assert result.id == sample_supplier.id
+        assert result.name == "Test Carrier Inc."
+        assert result.country == "USA"
+
+    def test_get_supplier_not_found(self, mock_db):
+        """
+        S-F4: get_supplier_not_found
+        ID inexistente → 404
+        """
+        from routes.suppliers import get_supplier
+        with pytest.raises(HTTPException) as exc:
+            get_supplier(9999, MockRequest())
+        assert exc.value.status_code == 404
+
+
+# ═══════════════════════════════════════════════════════
+#  UPDATE RATE
+# ═══════════════════════════════════════════════════════
+
+class TestUpdateRate:
+    """Pruebas para PATCH /suppliers/{id}/rate."""
+
+    def test_update_rate_ok(self, sample_supplier, mock_db):
+        """
+        S-H5: update_rate_ok
+        ID existente + nueva tarifa válida → tarifa actualizada
+        """
+        from routes.suppliers import update_supplier_rate, SupplierUpdateRate
+
+        payload = SupplierUpdateRate(rate_per_shipment=8.75)
+        result = update_supplier_rate(sample_supplier.id, payload, MockRequest())
+
+        assert result.rate_per_shipment == 8.75
+        assert result.id == sample_supplier.id
+
+        # Verificar persistencia
+        result2 = update_supplier_rate(sample_supplier.id, payload, MockRequest())
+        assert result2.rate_per_shipment == 8.75
+
+    def test_update_rate_negative_fails(self, sample_supplier, mock_db):
+        """
+        S-F5: update_rate_negative
+        Tarifa <= 0 → ValidationError de Pydantic
+        """
+        from models import SupplierUpdateRate
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            SupplierUpdateRate(rate_per_shipment=-1)
+
+    def test_update_rate_not_found(self, mock_db):
+        """
+        S-F6: update_rate_not_found
+        ID inexistente → 404
+        """
+        from routes.suppliers import update_supplier_rate, SupplierUpdateRate
+        payload = SupplierUpdateRate(rate_per_shipment=5.0)
+        with pytest.raises(HTTPException) as exc:
+            update_supplier_rate(9999, payload, MockRequest())
+        assert exc.value.status_code == 404
+
+
+# ═══════════════════════════════════════════════════════
+#  UPDATE STATUS
+# ═══════════════════════════════════════════════════════
+
+class TestUpdateStatus:
+    """Pruebas para PATCH /suppliers/{id}/status."""
+
+    def test_update_status_ok(self, sample_supplier, mock_db):
+        """
+        S-H6: update_status_ok
+        ID existente + estado válido → estado actualizado
+        """
+        from routes.suppliers import update_supplier_status, SupplierUpdateStatus
+        from models import SupplierStatus
+
+        payload = SupplierUpdateStatus(status=SupplierStatus.SUSPENDED)
+        result = update_supplier_status(sample_supplier.id, payload, MockRequest())
+
+        assert result.status == SupplierStatus.SUSPENDED
+
+        # Volver a active
+        payload2 = SupplierUpdateStatus(status=SupplierStatus.ACTIVE)
+        result2 = update_supplier_status(sample_supplier.id, payload2, MockRequest())
+        assert result2.status == SupplierStatus.ACTIVE
+
+    def test_update_status_not_found(self, mock_db):
+        """
+        S-F7: update_status_not_found
+        ID inexistente → 404
+        """
+        from routes.suppliers import update_supplier_status, SupplierUpdateStatus
+        from models import SupplierStatus
+
+        payload = SupplierUpdateStatus(status=SupplierStatus.SUSPENDED)
+        with pytest.raises(HTTPException) as exc:
+            update_supplier_status(9999, payload, MockRequest())
+        assert exc.value.status_code == 404
+
+
+# ═══════════════════════════════════════════════════════
+#  DELETE SUPPLIER
+# ═══════════════════════════════════════════════════════
+
+class TestDeleteSupplier:
+    """Pruebas para DELETE /suppliers/{id}."""
+
+    def test_delete_supplier_ok(self, sample_supplier, mock_db):
+        """
+        S-H7: delete_supplier_ok
+        ID existente → 200, mensaje de confirmación, registro eliminado
+        """
+        from routes.suppliers import delete_supplier
+
+        result = delete_supplier(sample_supplier.id, MockRequest())
+        assert result["message"] is not None
+        assert result["id"] == sample_supplier.id
+
+        # Verificar que ya no existe
+        from routes.suppliers import get_supplier
+        with pytest.raises(HTTPException) as exc:
+            get_supplier(sample_supplier.id, MockRequest())
+        assert exc.value.status_code == 404
+
+    def test_delete_supplier_not_found(self, mock_db):
+        """
+        S-F8: delete_supplier_not_found
+        ID inexistente → 404
+        """
+        from routes.suppliers import delete_supplier
+        with pytest.raises(HTTPException) as exc:
+            delete_supplier(9999, MockRequest())
+        assert exc.value.status_code == 404
