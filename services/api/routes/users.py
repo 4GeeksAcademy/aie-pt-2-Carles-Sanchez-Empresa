@@ -188,7 +188,11 @@ async def update_user_endpoint(
     if not data:
         raise HTTPException(status_code=400, detail="No se proporcionaron campos para actualizar")
 
-    user = update_user(user_id, data)
+    try:
+        user = update_user(user_id, data)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
     if user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
