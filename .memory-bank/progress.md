@@ -134,6 +134,48 @@
 - [x] Creación de **Carrier Selection Optimizer** — selección óptima del transportista entre los 8 de la red TrackFlow evaluando coste, tiempo y fiabilidad
 - [x] Creación de **Returns Triage Assistant** — clasificación automática de devoluciones con reglas de aprobación/rechazo, recogida y reacondicionamiento
 
+### 📐 Propuesta de Arquitectura — `docs/`
+- [x] Documento `ARCHITECTURE_PROPOSAL.md` con:
+  - Contexto y problemas documentados de TrackFlow
+  - Alternativas consideradas (MVC, Capas, Hexagonal)
+  - Justificación de la elección de Arquitectura Hexagonal + FastAPI
+  - Estructura de carpetas propuesta para `services/`
+  - Endpoints propuestos por dominio de negocio
+  - Estrategia de implementación por fases
+  - Riesgos y puntos de atención
+
+### 🚀 Backend — Incident Analyzer API (`services/api/`)
+
+**Fase 1 — Módulo de análisis (`analyzer/`)**
+- [x] Creación de `analyzer/_core.py` con:
+  - Constantes: `VALID_COUNTRIES`, `CARRIERS_BY_COUNTRY`, `VALID_CATEGORIES`, `EMAIL_RE`
+  - `validate_record()` — 8 reglas de validación (país, carrier, tracking, categoría, estado, email, puntuación, descripción)
+  - `compute_metrics()` — métricas sobre registros válidos (categorías, estados, países, satisfacción)
+  - `analyze_rows()` — orquestación de validación + métricas
+  - `build_results_csv()` — exportación a CSV plano
+- [x] `analyzer/__init__.py` con re-exportación pública de símbolos
+- [x] Datos de prueba: `tests/sample.csv` con 7 registros (4 válidos, 3 inválidos)
+
+**Fase 2 — Endpoints FastAPI (`main.py`)**
+- [x] `POST /api/incidents/analyze` — subida CSV con validación de extensión, parseo y análisis
+- [x] `GET /api/incidents/results/export` — descarga del último análisis como CSV
+- [x] `GET /api/health` — health check
+- [x] CORS configurado con `allow_origins=["*"]`
+- [x] Manejo de errores: 400 (CSV inválido, vacío, extensión incorrecta), 404 (sin análisis previo)
+- [x] Prueba verificada con `curl`
+
+**Fase 3 — Frontend unificado (`uis/backoffice/`)**
+- [x] Página `incidents.html` con drag & drop, cards de totales, tabla de reglas inválidas, métricas y botón de descarga
+- [x] Lógica `js/incidents.js` con rutas relativas (mismo origen que la API)
+- [x] FastAPI sirve también el frontend: `GET /` → `index.html`, `GET /incidents.html`, `GET /js/*`
+- [x] Sin dependencia de servidor estático externo (todo en puerto 8000)
+- [x] Sin problemas de CORS ni Mixed Content en Codespaces
+
+**Fase 4 — Eliminación de duplicación**
+- [x] `scripts/analyze.py` refactorizado: ya no duplica constantes ni lógica — importa todo del módulo compartido `services/api/analyzer/`  (validate_record, compute_metrics, analyze_rows, build_results_csv, RULE_LABELS, constantes)
+- [x] `scripts/analyze.py` solo mantiene: `print_report()` (salida consola), `export_csv()` (wrapper a fichero) y `_pct()` helper local
+- [x] `print_report()` ahora recibe un dict `result` de `analyze_rows()` en lugar de parámetros individuales
+
 ---
 
 ## 🔜 Próximos Pasos
