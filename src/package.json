@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "build": "npx tsc -p tsconfig.json --noEmit",
+    "typecheck": "npx tsc -p tsconfig.json --noEmit"
+  },
   "dependencies": {
     "typescript": "^7.0.2"
   }

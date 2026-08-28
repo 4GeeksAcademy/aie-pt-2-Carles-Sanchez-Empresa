@@ -1,0 +1,11 @@
+{
+  "name": "@trackflow/backoffice",
+  "private": true,
+  "scripts": {
+    "build": "esbuild ../../src/ui/handlers.ts --bundle --platform=browser --format=iife --target=es2020 --outfile=./js/app.js",
+    "build:watch": "esbuild ../../src/ui/handlers.ts --bundle --platform=browser --format=iife --target=es2020 --outfile=./js/app.js --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "scenario": "Envío urgente de Los Ángeles a Miami",
+  "input": {
+    "origin": "Los Angeles",
+    "destinationCity": "Miami",
+    "destinationCountry": "United States",
+    "distanceKm": 3920,
+    "weightKg": 4.5,
+    "isFragile": true,
+    "priority": "Express",
+    "declaredValueUSD": 250.00,
+    "maxBudgetUSD": 45.00,
+    "requiredDeliveryDays": 3
+  },
+  "expectedOutput": {
+    "recommendedCarrier": {
+      "id": "CAR-UPS",
+      "name": "UPS",
+      "score": 87.5,
+      "onTimeRate": 95
+    },
+    "estimatedCostUSD": 38.42,
+    "estimatedDeliveryDays": 3,
+    "justification": "UPS opera en Estados Unidos, soporta prioridad Express, maneja productos frágiles y tiene una tasa de entrega a tiempo del 95%. Coste estimado: 38.42 USD, dentro del presupuesto de 45.00 USD."
+  }
+}

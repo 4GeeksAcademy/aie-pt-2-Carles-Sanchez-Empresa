@@ -1,0 +1,141 @@
+# Progreso del Proyecto — TrackFlow
+
+## ✅ Hitos Completados
+
+### 🏢 Elección y Contexto de la Empresa
+- [x] Empresa escogida: **TrackFlow** (logística de última milla y almacenes)
+- [x] Documento `company-choice.md` con motivación y visión inicial
+- [x] Análisis de departamentos: Operaciones, Gestión, Logística, Experiencia del Cliente, Comercial, Tecnología, Dirección Ejecutiva
+
+### 📁 Estructura del Monorepo
+- [x] Creación de la estructura base del repositorio (`src/`, `uis/`, `services/`, `agents/`, `workflows/`, `skills/`, etc.)
+- [x] README.md principal y en español (`README.es.md`)
+- [x] README descriptivo para cada carpeta raíz (bilingües)
+- [x] Paquete compartido `@repo/shared-types` en `packages/shared/`
+- [x] Archivo `CONTEXT.md` con directrices del proyecto
+
+### 🧠 Lógica de Dominio — `src/`
+- [x] Definición de interfaces y tipos del dominio (`src/types/models.ts`):
+  - `Product`, `Dimensions`, `Shipment`, `Destination`, `Carrier`
+  - Enums y tipos unión (`ProductCategory`, `WarehouseLocation`, `ShipmentPriority`, etc.)
+- [x] Funciones de colecciones (`src/utils/collections.ts`):
+  - `filterProductsByWarehouse`, `filterProductsByCategory`, `filterLowStockProducts`
+  - `sortProductsByStock`, `sortCarriersByReliability`
+- [x] Funciones de búsqueda (`src/utils/search.ts`):
+  - `findProductBySKU`, `findShipmentById`, `binarySearchProductByWeight`
+- [x] Funciones de scoring y costes (`src/utils/transformations.ts`):
+  - `calculateShippingCost`, `scoreCarrierForShipment`
+- [x] Validaciones de negocio (`src/utils/validations.ts`):
+  - `validateProduct`, `validateShipment`, `validateCarrier`
+
+### 🗂️ Backoffice Operacional — `uis/backoffice/`
+
+**Fase 1 — Migración del HTML al área de UI**
+- [x] Traslado del panel manual desde `src/index.html` a `uis/backoffice/index.html`
+- [x] Conservación de la interfaz visual y de los resultados renderizados en pantalla (`<pre>`, estados de validación y mensajes de error/éxito)
+
+**Fase 2 — Integración con TypeScript del monorepo**
+- [x] Creación de datos de ejemplo tipados en `src/data/sampleData.ts`
+- [x] Creación del entrypoint de interfaz en `src/ui/handlers.ts`
+- [x] Exportación de tipos y funciones del dominio para reutilización desde la UI:
+  - `src/types/models.ts`
+  - `src/utils/collections.ts`
+  - `src/utils/search.ts`
+  - `src/utils/transformations.ts`
+  - `src/utils/validations.ts`
+- [x] Conexión de la interfaz del backoffice con la lógica de negocio original de `src/`, sin mantener archivos fuente duplicados en `uis/backoffice/`
+
+**Fase 3 — Build y eliminación de duplicación**
+- [x] Conversión de `src/` en fuente de verdad TypeScript con `noEmit` y `typecheck` sin generación de JS intermedio
+- [x] Configuración de `uis/backoffice/package.json` con build de navegador mediante `esbuild`
+- [x] Generación de un único bundle de salida en `uis/backoffice/js/app.js`
+- [x] Eliminación del árbol duplicado de artefactos `js/data`, `js/types`, `js/ui` y `js/utils` en backoffice
+- [x] Eliminación de sourcemaps en la salida final para evitar copias textuales adicionales del código fuente
+
+**Fase 4 — Verificación funcional**
+- [x] `npm run typecheck` correcto en `src/`
+- [x] `npm run build` correcto en `uis/backoffice/`
+- [x] Carga HTTP verificada del panel y del bundle (`index.html` + `js/app.js`)
+- [x] El resultado de la lógica de negocio sigue siendo visible en la UI del backoffice, no solo en consola
+- [x] Documentación bilingüe del backoffice (`README.md` y `README.es.md`) con instalación, build, watch y servidor estático
+
+### 🌐 Landing Pages (HTML estático) → React Website (`uis/website/`)
+
+**Fase 1 — HTML estático original**
+- [x] Landing page principal (`index.html`) con datos estructurados Schema.org
+- [x] Formulario de solicitud empresarial (`application.html`) con diseño TrackFlow
+- [x] Validación JavaScript del formulario (`validation.js`):
+  - Validación de campos requeridos, email, teléfono, URL
+  - Selectores condicionales (producto × volumen)
+  - Feedback visual de errores y éxito
+
+**Fase 2 — Migración a React + TypeScript + Tailwind**
+- [x] Migración de HTML estático a componentes React reutilizables con TypeScript y Tailwind
+- [x] Proyecto Vite + React 19 + TypeScript + Tailwind en `uis/website/`
+- [x] **Componentes reutilizables de layout**: `SiteHeader` (responsive desktop/móvil), `SiteFooter`
+- [x] **Componentes de landing**: `StructuredData` (Schema.org JSON-LD), `SectionContainer`, `InfoCard`
+- [x] **Formulario React tipado**: `ApplicationForm` con estado local, `FormField` genérico
+- [x] **Tipos TypeScript del dominio** (`src/types/application.ts`): `ApplicationFormData`, `FormErrors`, tipos unión para producto, volumen, país, servicios
+- [x] **Validación TypeScript** (`src/utils/applicationValidation.ts`): email, teléfono, URL, campos requeridos, advertencia producto×volumen, contador de caracteres
+- [x] **Ruteo SPA**: `/` (landing) y `/application` (formulario) con React Router
+- [x] **Documentación bilingüe**: `README.md` (EN) y `README.es.md` (ES) con comandos y troubleshooting
+- [x] `npm run typecheck` sin errores y `npm run build` correcto
+
+### 🎯 Talent Pipeline Tracker — Frontend Next.js
+- [x] Inicialización del proyecto Next.js 16 con App Router y TypeScript
+- [x] Configuración de Tailwind CSS 4 con PostCSS
+- [x] Configuración de ESLint 9 con `eslint-config-next`
+- [x] **Proxy API**: rewrites de Next.js para evitar CORS
+- [x] **Tipos TypeScript** (`uis/talent-pipeline-tracker/types/index.ts`):
+  - `RecordOut`, `RecordCreate`, `RecordUpdate`, `RecordPatch`
+  - `NoteCreate`, `NoteOut`, `RecordsQuery`, `PaginatedRecords`
+  - Tipos unión `StatusValue`, `StageValue` y etiquetas `StatusLabel`, `StageLabel`
+- [x] **Constantes y validaciones** (`lib/`):
+  - Mapeo de valores crudos a etiquetas en español
+  - Validación de teléfono (7-15 dígitos)
+- [x] **Componentes reutilizables**:
+  - `Header.tsx` — cabecera con logo y navegación responsive
+  - `StatusBadge.tsx` — etiqueta visual de estado
+  - `StageBadge.tsx` — etiqueta visual de etapa
+  - `LoadingSpinner.tsx` — indicador de carga
+  - `ErrorMessage.tsx` — mensaje de error
+  - `SuccessToast.tsx` — notificación de éxito
+- [x] **Capa de servicios** (`services/api.ts`):
+  - Cliente HTTP genérico `request<T>()`
+  - Funciones: `getRecords`, `getRecordById`, `createRecord`, `updateRecord`, `patchRecord`, `deleteRecord`
+  - Funciones de notas: `getNotes`, `createNote`, `deleteNote`
+- [x] **Layout raíz** (`app/layout.tsx`): Header + Footer con paleta de colores TrackFlow
+- [x] **Página de listado** (`app/page.tsx`):
+  - Tabla de candidaturas con nombre, puesto, estado y etapa
+  - Filtros por estado y etapa (query params con `useSearchParams`)
+  - Búsqueda por nombre/email
+  - Modal de nueva candidatura con validación
+  - Estados: carga, éxito, error
+- [x] **Página de detalle** (`app/candidates/[id]/page.tsx`):
+  - Datos completos del candidato
+  - Controles PATCH para cambiar estado/etapa con una interacción
+  - Modal de edición de datos (PUT)
+  - Listado de notas con crear/eliminar
+  - Estados: carga, éxito, error
+
+### 📝 Documentación del Proyecto
+- [x] `techContext.md` en `.memory-bank/` con:
+  - Stack tecnológico completo
+  - 8 decisiones de arquitectura documentadas
+  - Restricciones técnicas detalladas
+
+---
+
+### 📐 Reglas de Desarrollo — `.agents/rules/`
+- [x] Creación de `typescript-strict.md` — tipado estricto, prohibición de `any`, tipado explícito en funciones y componentes
+- [x] Creación de `styling-rules.md` — paleta de colores TrackFlow, mobile-first responsive, estados de UI obligatorios, Tailwind CSS
+
+### 🤖 Skills de Agente — `skills/`
+- [x] Creación de **Carrier Selection Optimizer** — selección óptima del transportista entre los 8 de la red TrackFlow evaluando coste, tiempo y fiabilidad
+- [x] Creación de **Returns Triage Assistant** — clasificación automática de devoluciones con reglas de aprobación/rechazo, recogida y reacondicionamiento
+
+---
+
+## 🔜 Próximos Pasos
+
+*(Por definir — sección reservada para futuros hitos)*
