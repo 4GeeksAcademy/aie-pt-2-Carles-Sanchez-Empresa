@@ -38,19 +38,26 @@
 | **React Router DOM** | ^7.9.1 | Ruteo SPA entre landing y formulario |
 | **PostCSS + Autoprefixer** | — | Procesamiento de estilos |
 
-### Backoffice operacional — `uis/backoffice/` (HTML estático + bundle desde `src`)
+### Backoffice operacional — `uis/backoffice/` (HTML estático + bundle desde `src` + páginas servidas por FastAPI)
 
 | Tecnología | Versión | Propósito |
 |---|---|---|
-| **HTML5 + Tailwind CDN** | — | Render del panel manual del backoffice |
-| **TypeScript** | ^7.0.2 | Fuente única de lógica y handlers reutilizados desde `src/` |
+| **HTML5 + Tailwind CDN** | — | Render del panel manual del backoffice (`index.html`, `incidents.html`, `suppliers.html`) |
+| **JavaScript vanilla** | — | Lógica del Analizador de Incidencias (`js/incidents.js`) con drag & drop, llamadas fetch a la API |
+| **TypeScript** | ^7.0.2 | Fuente única de lógica y handlers reutilizados desde `src/` para el panel de utilidades |
 | **esbuild** | ^0.28.1 | Bundling de navegador en un único archivo `js/app.js` |
 
-### Paquete compartido — `packages/shared/`
+### Backend API — `services/api/` (FastAPI + TinyDB)
 
-| Tecnología | Propósito |
-|---|---|
-| **TypeScript** | Tipos base compartidos (`Id`, `BaseEntity`) para uso transversal entre proyectos |
+| Tecnología | Versión | Propósito |
+|---|---|---|
+| **Python** | ^3.12 | Lenguaje de ejecución del backend |
+| **FastAPI** | ^0.104.0 | Framework web asíncrono con OpenAPI automático |
+| **Uvicorn** | ^0.24.0 | Servidor ASGI para FastAPI |
+| **TinyDB** | ^4.8.0 | Base de datos documental ligera (JSON) para el Directorio de Proveedores |
+| **Pydantic v2** | — | Validación de datos con `field_validator`, `model_validator` y Enums |
+| **python-multipart** | ^0.0.6 | Soporte para subida de archivos (CSV de incidencias) |
+| **uv** | — | Gestor de proyectos Python (alternativa a pip/poetry) |
 
 ### Estructura del Monorepo
 
@@ -64,8 +71,8 @@ aie-pt-2-Carles-Sanchez-Empresa/
 │   ├── talent-pipeline-tracker/  # Next.js App Router
 │   ├── backoffice/         # HTML estático con bundle generado desde src/
 │   └── website/            # React + Vite (landing corporativa y formulario)
-├── services/               # Backend: Incident Analyzer API (FastAPI)
-│   └── api/                #   analyzer/ (dominio) + main.py (FastAPI)
+├── services/               # Backend: API unificada (FastAPI)
+│   └── api/                #   analyzer/ (incidencias), routes/ (proveedores), models.py, database.py, main.py
 ├── agents/                 # Agentes de IA (estructura preparada)
 ├── workflows/              # Automatizaciones y workflows (estructura preparada)
 ├── skills/                 # Habilidades: code-review, data-analysis, research
@@ -174,22 +181,39 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
   - `POST /records/:id/notes` — crear nota
   - `DELETE /records/:id/notes/:note_id` — eliminar nota
 
-### Backend FastAPI — Incident Analyzer (`services/api/`)
+### Backend FastAPI — API Unificada (`services/api/`)
 
-- **Framework**: FastAPI 0.141.1 con Uvicorn
+- **Framework**: FastAPI (desde ^0.104.0) con Uvicorn
 - **Puerto**: 8000 (sirve tanto API como frontend estático)
-- **Endpoints**:
+- **Versión API**: `2.0.0`
+- **Endpoints — Incident Analyzer**:
   - `POST /api/incidents/analyze` — subida CSV, devuelve JSON con validación y métricas
   - `GET /api/incidents/results/export` — descarga del último análisis como CSV
   - `GET /api/health` — health check
-  - `GET /` — sirve `index.html` del backoffice
+- **Endpoints — Supplier Directory** (router `/suppliers`):
+  - `POST /suppliers` — crear proveedor (201, validación Pydantic estricta)
+  - `GET /suppliers` — listar proveedores con filtros opcionales `?country=` y `?category=`
+  - `GET /suppliers/{id}` — obtener proveedor por ID (404 si no existe)
+  - `PATCH /suppliers/{id}/rate` — actualizar tarifa (422 si ≤ 0)
+  - `PATCH /suppliers/{id}/status` — actualizar estado (active/suspended)
+  - `DELETE /suppliers/{id}` — eliminar proveedor
+- **Endpoints — Frontend** (servido desde FastAPI):
+  - `GET /` — sirve `index.html` del backoffice (panel de utilidades)
   - `GET /incidents.html` — sirve la página de análisis de incidencias
+  - `GET /suppliers.html` — sirve la página del directorio de proveedores
   - `GET /js/*` — sirve los archivos JavaScript del backoffice
-- **Módulo de análisis**: `analyzer/_core.py` con 8 reglas de validación, métricas y exportación CSV
+- **Módulos**:
+  - `analyzer/_core.py` — 8 reglas de validación, métricas y exportación CSV para incidencias
+  - `routes/suppliers.py` — CRUD completo del directorio de proveedores
+  - `models.py` — Modelos Pydantic con `SupplierCreate`, `SupplierResponse`, `SupplierUpdateRate`, `SupplierUpdateStatus`, validaciones cruzadas país↔moneda, categorías, estado (Enum)
+  - `seed.py` — Poblado inicial con 15 proveedores (9 USA + 6 Spain), idempotente
+- **Base de datos**: TinyDB 4.8+ — persistencia en JSON (`suppliers_db.json`), tabla `suppliers`, consultas con `tinydb.Query`
 - **CORS**: configurado con `allow_origins=["*"]`, `allow_credentials=False`
-- **Ejecución**: `python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload`
-- **Frontend**: HTML + Tailwind CDN + JavaScript vanilla, servido desde FastAPI (mismo origen, sin CORS ni Mixed Content)
-- **Store en memoria**: variable global `_last_result` para la exportación CSV
+- **Ejecución**: `uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload` (o con `uvicorn` directamente)
+- **Instalación**: `uv sync` en `services/api/`
+- **Seed**: `uv run seed` (idempotente, no duplica si ya hay datos)
+- **Frontend**: HTML + Tailwind CDN + JavaScript vanilla (`incidents.js`), servido desde FastAPI (mismo origen, sin CORS ni Mixed Content)
+- **Store en memoria**: variable global `_last_result` para la exportación CSV de incidencias
 
 ### Arquitectura Hexagonal (documentada en `docs/ARCHITECTURE_PROPOSAL.md`)
 
