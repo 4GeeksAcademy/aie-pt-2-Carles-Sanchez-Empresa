@@ -1,10 +1,10 @@
 """
-main.py — FastAPI service for incident analysis (TrackFlow).
+main.py — FastAPI service for TrackFlow.
 
-Endpoints:
-    POST /api/incidents/analyze        → Upload CSV, get JSON analysis
-    GET  /api/incidents/results/export  → Download last analysis as CSV
-    GET  /                             → Backoffice frontend (HTML/CSS/JS)
+Módulos:
+    /api/incidents/*      → Analyzer de incidencias (existente)
+    /suppliers/*          → Directorio de proveedores
+    GET /                 → Backoffice frontend (HTML/CSS/JS)
 """
 
 import csv
@@ -18,13 +18,14 @@ from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from analyzer import analyze_rows, build_results_csv
+from routes import suppliers_router
 
 # ──────────────────────────── App ────────────────────────────
 
 app = FastAPI(
-    title="TrackFlow Incident Analyzer API",
-    description="API para analizar incidencias de envíos a partir de ficheros CSV.",
-    version="1.0.0",
+    title="TrackFlow API",
+    description="API unificada de TrackFlow. Incluye análisis de incidencias y directorio de proveedores.",
+    version="2.0.0",
 )
 
 # ── CORS: permitir peticiones desde el frontend ──
@@ -121,11 +122,16 @@ async def get_export():
     )
 
 
+# ──────────────────────────── Routers ────────────────────────────
+
+app.include_router(suppliers_router)
+
+
 # ──────────────────────────── Root health-check ────────────────────────────
 
 @app.get("/api/health")
 async def root():
-    return {"status": "ok", "service": "TrackFlow Incident Analyzer API"}
+    return {"status": "ok", "service": "TrackFlow API"}
 
 
 # ──────────────────────── Frontend Routes ────────────────────────
@@ -140,6 +146,12 @@ async def get_index():
 async def get_incidents():
     """Sirve la página de análisis de incidencias."""
     return FileResponse(os.path.join(BACKOFFICE_DIR, "incidents.html"))
+
+
+@app.get("/suppliers.html")
+async def get_suppliers():
+    """Sirve la página del directorio de proveedores."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "suppliers.html"))
 
 
 # ──────────────────────────── Entry point ────────────────────────────
