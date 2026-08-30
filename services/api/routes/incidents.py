@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from i18n import get_language_from_request, get_translator
 
 from database import incidents_table, IncidentQuery
-from models import (
+from pydantic_models import (
     IncidentCreate,
     IncidentResponse,
     IncidentStatusUpdate,

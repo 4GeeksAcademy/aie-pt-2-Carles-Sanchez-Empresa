@@ -10,7 +10,7 @@ from typing import Optional
 
 from database import users_table, profiles_table, UserQuery, ProfileQuery
 from auth import hash_password
-from models import generate_timestamp
+from pydantic_models import generate_timestamp
 
 
 # ════════════════════════════ USUARIOS ════════════════════════════

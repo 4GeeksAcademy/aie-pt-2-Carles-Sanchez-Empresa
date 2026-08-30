@@ -2,9 +2,10 @@
 main.py — FastAPI service for TrackFlow.
 
 Módulos:
-    /api/incidents/*      → Incidents manager (nuevo gestor)
-    /api/incidents/analyze → Analyzer de incidencias (existente)
-    /api/incidents/summary → Métricas agregadas (gestor)
+    /inventory/*          → Gestión de inventario con ORM + Supabase (nuevo)
+    /api/incidents/*      → Incidents manager
+    /api/incidents/analyze → Analyzer de incidencias
+    /api/incidents/summary → Métricas agregadas
     /api/suppliers/*      → Directorio de proveedores (protegido)
     /auth/*               → Autenticación JWT
     /users/*              → Gestión de usuarios
@@ -20,6 +21,8 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,21 +31,35 @@ from fastapi.staticfiles import StaticFiles
 
 from analyzer import analyze_rows, build_results_csv
 from auth import get_current_user
+from database import engine
 from i18n import get_translator, get_language_from_request
+from models import SQLModel
 from routes import (
     auth_router,
     incidents_router,
+    inventory_router,
     profiles_router,
     suppliers_router,
     users_router,
 )
 
+# ──────────────────────────── Lifespan: init SQLModel tables ────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Inicializa las tablas de SQLModel en Supabase al arrancar la aplicación."""
+    SQLModel.metadata.create_all(engine)
+    logger.info("Tablas SQLModel creadas/verificadas en Supabase")
+    yield
+
+
 # ──────────────────────────── App ────────────────────────────
 
 app = FastAPI(
     title="TrackFlow API",
-    description="API unificada de TrackFlow. Incluye análisis de incidencias, directorio de proveedores y autenticación.",
-    version="2.1.0",
+    description="API unificada de TrackFlow. Incluye análisis de incidencias, directorio de proveedores, autenticación y gestión de inventario.",
+    version="3.0.0",
+    lifespan=lifespan,
 )
 
 # ── CORS: permitir peticiones desde el frontend ──
@@ -220,6 +237,7 @@ async def get_export(
 
 app.include_router(suppliers_router, dependencies=[Depends(get_current_user)])
 app.include_router(incidents_router, dependencies=[Depends(get_current_user)])
+app.include_router(inventory_router, dependencies=[Depends(get_current_user)])
 app.include_router(users_router)
 app.include_router(profiles_router)
 app.include_router(auth_router)

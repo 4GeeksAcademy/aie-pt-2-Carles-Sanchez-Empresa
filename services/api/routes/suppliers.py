@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from i18n import get_language_from_request, get_translator
 
 from database import suppliers_table, SupplierQuery
-from models import (
+from pydantic_models import (
     SupplierCreate,
     SupplierResponse,
     SupplierUpdateRate,
