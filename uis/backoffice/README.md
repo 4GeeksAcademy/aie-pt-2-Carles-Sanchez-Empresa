@@ -32,6 +32,8 @@ When the API is running on port `8000`, these pages are available:
 - `/` → backoffice main panel (protected)
 - `/suppliers.html` → supplier directory (protected)
 - `/incidents.html` → incident analyzer (protected)
+- `/incidents-manager.html` → incident manager (protected)
+- `/inventory.html` → inventory management (protected)
 - `/account/profile` → current user profile (protected)
 
 Legacy routes (`/login.html`, `/register.html`, `/profile.html`) are kept as aliases.

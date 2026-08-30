@@ -336,6 +336,12 @@ async def get_incidents_manager():
     return FileResponse(os.path.join(BACKOFFICE_DIR, "incidents-manager.html"))
 
 
+@app.get("/inventory.html")
+async def get_inventory():
+    """Sirve la página del gestor de inventario."""
+    return FileResponse(os.path.join(BACKOFFICE_DIR, "inventory.html"))
+
+
 # ──────────────────────────── Entry point ────────────────────────────
 
 if __name__ == "__main__":
