@@ -334,7 +334,6 @@ function showErrorToast(message) {
     toast.style.display = "none";
   }, 6000);
 }
-}
 
 async function loadList() {
   const loadingEl = document.getElementById("listLoading");

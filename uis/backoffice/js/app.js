@@ -284,66 +284,90 @@
     throw err;
   }
   async function login(email, password) {
-    const res = await fetch(`${API_ORIGIN}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
-    if (!res.ok) {
-      let detail = `Error ${res.status}`;
-      try {
-        const body = await res.json();
-        detail = body.detail || detail;
-      } catch {
+    try {
+      const res = await fetch(`${API_ORIGIN}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) {
+        let detail = `Error ${res.status}`;
+        try {
+          const body = await res.json();
+          detail = body.detail || detail;
+        } catch {
+          console.warn("[auth] No se pudo parsear el cuerpo de error en login (c\xF3digo HTTP", res.status, ")");
+        }
+        throw new Error(detail);
       }
-      throw new Error(detail);
+      const data = await res.json();
+      setToken(data.access_token);
+      return data.access_token;
+    } catch (err) {
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        throw new Error("No se pudo conectar con el servidor. Verifica tu conexi\xF3n e int\xE9ntalo de nuevo.");
+      }
+      throw err;
     }
-    const data = await res.json();
-    setToken(data.access_token);
-    return data.access_token;
   }
   async function register(data) {
-    const registerPayload = {
-      email: data.email,
-      password: data.password
-    };
-    if (data.name) registerPayload.name = data.name;
-    if (data.phone) registerPayload.phone = data.phone;
-    if (data.address) registerPayload.address = data.address;
-    const regRes = await fetch(`${API_ORIGIN}/users`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(registerPayload)
-    });
-    if (!regRes.ok) {
-      let detail = `Error ${regRes.status}`;
-      try {
-        const body = await regRes.json();
-        detail = body.detail || detail;
-      } catch {
+    try {
+      const registerPayload = {
+        email: data.email,
+        password: data.password
+      };
+      if (data.name) registerPayload.name = data.name;
+      if (data.phone) registerPayload.phone = data.phone;
+      if (data.address) registerPayload.address = data.address;
+      const regRes = await fetch(`${API_ORIGIN}/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(registerPayload)
+      });
+      if (!regRes.ok) {
+        let detail = `Error ${regRes.status}`;
+        try {
+          const body = await regRes.json();
+          detail = body.detail || detail;
+        } catch {
+          console.warn("[auth] No se pudo parsear el cuerpo de error en register (c\xF3digo HTTP", regRes.status, ")");
+        }
+        throw new Error(detail);
       }
-      throw new Error(detail);
+      return login(data.email, data.password);
+    } catch (err) {
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        throw new Error("No se pudo conectar con el servidor. Verifica tu conexi\xF3n e int\xE9ntalo de nuevo.");
+      }
+      throw err;
     }
-    return login(data.email, data.password);
   }
   async function getAuthMe() {
-    const res = await fetch(`${API_ORIGIN}/auth/me`, {
-      headers: { ...getAuthHeaders() }
-    });
-    if (!res.ok) {
-      if (res.status === 401) {
-        clearToken();
-        window.location.href = "/login?reason=session_expired";
+    try {
+      const res = await fetch(`${API_ORIGIN}/auth/me`, {
+        headers: { ...getAuthHeaders() }
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          clearToken();
+          window.location.href = "/login?reason=session_expired";
+        }
+        let detail = `Error ${res.status}`;
+        try {
+          const body = await res.json();
+          detail = body.detail || detail;
+        } catch {
+          console.warn("[auth] No se pudo parsear el cuerpo de error en getAuthMe (c\xF3digo HTTP", res.status, ")");
+        }
+        throw new Error(detail);
       }
-      let detail = `Error ${res.status}`;
-      try {
-        const body = await res.json();
-        detail = body.detail || detail;
-      } catch {
+      return res.json();
+    } catch (err) {
+      if (err instanceof TypeError && err.message === "Failed to fetch") {
+        throw new Error("No se pudo conectar con el servidor. Verifica tu conexi\xF3n e int\xE9ntalo de nuevo.");
       }
-      throw new Error(detail);
+      throw err;
     }
-    return res.json();
   }
   async function getProfile() {
     const res = await fetch(`${API_ORIGIN}/profiles/me`, {
@@ -418,6 +442,9 @@
       const newProducts = JSON.parse(document.getElementById("sampleProducts").value);
       const newShipments = JSON.parse(document.getElementById("sampleShipments").value);
       const newCarriers = JSON.parse(document.getElementById("sampleCarriers").value);
+      if (!Array.isArray(newProducts) || !Array.isArray(newShipments) || !Array.isArray(newCarriers)) {
+        throw new Error("Uno o m\xE1s datos no son arrays v\xE1lidos");
+      }
       state.products.length = 0;
       state.shipments.length = 0;
       state.carriers.length = 0;
