@@ -364,3 +364,52 @@
   - **READMEs**: ruta `GET /suppliers` → `GET /api/suppliers` corregida
 - [x] Todos los archivos compilados sin errores (get_errors limpio en Python y TypeScript)
 - [x] Repositorio memory bank actualizado con estado final de la auditoría
+
+### 🚀 Sistema de Inventario TrackFlow — Supabase + SQLModel
+
+**Fase 12 — Modelos y Base de Datos**
+- [x] Modelos ORM SQLModel en `models.py`:
+  - `SKU` (tabla `skus`) — producto con name, sku_code (único+indexado), client_name, category, warehouse, created_at
+  - `StockEntry` (tabla `stock_entries`) — recepción con sku_id (FK→skus), quantity, reference, warehouse, user_uuid
+  - `StockExit` (tabla `stock_exits`) — despacho/pérdida con sku_id (FK→skus), quantity, exit_type, tracking_number, warehouse, user_uuid
+- [x] Schemas Pydantic separados en `schemas.py`:
+  - `SKUCreate` / `SKUResponse` — validación category (fashion/electronics/cosmetics), warehouse (LA/ZGZ)
+  - `StockEntryCreate` / `StockEntryResponse` — warehouse validado
+  - `StockExitCreate` / `StockExitResponse` — exit_type (dispatch/loss), tracking_number condicional
+  - `MovementResponse` — combinación inbound/outbound para listado
+- [x] Conexión Supabase/PostgreSQL via `sqlmodel.create_engine(SUPABASE_URL)`
+- [x] Sesión inyectada por petición: `get_db()` con `Session(engine)`
+- [x] Fallo controlado si SUPABASE_URL no está en .env
+
+**Fase 13 — Endpoints REST**
+- [x] `GET /inventory/products` — lista SKUs con stock calculado (entradas - salidas), filtros ?warehouse= & ?category=
+- [x] `GET /inventory/products/{id}` — detalle de SKU + stock
+- [x] `POST /inventory/products` — crear SKU (201), verifica unicidad de sku_code
+- [x] `POST /inventory/orders/inbound` — recepción (201), valida SKU existe y warehouse coincide
+- [x] `POST /inventory/orders/outbound` — despacho/pérdida (201), valida SKU existe, warehouse coincide, stock suficiente, tracking_number condicional
+- [x] `GET /inventory/orders` — lista movimientos (inbound+outbound) con datos del SKU, ordenado por fecha descendente
+- [x] Todos protegidos con `Depends(get_current_user)`
+
+**Fase 14 — Tests Unitarios**
+- [x] 20 tests en `tests/test_inventory.py` cubriendo:
+  - CRUD de SKUs (crear, listar, obtener por ID, duplicado → 400, listar con filtros)
+  - Stock calculado (entradas incrementan, salidas decrementan)
+  - Validación stock negativo (HTTP 400 con mensaje detallado)
+  - tracking_number: obligatorio si dispatch, nulo si loss (ambos sentidos)
+  - Warehouse matching entre SKU y movimientos (inbound/outbound → 400)
+  - Autenticación requerida (sin token → 401)
+- [x] MockResults implementado con soporte de agregación SUM/COALESCE y filtros WHERE
+- [x] 108 tests totales: 20 inventario + 88 existentes → todos verdes
+
+**Fase 15 — Seed Script**
+- [x] `scripts/seed_inventory.py` — carga inicial idempotente:
+  - 6 SKUs (3 LA: fashion+electronics, 3 ZGZ: electronics+cosmetics)
+  - 6 recepciones (StockEntry) con referencias únicas
+  - 4 despachos/pérdidas (StockExit) con tracking_numbers únicos
+  - Idempotencia: comprueba sku_code, reference y tracking_number antes de insertar
+  - Resumen final con stock calculado por SKU
+
+#### ⚠️ Deuda Técnica
+- **N+1 en `list_orders`**: `GET /inventory/orders` carga los SKU relacionados uno por uno dentro del bucle (db.get por cada movimiento). Solución futura: cargar todos los SKU relacionados en una sola consulta con `select(SKU).where(SKU.id.in_(...))` y lookup en dict O(1).
+
+---

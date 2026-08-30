@@ -242,7 +242,64 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
   - `models.py` — Modelos Pydantic con `SupplierCreate`, `SupplierResponse`, `SupplierUpdateRate`, `SupplierUpdateStatus`, validaciones cruzadas país↔moneda, categorías, estado (Enum)
   - `seed.py` — Poblado inicial con 15 proveedores (9 USA + 6 Spain), idempotente
 - **Base de datos**: TinyDB 4.8+ — persistencia en JSON (`suppliers_db.json`), tabla `suppliers`, consultas con `tinydb.Query`
-- **CORS**: configurado con `allow_origins=["*"]`, `allow_credentials=False`
+
+### Sistema de Inventario — Supabase + SQLModel
+
+- **Base de datos cloud**: PostgreSQL vía Supabase, conectada mediante `sqlmodel.create_engine(SUPABASE_URL)`
+- **Variable de entorno**: `SUPABASE_URL` en `.env` — si no está configurada, el backend lanza `RuntimeError` al arrancar
+- **ORM**: SQLModel 0.42+ (combina SQLAlchemy + Pydantic) — modelos con `table=True` para mapeo automático
+- **Sesión**: `get_db()` como dependencia FastAPI que produce `Session(engine)` por petición, cerrada automáticamente al finalizar
+- **Tablas** (creadas automáticamente por SQLModel):
+  - `skus` — productos con sku_code único e indexado
+  - `stock_entries` — recepciones, FK→skus con CASCADE
+  - `stock_exits` — despachos/pérdidas, FK→skus con CASCADE
+- **Modelos ORM** (`services/api/models.py`): `SKU`, `StockEntry`, `StockExit` — todos con `Optional[int] id` como PK y `created_at: str` en ISO 8601
+- **Schemas Pydantic** (`services/api/schemas.py`): separados de modelos ORM, con validaciones:
+  - Categorías: fashion, electronics, cosmetics
+  - Almacenes: LA (Los Ángeles), ZGZ (Zaragoza)
+  - Tipos de salida: dispatch (envío), loss (pérdida)
+  - tracking_number obligatorio si dispatch, nulo si loss
+
+### Endpoints de Inventario
+
+Router `/inventory` (protegido con JWT):
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/inventory/products` | Lista SKUs con stock calculado, filtros ?warehouse= & ?category= |
+| GET | `/inventory/products/{id}` | Detalle SKU + stock actual |
+| POST | `/inventory/products` | Crear SKU (201), verifica sku_code único |
+| POST | `/inventory/orders/inbound` | Recepción (201), valida warehouse coincidente |
+| POST | `/inventory/orders/outbound` | Despacho/pérdida (201), valida stock suficiente |
+| GET | `/inventory/orders` | Todos los movimientos con datos del SKU |
+
+### Arquitectura de Datos (Dual DB)
+
+| Propósito | Base de Datos | Tecnología |
+|-----------|---------------|------------|
+| Auth (usuarios, perfiles) | Local JSON | TinyDB 4.8 |
+| Proveedores | Local JSON | TinyDB 4.8 |
+| Incidencias | Local JSON | TinyDB 4.8 |
+| **Inventario (SKUs, movimientos)** | **Cloud PostgreSQL** | **SQLModel + Supabase** |
+
+### Seed
+
+```bash
+# Inventario (crea 6 SKUs + 6 entradas + 4 salidas, idempotente)
+cd services/api && python ../../scripts/seed_inventory.py
+
+# Incidencias (desde CSV, idempotente)
+cd services/api && python ../../scripts/seed_incidents.py
+
+# Proveedores (15 registros, idempotente)
+cd services/api && uv run seed
+```
+
+### Deuda Técnica
+
+- **N+1 en `list_orders`**: `GET /inventory/orders` ejecuta `db.get(SKU, ...)` por cada movimiento. Solución: cargar todos los SKU relacionados en una única consulta anticipada.
+
+**CORS**: configurado con `allow_origins=["*"]`, `allow_credentials=False`
 - **Ejecución**: `uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload` (o con `uvicorn` directamente)
 - **Instalación**: `uv sync` en `services/api/`
 - **Seed**: `uv run seed` (idempotente, no duplica si ya hay datos)
