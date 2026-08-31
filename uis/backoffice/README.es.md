@@ -1,8 +1,9 @@
-# TrackFlow Backoffice (HTML + bundle TypeScript)
+# TrackFlow Backoffice (Next.js 16 + React 19 + Tailwind v4)
 
-Esta carpeta contiene las páginas estáticas del backoffice (`index.html`, `suppliers.html`, `incidents.html`, `login.html`, `register.html`, `profile.html`) y el bundle de navegador (`js/app.js`) generado desde `src/ui/handlers.ts`.
+Aplicación Next.js que sirve el panel operativo de TrackFlow.  
+Reemplaza las páginas HTML estáticas legacy con una estructura moderna de App Router usando React Server Components y Client Components.
 
-El backoffice está pensado para servirse desde la app FastAPI en `services/api`, no desde un servidor frontend independiente.
+Toda la lógica de dominio compartida se importa de `@trackflow/core` (en `src/` de la raíz del monorepo) — sin duplicación de código.
 
 ---
 
@@ -10,74 +11,114 @@ El backoffice está pensado para servirse desde la app FastAPI en `services/api`
 
 - Node.js 20+
 - npm 10+
-- Python 3.10+
-- `uv`
-
-Comprobación rápida:
-
-```bash
-node -v
-npm -v
-uv --version
-```
+- Backend FastAPI corriendo en puerto 8000 (`services/api`)
 
 ---
 
-## Rutas para abrir en el navegador
-
-Cuando la API está corriendo en el puerto `8000`, tienes disponibles estas páginas:
-
-- `/login` → inicio de sesión
-- `/register` → registro de cuenta
-- `/` → panel principal del backoffice (protegido)
-- `/suppliers.html` → directorio de proveedores (protegido)
-- `/incidents.html` → analizador de incidencias (protegido)
-- `/account/profile` → perfil del usuario actual (protegido)
-
-Las rutas legacy (`/login.html`, `/register.html`, `/profile.html`) se mantienen como alias.
-
-Las rutas protegidas requieren un token JWT válido guardado en `localStorage` (`trackflow_token`).
-
----
-
-## Proceso recomendado de arranque (de principio a fin)
-
-### 1. Compilar el bundle del backoffice
+## Ejecutar
 
 ```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
+# Desde la raíz del repo, instalar deps de todos los workspaces
 npm install
-npm run build
+
+# Iniciar servidor de desarrollo (puerto 3000)
+cd uis/backoffice
+npm run dev
 ```
-
-### 2. Iniciar la API (que también sirve esta UI)
-
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/services/api
-uv sync
-uv run seed   # opcional: datos de ejemplo para proveedores
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### 3. Abrir y autenticarse
-
-1. Abre `http://localhost:8000/register` para crear una cuenta.
-2. Luego inicia sesión en `http://localhost:8000/login`.
-3. Tras el login se redirige a `http://localhost:8000/`.
-4. Navega a proveedores e incidencias desde la barra superior.
 
 ---
 
-## Flujo de desarrollo
+## Proxy API (rewrites)
 
-Usa recompilación automática mientras editas `src/`:
+El backoffice usa **rewrites** de Next.js (`next.config.ts`) para redirigir las llamadas API al backend FastAPI, manteniendo todo en el mismo origen:
 
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build:watch
+```
+/api/*       → http://localhost:8000/*  (elimina el prefijo /api)
+/auth/*      → http://localhost:8000/auth/*
+/users/*     → http://localhost:8000/users/*
+/profiles/*  → http://localhost:8000/profiles/*
 ```
 
-Mantén el servidor FastAPI corriendo en otra terminal.
+> 💡 El frontend usa `API_BASE = "/api"` en `lib/constants.ts`, por lo que todas las llamadas fetch (ej. `fetch("/api/suppliers")`) se redirigen al backend sin el prefijo `/api`.
+
+Esto evita problemas de CORS en desarrollo y Codespaces.
+
+---
+
+## Rutas
+
+| Ruta | Auth | Descripción |
+|---|---|---|
+| `/login` | No | Formulario de login (email + password → JWT) |
+| `/register` | No | Formulario de registro |
+| `/` | JWT | Dashboard — inventario, envíos y carriers |
+| `/suppliers` | JWT | CRUD de proveedores |
+| `/incidents` | JWT | Analizador CSV de incidencias |
+| `/account/profile` | JWT | Gestión de perfil de usuario |
+
+> Las rutas protegidas requieren un JWT válido en `localStorage` (`trackflow_token`).
+
+---
+
+## Cómo lanzar (full stack)
+
+### 1. Backend FastAPI (puerto 8000)
+
+```bash
+cd services/api
+source venv/bin/activate
+uv run seed                # opcional: datos de ejemplo
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### 2. Backoffice (puerto 3000)
+
+```bash
+cd uis/backoffice
+npm run dev
+```
+
+> ⚠️ El backoffice usa el puerto 3000 por defecto. Si el website ya ocupa ese puerto, Next.js asignará automáticamente el puerto 3001.
+
+### 3. Abrir en navegador
+
+- **Login**: `http://localhost:3001/login`
+- **Registro**: `http://localhost:3001/register`
+- **Dashboard**: `http://localhost:3001/` (tras login)
+
+---
+
+## Arquitectura
+
+```
+uis/backoffice/
+├── app/                    # Páginas Next.js App Router
+│   ├── login/page.tsx      # Login (envuelto en Suspense)
+│   ├── register/page.tsx   # Registro
+│   ├── page.tsx            # Dashboard (protegido)
+│   ├── suppliers/page.tsx  # CRUD proveedores (protegido)
+│   ├── incidents/page.tsx  # Analizador incidencias (protegido)
+│   └── account/profile/page.tsx  # Perfil (protegido)
+├── components/             # Componentes UI compartidos
+├── hooks/                  # Custom hooks (useDashboard, useSuppliers, useIncidentAnalyzer)
+├── services/api.ts         # Wrapper fetch API (usa API_BASE + rewrites)
+├── lib/constants.ts        # Config (API_BASE, categorías, etc.)
+├── next.config.ts          # Rewrites + transpilePackages
+└── tsconfig.json           # Alias de ruta
+```
+
+## Paquete compartido (`@trackflow/core`)
+
+El backoffice importa toda la lógica compartida del barrel `src/` del monorepo:
+
+```ts
+import { login, register, getToken, getAuthMe, getProfile, updateProfile }
+  from "@trackflow/core";
+import { filterProductsByWarehouse, sortCarriersByReliability, selectBestCarrier, ... }
+  from "@trackflow/core";
+import type { Product, Shipment, Carrier, User, ... }
+  from "@trackflow/core";
+```
 
 ---
 
@@ -85,49 +126,31 @@ Mantén el servidor FastAPI corriendo en otra terminal.
 
 | Comando | Descripción |
 |---|---|
-| `npm run build` | Empaqueta `../../src/ui/handlers.ts` en `js/app.js` |
-| `npm run build:watch` | Recompila automáticamente al detectar cambios |
-
----
-
-## Acceso en Codespaces
-
-Si ejecutas esto en GitHub Codespaces, usa la URL del puerto `8000`:
-
-- `https://<codespace-name>-8000.app.github.dev/login`
-
-Puedes ver la URL exacta en el panel Ports de VS Code.
+| `npm run dev` | Iniciar servidor de desarrollo (puerto 3001) |
+| `npm run build` | Compilar para producción |
+| `npm run start` | Iniciar servidor de producción |
 
 ---
 
 ## Solución de problemas
 
-### La UI carga pero las acciones no hacen nada
+### `another next dev server is already running`
 
-El bundle puede estar desactualizado. Recompila:
-
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build
-```
-
-### 401 Unauthorized o redirección automática al login
-
-El token falta o expiró. Inicia sesión de nuevo en `/login`.
-
-### `sh: esbuild: not found`
-
-Instala dependencias en backoffice:
+Mata el servidor existente:
 
 ```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm install
+lsof -ti:3001 | xargs kill
+npm run dev
 ```
 
-### No se puede conectar con la API
+### Las peticiones API devuelven 404
 
-Inicia/reinicia FastAPI en `services/api`:
+Asegúrate de que FastAPI está corriendo en puerto 8000 y que los rewrites en `next.config.ts` apuntan a la URL correcta. Verifica con:
 
 ```bash
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+curl http://localhost:8000/api/health
 ```
+
+### Error de login
+
+Asegúrate de haberte registrado primero. El backend FastAPI debe estar corriendo en puerto 8000.

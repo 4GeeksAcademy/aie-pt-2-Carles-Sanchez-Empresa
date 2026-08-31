@@ -1,0 +1,128 @@
+<!DOCTYPE html><html lang="es" class="h-full antialiased"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/3d3w_wf0fpyhe.css" data-precedence="next"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/1u5zan5bs9a7v.js"/><script src="/_next/static/chunks/2yfh_cfzr1nyc.js" async=""></script><script src="/_next/static/chunks/08ttfj81-47mu.js" async=""></script><script src="/_next/static/chunks/turbopack-14a6dgwtnqhkj.js" async=""></script><script src="/_next/static/chunks/3iyggq872min9.js" async="" crossorigin=""></script><script src="/_next/static/chunks/0ctt9cky2rsb2.js" async="" crossorigin=""></script><script src="/_next/static/chunks/0cz1d0mv5g_q7.js" noModule=""></script></head><body class="flex min-h-full flex-col bg-[#c6dced] text-[#2f4a62]"><div hidden=""><!--$--><!--/$--></div><header class="border-b border-[#c89d66] bg-[#f3ddba]"><div class="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3"><div class="flex items-center gap-6"><a class="text-xl font-bold tracking-tight text-[#14263a]" href="/">🚚 TrackFlow</a></div></div></header><main class="flex-1"><div class="mx-auto max-w-7xl space-y-6 p-6"><div class="mb-6"><h1 class="text-2xl font-bold text-[#14263a]">Dashboard — Verificador de Utilidades</h1><p class="text-sm text-[#2f4a62]">Prueba y verifica las funciones de colecciones, búsqueda, transformaciones y validaciones desde <code class="rounded bg-[#f3ddba] px-1 text-xs">@trackflow/core</code></p></div><section class="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm"><h2 class="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span>Datos de ejemplo</h2><div class="mb-3 flex items-center gap-2"><button class="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">✅ Aplicar cambios</button><span class="text-xs text-[#2f4a62] italic">Los datos se cargan automáticamente al abrir la página</span></div><div class="grid grid-cols-1 gap-4 md:grid-cols-3"><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-3"><p class="mb-1 font-medium text-[#14263a]">Productos</p><textarea class="h-48 w-full resize-y rounded border border-[#c89d66] bg-[#f3ddba] p-2 font-mono text-xs text-[#14263a]">[
+  {
+    &quot;sku&quot;: &quot;SHOE-BLK-42&quot;,
+    &quot;name&quot;: &quot;Zapatillas Negras Running - Talla 42&quot;,
+    &quot;category&quot;: &quot;Fashion&quot;,
+    &quot;weightKg&quot;: 0.8,
+    &quot;dimensions&quot;: {
+      &quot;lengthCm&quot;: 35,
+      &quot;widthCm&quot;: 22,
+      &quot;heightCm&quot;: 12
+    },
+    &quot;warehouse&quot;: &quot;Los Angeles&quot;,
+    &quot;stockQuantity&quot;: 45,
+    &quot;minStockThreshold&quot;: 20,
+    &quot;unitCostUSD&quot;: 35,
+    &quot;isFragile&quot;: false,
+    &quot;status&quot;: &quot;Active&quot;
+  },
+  {
+    &quot;sku&quot;: &quot;LAPTOP-DELL-15&quot;,
+    &quot;name&quot;: &quot;Laptop Dell 15 pulgadas&quot;,
+    &quot;category&quot;: &quot;Electronics&quot;,
+    &quot;weightKg&quot;: 2.3,
+    &quot;dimensions&quot;: {
+      &quot;lengthCm&quot;: 40,
+      &quot;widthCm&quot;: 28,
+      &quot;heightCm&quot;: 3
+    },
+    &quot;warehouse&quot;: &quot;Zaragoza&quot;,
+    &quot;stockQuantity&quot;: 8,
+    &quot;minStockThreshold&quot;: 10,
+    &quot;unitCostUSD&quot;: 650,
+    &quot;isFragile&quot;: true,
+    &quot;status&quot;: &quot;Low stock&quot;
+  },
+  {
+    &quot;sku&quot;: &quot;PERFUME-COCO-50&quot;,
+    &quot;name&quot;: &quot;Perfume Coco 50ml&quot;,
+    &quot;category&quot;: &quot;Cosmetics&quot;,
+    &quot;weightKg&quot;: 0.3,
+    &quot;dimensions&quot;: {
+      &quot;lengthCm&quot;: 12,
+      &quot;widthCm&quot;: 8,
+      &quot;heightCm&quot;: 15
+    },
+    &quot;warehouse&quot;: &quot;Los Angeles&quot;,
+    &quot;stockQuantity&quot;: 120,
+    &quot;minStockThreshold&quot;: 30,
+    &quot;unitCostUSD&quot;: 85,
+    &quot;isFragile&quot;: true,
+    &quot;status&quot;: &quot;Active&quot;
+  }
+]</textarea></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-3"><p class="mb-1 font-medium text-[#14263a]">Envíos</p><textarea class="h-48 w-full resize-y rounded border border-[#c89d66] bg-[#f3ddba] p-2 font-mono text-xs text-[#14263a]">[
+  {
+    &quot;id&quot;: &quot;SH-2024-8821&quot;,
+    &quot;sku&quot;: &quot;LAPTOP-DELL-15&quot;,
+    &quot;quantity&quot;: 1,
+    &quot;origin&quot;: &quot;Zaragoza&quot;,
+    &quot;destination&quot;: {
+      &quot;city&quot;: &quot;Madrid&quot;,
+      &quot;country&quot;: &quot;Spain&quot;,
+      &quot;postalCode&quot;: &quot;28001&quot;,
+      &quot;distanceKm&quot;: 320
+    },
+    &quot;priority&quot;: &quot;Express&quot;,
+    &quot;declaredValueUSD&quot;: 650,
+    &quot;carrier&quot;: null,
+    &quot;status&quot;: &quot;Pending&quot;,
+    &quot;createdAt&quot;: &quot;2024-03-15T00:00:00.000Z&quot;
+  }
+]</textarea></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-3"><p class="mb-1 font-medium text-[#14263a]">Transportistas</p><textarea class="h-48 w-full resize-y rounded border border-[#c89d66] bg-[#f3ddba] p-2 font-mono text-xs text-[#14263a]">[
+  {
+    &quot;id&quot;: &quot;CAR-UPS&quot;,
+    &quot;name&quot;: &quot;UPS&quot;,
+    &quot;operatesIn&quot;: [
+      &quot;United States&quot;
+    ],
+    &quot;baseRateUSD&quot;: 5,
+    &quot;ratePerKgUSD&quot;: 1.2,
+    &quot;ratePerKmUSD&quot;: 0.05,
+    &quot;avgDeliveryDays&quot;: 3,
+    &quot;onTimeRate&quot;: 88,
+    &quot;maxWeightKg&quot;: 30,
+    &quot;handlesFragile&quot;: true,
+    &quot;acceptsPriority&quot;: [
+      &quot;Standard&quot;,
+      &quot;Express&quot;
+    ]
+  },
+  {
+    &quot;id&quot;: &quot;CAR-SEUR&quot;,
+    &quot;name&quot;: &quot;SEUR&quot;,
+    &quot;operatesIn&quot;: [
+      &quot;Spain&quot;
+    ],
+    &quot;baseRateUSD&quot;: 6.5,
+    &quot;ratePerKgUSD&quot;: 1.5,
+    &quot;ratePerKmUSD&quot;: 0.08,
+    &quot;avgDeliveryDays&quot;: 2,
+    &quot;onTimeRate&quot;: 92,
+    &quot;maxWeightKg&quot;: 25,
+    &quot;handlesFragile&quot;: true,
+    &quot;acceptsPriority&quot;: [
+      &quot;Standard&quot;,
+      &quot;Express&quot;,
+      &quot;Same-day&quot;
+    ]
+  },
+  {
+    &quot;id&quot;: &quot;CAR-DHL&quot;,
+    &quot;name&quot;: &quot;DHL Express&quot;,
+    &quot;operatesIn&quot;: [
+      &quot;United States&quot;,
+      &quot;Spain&quot;
+    ],
+    &quot;baseRateUSD&quot;: 12,
+    &quot;ratePerKgUSD&quot;: 2,
+    &quot;ratePerKmUSD&quot;: 0.1,
+    &quot;avgDeliveryDays&quot;: 1,
+    &quot;onTimeRate&quot;: 95,
+    &quot;maxWeightKg&quot;: 50,
+    &quot;handlesFragile&quot;: true,
+    &quot;acceptsPriority&quot;: [
+      &quot;Express&quot;,
+      &quot;Same-day&quot;
+    ]
+  }
+]</textarea></div></div></section><section class="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm"><h2 class="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span>Colecciones — Filtrado y Ordenación</h2><div class="grid grid-cols-1 gap-4 md:grid-cols-2"><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><label class="mb-2 block text-sm font-medium text-[#14263a]">Filtrar productos por almacén</label><div class="flex gap-2"><select class="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]"><option value="Los Angeles" selected="">Los Angeles</option><option value="Zaragoza">Zaragoza</option></select><button class="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Ejecutar</button></div><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><label class="mb-2 block text-sm font-medium text-[#14263a]">Filtrar productos por categoría</label><div class="flex gap-2"><select class="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]"><option value="Fashion" selected="">Fashion</option><option value="Electronics">Electronics</option><option value="Cosmetics">Cosmetics</option><option value="Home">Home</option><option value="Other">Other</option></select><button class="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Ejecutar</button></div><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><p class="mb-2 text-sm font-medium text-[#14263a]">Productos con stock bajo</p><button class="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Ejecutar</button><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><label class="mb-2 block text-sm font-medium text-[#14263a]">Ordenar productos por stock</label><div class="flex gap-2"><select class="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]"><option value="asc" selected="">Ascendente</option><option value="desc">Descendente</option></select><button class="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Ejecutar</button></div><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4 md:col-span-2"><label class="mb-2 block text-sm font-medium text-[#14263a]">Ordenar transportistas por fiabilidad (onTimeRate)</label><div class="flex gap-2"><select class="max-w-xs flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]"><option value="desc" selected="">Descendente (más fiable primero)</option><option value="asc">Ascendente (menos fiable primero)</option></select><button class="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Ejecutar</button></div><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div></div></section><section class="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm"><h2 class="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span>Búsqueda</h2><div class="grid grid-cols-1 gap-4 md:grid-cols-3"><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><label class="mb-2 block text-sm font-medium text-[#14263a]">Buscar producto por SKU (lineal)</label><div class="flex gap-2"><input type="text" placeholder="SKU-..." class="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm" value=""/><button class="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Buscar</button></div><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><label class="mb-2 block text-sm font-medium text-[#14263a]">Buscar envío por ID (lineal)</label><div class="flex gap-2"><input type="text" placeholder="SHP-..." class="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm" value=""/><button class="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Buscar</button></div><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><label class="mb-2 block text-sm font-medium text-[#14263a]">Búsqueda binaria por peso (kg)</label><div class="flex gap-2"><input type="number" step="0.1" class="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm" value="95"/><button class="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Buscar</button></div><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div></div></section><section class="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm"><h2 class="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span>Transformaciones — Scoring, Reportes, Agrupación</h2><div class="grid grid-cols-1 gap-4 md:grid-cols-2"><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><p class="mb-2 text-sm font-medium text-[#14263a]">Puntuar transportista para envío</p><div class="mb-2 flex flex-wrap gap-2"><label class="text-xs text-[#2f4a62]">Transportista: <input type="number" min="0" max="2" class="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" value="0"/></label><label class="text-xs text-[#2f4a62]">Envío: <input type="number" min="0" max="0" class="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" value="0"/></label><label class="text-xs text-[#2f4a62]">Producto: <input type="number" min="0" max="2" class="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" value="0"/></label><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Puntuar</button></div><pre class="mt-1 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><p class="mb-2 text-sm font-medium text-[#14263a]">Seleccionar mejor transportista para envío</p><div class="mb-2 flex gap-2"><label class="text-xs text-[#2f4a62]">Envío: <input type="number" min="0" max="0" class="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" value="0"/></label><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Seleccionar</button></div><pre class="mt-1 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><p class="mb-2 text-sm font-medium text-[#14263a]">Resumenes</p><div class="flex flex-wrap gap-2"><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Contar por categoría</button><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Valor inventario</button><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Distancia media</button></div><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><p class="mb-2 text-sm font-medium text-[#14263a]">Agrupaciones y rankings</p><div class="flex flex-wrap gap-2"><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Envíos por estado</button><div class="flex gap-1"><label class="text-xs text-[#2f4a62] self-center">Top: <input type="number" min="1" max="10" class="w-10 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" value="3"/></label><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Top transportistas</button></div></div><pre class="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div></div></section><section class="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm"><h2 class="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span>Validaciones de negocio</h2><div class="grid grid-cols-1 gap-4 md:grid-cols-3"><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><p class="mb-2 text-sm font-medium text-[#14263a]">Validar producto</p><div class="mb-2 flex gap-2"><input type="number" min="0" max="2" class="w-14 rounded border border-[#c89d66] bg-[#f3ddba] px-2 py-1 text-xs" value="0"/><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Validar</button></div><pre class="min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><p class="mb-2 text-sm font-medium text-[#14263a]">Validar envío</p><div class="mb-2 flex gap-2"><input type="number" min="0" max="0" class="w-14 rounded border border-[#c89d66] bg-[#f3ddba] px-2 py-1 text-xs" value="0"/><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Validar</button></div><pre class="min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div><div class="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4"><p class="mb-2 text-sm font-medium text-[#14263a]">Validar transportista</p><div class="mb-2 flex gap-2"><input type="number" min="0" max="2" class="w-14 rounded border border-[#c89d66] bg-[#f3ddba] px-2 py-1 text-xs" value="0"/><button class="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Validar</button></div><pre class="min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs"></pre></div></div></section></div><!--$--><!--/$--></main><footer class="border-t border-[#c89d66] bg-[#f3ddba]"><div class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-[#2f4a62] md:flex-row md:items-center md:justify-between"><p>© 2025 TrackFlow. Todos los derechos reservados.</p></div></footer><script src="/_next/static/chunks/1u5zan5bs9a7v.js" id="_R_" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:I[92825,[\"/_next/static/chunks/3iyggq872min9.js\"],\"ClientSegmentRoot\"]\n3:I[71260,[\"/_next/static/chunks/3iyggq872min9.js\"],\"default\"]\n4:I[39756,[\"/_next/static/chunks/3iyggq872min9.js\"],\"default\"]\n5:I[37457,[\"/_next/static/chunks/3iyggq872min9.js\"],\"default\"]\n7:I[47257,[\"/_next/static/chunks/3iyggq872min9.js\"],\"ClientPageRoot\"]\n8:I[76231,[\"/_next/static/chunks/3iyggq872min9.js\",\"/_next/static/chunks/0ctt9cky2rsb2.js\"],\"default\"]\nb:I[97367,[\"/_next/static/chunks/3iyggq872min9.js\"],\"OutletBoundary\"]\nc:\"$Sreact.suspense\"\ne:I[97367,[\"/_next/static/chunks/3iyggq872min9.js\"],\"ViewportBoundary\"]\n10:I[97367,[\"/_next/static/chunks/3iyggq872min9.js\"],\"MetadataBoundary\"]\n12:I[68027,[\"/_next/static/chunks/3iyggq872min9.js\"],\"default\",1]\n:HL[\"/_next/static/chunks/3d3w_wf0fpyhe.css\",\"style\"]\n0:{\"P\":null,\"c\":[\"\",\"\"],\"q\":\"\",\"i\":false,\"f\":[[[\"\",{\"children\":[\"__PAGE__\",{},\"$undefined\",\"$undefined\",4608]},\"$undefined\",\"$undefined\",4624],[[\"$\",\"$1\",\"c\",{\"children\":[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/3d3w_wf0fpyhe.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}],[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/3iyggq872min9.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"$L2\",null,{\"Component\":\"$3\",\"slots\":{\"children\":[\"$\",\"$L4\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L5\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[[\"$\",\"title\",null,{\"children\":\"404: This page could not be found.\"}],[\"$\",\"div\",null,{\"style\":{\"fontFamily\":\"system-ui,\\\"Segoe UI\\\",Roboto,Helvetica,Arial,sans-serif,\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\"\",\"height\":\"100vh\",\"textAlign\":\"center\",\"display\":\"flex\",\"flexDirection\":\"column\",\"alignItems\":\"center\",\"justifyContent\":\"center\"},\"children\":[\"$\",\"div\",null,{\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\"}}],[\"$\",\"h1\",null,{\"className\":\"next-error-h1\",\"style\":{\"display\":\"inline-block\",\"margin\":\"0 20px 0 0\",\"padding\":\"0 23px 0 0\",\"fontSize\":24,\"fontWeight\":500,\"verticalAlign\":\"top\",\"lineHeight\":\"49px\"},\"children\":404}],[\"$\",\"div\",null,{\"style\":{\"display\":\"inline-block\"},\"children\":[\"$\",\"h2\",null,{\"style\":{\"fontSize\":14,\"fontWeight\":400,\"lineHeight\":\"49px\",\"margin\":0},\"children\":\"This page could not be found.\"}]}]]}]}]],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]},\"serverProvidedParams\":{\"params\":{},\"promises\":[\"$@6\"]}}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[[\"$\",\"$L7\",null,{\"Component\":\"$8\",\"serverProvidedParams\":{\"searchParams\":{},\"params\":\"$0:f:0:1:0:props:children:1:props:serverProvidedParams:params\",\"promises\":[\"$@9\",\"$@a\"]}}],[[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/0ctt9cky2rsb2.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"$Lb\",null,{\"children\":[\"$\",\"$c\",null,{\"name\":\"Next.MetadataOutlet\",\"children\":\"$@d\"}]}]]}],{},null,false,null]},null,false,null],[\"$\",\"$1\",\"h\",{\"children\":[null,[\"$\",\"$Le\",null,{\"children\":\"$Lf\"}],[\"$\",\"div\",null,{\"hidden\":true,\"children\":[\"$\",\"$L10\",null,{\"children\":[\"$\",\"$c\",null,{\"name\":\"Next.Metadata\",\"children\":\"$L11\"}]}]}],null]}],false]],\"m\":\"$undefined\",\"G\":[\"$12\",[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/3d3w_wf0fpyhe.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}]]],\"S\":true,\"h\":null,\"r\":\"$undefined\",\"s\":\"$undefined\",\"a\":\"$undefined\",\"l\":\"$undefined\",\"p\":\"$undefined\",\"d\":\"$undefined\",\"b\":\"j-M_CJpGG4ltNtbzguy6F\"}\n6:\"$0:f:0:1:0:props:children:1:props:serverProvidedParams:params\"\n9:{}\na:\"$0:f:0:1:0:props:children:1:props:serverProvidedParams:params\"\nf:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"}],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1\"}]]\nd:null\n11:[]\n"])</script></body></html>
