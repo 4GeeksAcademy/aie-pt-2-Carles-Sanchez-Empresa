@@ -1,6 +1,6 @@
 //Scoring de Transportista y Cálculo de Costos
 
-import { Product, Shipment, Carrier, ProductCategory, ShipmentStatus } from '../types/models.js';
+import { Product, Shipment, Carrier, ProductCategory, ShipmentStatus } from '../types/models';
 
 //Funciones:
 

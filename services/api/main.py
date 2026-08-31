@@ -12,13 +12,11 @@ Módulos:
 
 import csv
 import io
-import os
 from typing import Optional
 
 from fastapi import Depends, FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 
 from analyzer import analyze_rows, build_results_csv
 from auth import get_current_user
@@ -45,12 +43,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ── Servir frontend (backoffice) como estáticos ──
-BACKOFFICE_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "uis", "backoffice")
-
-# Servimos JS y demás recursos bajo /js/, /public/, etc.
-app.mount("/js", StaticFiles(directory=os.path.join(BACKOFFICE_DIR, "js")), name="js")
 
 # Almacén en memoria del último resultado (para la exportación CSV)
 _last_result: dict | None = None
@@ -153,62 +145,6 @@ app.include_router(auth_router)
 @app.get("/api/health")
 async def root():
     return {"status": "ok", "service": "TrackFlow API"}
-
-
-# ──────────────────────── Frontend Routes ────────────────────────
-
-@app.get("/")
-async def get_index():
-    """Sirve la página principal del backoffice."""
-    return FileResponse(os.path.join(BACKOFFICE_DIR, "index.html"))
-
-
-@app.get("/incidents.html")
-async def get_incidents():
-    """Sirve la página de análisis de incidencias."""
-    return FileResponse(os.path.join(BACKOFFICE_DIR, "incidents.html"))
-
-
-@app.get("/suppliers.html")
-async def get_suppliers():
-    """Sirve la página del directorio de proveedores."""
-    return FileResponse(os.path.join(BACKOFFICE_DIR, "suppliers.html"))
-
-
-@app.get("/login.html")
-async def get_login():
-    """Sirve la página de inicio de sesión."""
-    return FileResponse(os.path.join(BACKOFFICE_DIR, "login.html"))
-
-
-@app.get("/login")
-async def get_login_clean():
-    """Alias limpio para la página de inicio de sesión."""
-    return FileResponse(os.path.join(BACKOFFICE_DIR, "login.html"))
-
-
-@app.get("/register.html")
-async def get_register():
-    """Sirve la página de registro."""
-    return FileResponse(os.path.join(BACKOFFICE_DIR, "register.html"))
-
-
-@app.get("/register")
-async def get_register_clean():
-    """Alias limpio para la página de registro."""
-    return FileResponse(os.path.join(BACKOFFICE_DIR, "register.html"))
-
-
-@app.get("/profile.html")
-async def get_profile():
-    """Sirve la página de perfil de usuario."""
-    return FileResponse(os.path.join(BACKOFFICE_DIR, "profile.html"))
-
-
-@app.get("/account/profile")
-async def get_profile_clean():
-    """Alias limpio para la página de perfil de usuario."""
-    return FileResponse(os.path.join(BACKOFFICE_DIR, "profile.html"))
 
 
 # ──────────────────────────── Entry point ────────────────────────────

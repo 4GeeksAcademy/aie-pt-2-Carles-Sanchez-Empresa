@@ -1,107 +1,97 @@
-# TrackFlow Website (React + TypeScript + Tailwind)
+# TrackFlow Website (Next.js 16 + React 19 + Tailwind v4)
 
-Este proyecto contiene la migración de la web estática de TrackFlow a componentes reutilizables en React con TypeScript y estilos con Tailwind.
+Aplicación Next.js que sirve la web corporativa de TrackFlow.  
+Migrada de React + Vite a Next.js App Router.
+
+Toda la lógica de dominio compartida se importa de `@trackflow/core` (en `src/` de la raíz del monorepo) — sin duplicación de código.
+
+---
 
 ## Requisitos
 
-- Node.js 20 o superior
-- npm 10 o superior
+- Node.js 20+
+- npm 10+
 
-Comprobación rápida:
+---
 
-```bash
-node -v
-npm -v
-```
-
-## Estructura relevante
-
-- `src/` componentes y páginas React
-- `public/media/` imágenes y recursos visuales
-- `src/utils/applicationValidation.ts` validaciones del formulario
-
-## Instalación
-
-Desde la carpeta del proyecto:
+## Ejecutar
 
 ```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/website
-npm install --no-package-lock
-```
+# Desde la raíz del repo, instalar deps de todos los workspaces
+npm install
 
-Nota:
-- Se usa `--no-package-lock` para evitar generar `package-lock.json` en este repositorio.
-
-## Ejecutar en desarrollo
-
-```bash
+# Iniciar servidor de desarrollo (puerto 3000)
+cd uis/website
 npm run dev
 ```
 
-Vite mostrará una URL local (normalmente `http://localhost:5173`).
+---
 
-## Comprobar tipado TypeScript
+## Rutas
 
-```bash
-npm run typecheck
-```
+| Ruta | Descripción |
+|---|---|
+| `/` | Landing principal |
+| `/application` | Formulario de solicitud TrackFlow |
 
-## Generar build de producción
-
-```bash
-npm run build
-```
-
-## Previsualizar build
-
-```bash
-npm run preview
-```
+---
 
 ## Scripts disponibles
 
-- `npm run dev`: levanta servidor de desarrollo
-- `npm run typecheck`: valida tipos sin emitir archivos
-- `npm run build`: compila para producción
-- `npm run preview`: sirve la build generada
+| Comando | Descripción |
+|---|---|
+| `npm run dev` | Iniciar servidor de desarrollo (puerto 3000) |
+| `npm run build` | Compilar para producción |
+| `npm run start` | Iniciar servidor de producción |
+| `npm run typecheck` | Validar tipos TypeScript sin emitir archivos |
 
-## Rutas de la aplicación
+---
 
-- `/` landing principal
-- `/application` formulario de solicitud
+## Arquitectura
+
+```
+uis/website/
+├── app/
+│   ├── page.tsx            # Landing page
+│   ├── layout.tsx          # Layout raíz
+│   └── application/
+│       └── page.tsx        # Formulario de solicitud
+├── components/             # Componentes UI reutilizables
+├── public/media/           # Imágenes y recursos
+└── next.config.ts          # transpilePackages para @trackflow/core
+```
+
+## Paquete compartido (`@trackflow/core`)
+
+El website importa lógica compartida del barrel `src/` del monorepo:
+
+```ts
+import { validateProduct, validateShipment, validateCarrier, ... }
+  from "@trackflow/core";
+import type { Product, Shipment, Carrier, ApplicationFormData, ... }
+  from "@trackflow/core";
+```
+
+---
 
 ## Solución de problemas
 
-### Error `sh: vite: not found` o exit code `127`
+### `port already in use`
 
-Suele ocurrir cuando faltan dependencias locales.
-
-1. Asegura que estás en la carpeta correcta:
+Next.js sugerirá automáticamente el siguiente puerto disponible. O mata el proceso existente:
 
 ```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/website
-```
-
-2. Reinstala dependencias:
-
-```bash
-npm install --no-package-lock
-```
-
-3. Ejecuta de nuevo:
-
-```bash
+lsof -ti:3000 | xargs kill
 npm run dev
 ```
 
-### Puerto ocupado
+### `sh: next: not found`
 
-Si el puerto por defecto está ocupado, Vite propondrá otro automáticamente.
+Asegúrate de que las dependencias están instaladas:
 
-## Estado esperado
-
-Si todo está correcto:
-
-- `npm run typecheck` termina sin errores
-- `npm run build` genera `dist/` sin fallos
-- `npm run dev` sirve la app en local
+```bash
+cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa
+npm install
+cd uis/website
+npm run dev
+```

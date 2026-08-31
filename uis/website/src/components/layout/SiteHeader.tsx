@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 type HeaderVariant = "home" | "application";
 
@@ -19,7 +19,7 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
       <div className="sticky top-0 z-20">
         <header className="border-b border-[#c89d66] bg-[#f3ddba]">
           <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4">
-            <Link to="/" aria-label="TrackFlow" className="inline-flex items-center bg-transparent">
+            <Link href="/" aria-label="TrackFlow" className="inline-flex items-center bg-transparent">
               <img
                 src="/media/Logo TrackFlow.png"
                 alt="Logo TrackFlow"
@@ -27,7 +27,7 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
               />
             </Link>
             <Link
-              to="/"
+              href="/"
               className="rounded-md border border-[#14263a] bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] hover:bg-[#1d4f7a]"
             >
               Inicio
