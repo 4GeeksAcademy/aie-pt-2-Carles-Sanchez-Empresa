@@ -5,8 +5,10 @@ import { useIncidentAnalyzer } from "@/hooks/useIncidentAnalyzer";
 import { FileUpload } from "@/components/incidents/FileUpload";
 import { SummaryCards } from "@/components/incidents/SummaryCards";
 import { MetricsTables } from "@/components/incidents/MetricsTables";
+import { useTranslation } from "@/lib/i18n";
 
 export default function IncidentsPage() {
+  const { t } = useTranslation();
   const { rows, error, parseCSV, getStats } = useIncidentAnalyzer();
   const [fileError, setFileError] = useState<string | null>(null);
 
@@ -20,8 +22,8 @@ export default function IncidentsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#14263a]">Analizador de Incidencias</h1>
-        <p className="text-sm text-[#2f4a62]">Sube un CSV con incidencias para obtener métricas y estadísticas</p>
+        <h1 className="text-2xl font-bold text-[#14263a]">{t("incidents.title")}</h1>
+        <p className="text-sm text-[#2f4a62]">{t("incidents.subtitle")}</p>
       </div>
 
       {(error || fileError) && (
@@ -36,7 +38,7 @@ export default function IncidentsPage() {
         <div className="space-y-6">
           <div className="rounded-lg bg-[#f8fbff] border border-[#c89d66] p-3">
             <p className="text-xs text-[#2f4a62]">
-              {rows.length} filas cargadas · {Object.keys(rows[0]).length} columnas: {Object.keys(rows[0]).join(", ")}
+              {t("incidents.rows_loaded", { count: rows.length })} · {t("incidents.columns", { count: Object.keys(rows[0]).length, columns: Object.keys(rows[0]).join(", ") })}
             </p>
           </div>
 
@@ -50,7 +52,7 @@ export default function IncidentsPage() {
           <section className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-blue-500" />
-              Datos completos
+              {t("incidents.full_data")}
             </h2>
             <div className="overflow-x-auto rounded-lg border border-[#c89d66] bg-[#f8fbff]">
               <table className="w-full text-left text-xs">

@@ -5,24 +5,30 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { getToken, logout } from "@trackflow/core";
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 interface HeaderLink {
   href: string;
-  label: string;
+  labelKey: string;
 }
 
-const protectedLinks: HeaderLink[] = [
-  { href: "/", label: "Dashboard" },
-  { href: "/suppliers", label: "Proveedores" },
-  { href: "/incidents", label: "Analizador" },
-  { href: "/incidents-manager", label: "Gestor" },
-];
-
 export function Header() {
+  const { t, lang, setLang } = useTranslation();
   const pathname = usePathname();
   const isAuthPage = pathname === "/login" || pathname === "/register";
   const [mounted, setMounted] = useState(false);
   const [token, setTokenState] = useState<string | null>(null);
+
+  const toggleLang = () => {
+    setLang(lang === "es" ? "en" : "es");
+  };
+
+  const protectedLinks: HeaderLink[] = [
+    { href: "/", labelKey: "nav.dashboard" },
+    { href: "/suppliers", labelKey: "nav.suppliers" },
+    { href: "/incidents", labelKey: "nav.analyzer" },
+    { href: "/incidents-manager", labelKey: "nav.manager" },
+  ];
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +53,14 @@ export function Header() {
               priority
             />
           </Link>
+          <button
+            type="button"
+            onClick={toggleLang}
+            className="rounded-md border border-[#c89d66] bg-[#f8fbff] px-2.5 py-1.5 text-xs font-medium text-[#2f4a62] hover:bg-[#e5be83] transition"
+            aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
+          >
+            {lang === "es" ? "EN" : "ES"}
+          </button>
         </div>
       </header>
     );
@@ -80,7 +94,7 @@ export function Header() {
                         : "text-[#2f4a62] hover:bg-[#e5be83] hover:text-[#14263a]"
                     }`}
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </Link>
                 );
               })}
@@ -94,16 +108,25 @@ export function Header() {
               href="/account/profile"
               className="rounded-lg px-3 py-2 text-sm font-medium text-[#2f4a62] hover:bg-[#e5be83] hover:text-[#14263a] transition"
             >
-              👤 Perfil
+              👤 {t("nav.profile")}
             </Link>
             <button
               onClick={() => logout()}
               className="rounded-lg bg-red-500/20 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-500/30 transition"
             >
-              🚪 Salir
+              🚪 {t("nav.logout")}
             </button>
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={toggleLang}
+          className="rounded-md border border-[#c89d66] bg-[#f8fbff] px-2.5 py-1.5 text-xs font-medium text-[#2f4a62] hover:bg-[#e5be83] transition"
+          aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
+        >
+          {lang === "es" ? "EN" : "ES"}
+        </button>
       </div>
     </header>
   );

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getToken, clearToken } from "@trackflow/core";
 import { API_BASE } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n";
 
 interface ProfileData {
   name: string;
@@ -16,6 +17,7 @@ interface UserInfo {
 }
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [profile, setProfile] = useState<ProfileData>({ name: "", phone: "", address: "" });
   const [loading, setLoading] = useState(true);
@@ -54,7 +56,7 @@ export default function ProfilePage() {
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar perfil");
+      setError(err instanceof Error ? err.message : t("profile.error_load"));
       if (String(err).includes("401") || String(err).includes("Unauthorized")) {
         clearToken();
         window.location.href = "/login?reason=session_expired";
@@ -89,9 +91,9 @@ export default function ProfilePage() {
         phone: updated.phone ?? "",
         address: updated.address ?? "",
       });
-      setFeedback("✅ Perfil actualizado correctamente");
+      setFeedback(t("profile.saved"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al guardar");
+      setError(err instanceof Error ? err.message : t("profile.error_save"));
       if (String(err).includes("401") || String(err).includes("Unauthorized")) {
         clearToken();
         window.location.href = "/login?reason=session_expired";
@@ -104,22 +106,22 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex min-h-[calc(100vh-80px)] items-center justify-center">
-        <p className="text-[#2f4a62]">⏳ Cargando perfil...</p>
+        <p className="text-[#2f4a62]">{t("profile.loading")}</p>
       </div>
     );
   }
 
   const roleLabel: Record<string, string> = {
-    admin: "Administrador",
-    manager: "Gestor",
-    user: "Usuario",
+    admin: t("profile.role_admin"),
+    manager: t("profile.role_manager"),
+    user: t("profile.role_user"),
   };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#14263a]">Mi perfil</h1>
-        <p className="text-sm text-[#2f4a62]">Gestiona tu información personal</p>
+        <h1 className="text-2xl font-bold text-[#14263a]">{t("profile.title")}</h1>
+        <p className="text-sm text-[#2f4a62]">{t("profile.subtitle")}</p>
       </div>
 
       {error && (
@@ -131,17 +133,17 @@ export default function ProfilePage() {
       <div className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-blue-500" />
-          Información de la cuenta
+          {t("profile.account_info")}
         </h2>
         <div className="space-y-3">
           {user && (
             <>
               <div className="flex items-center gap-2">
-                <span className="w-24 text-sm font-medium text-[#2f4a62]">Email:</span>
+                <span className="w-24 text-sm font-medium text-[#2f4a62]">{t("profile.email")}</span>
                 <span className="font-mono text-sm text-[#14263a]">{user.email}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-24 text-sm font-medium text-[#2f4a62]">Rol:</span>
+                <span className="w-24 text-sm font-medium text-[#2f4a62]">{t("profile.role")}</span>
                 <span className="text-sm text-[#14263a]">{roleLabel[user.role] || user.role}</span>
               </div>
             </>
@@ -152,48 +154,48 @@ export default function ProfilePage() {
       <div className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm">
         <h2 className="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-emerald-500" />
-          Datos de contacto
+          {t("profile.contact_info")}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="profileName" className="mb-1 block text-sm font-medium text-[#14263a]">Nombre</label>
+            <label htmlFor="profileName" className="mb-1 block text-sm font-medium text-[#14263a]">{t("profile.name_label")}</label>
             <input
               id="profileName"
               type="text"
               value={profile.name}
               onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
               className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
-              placeholder="Tu nombre"
+              placeholder={t("profile.name_placeholder")}
             />
           </div>
           <div>
-            <label htmlFor="profilePhone" className="mb-1 block text-sm font-medium text-[#14263a]">Teléfono</label>
+            <label htmlFor="profilePhone" className="mb-1 block text-sm font-medium text-[#14263a]">{t("profile.phone_label")}</label>
             <input
               id="profilePhone"
               type="tel"
               value={profile.phone}
               onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
               className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
-              placeholder="+34 600 000 000"
+              placeholder={t("profile.phone_placeholder")}
             />
           </div>
           <div>
-            <label htmlFor="profileAddress" className="mb-1 block text-sm font-medium text-[#14263a]">Dirección</label>
+            <label htmlFor="profileAddress" className="mb-1 block text-sm font-medium text-[#14263a]">{t("profile.address_label")}</label>
             <input
               id="profileAddress"
               type="text"
               value={profile.address}
               onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
               className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
-              placeholder="Calle, ciudad, código postal"
+              placeholder={t("profile.address_placeholder")}
             />
           </div>
 
           {feedback && <p className="text-sm text-emerald-600">{feedback}</p>}
 
           <button type="submit" disabled={saving} className="rounded-lg bg-[#14263a] px-6 py-2.5 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:opacity-50 flex items-center gap-2">
-            {saving ? "⏳ Guardando..." : "💾 Guardar cambios"}
+            {saving ? t("profile.saving") : t("profile.save")}
           </button>
         </form>
       </div>
