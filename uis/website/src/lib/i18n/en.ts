@@ -73,12 +73,18 @@ const en: Record<string, string> = {
   "form.review_text": "Check all data before submitting your request.",
   "form.clear_btn": "Clear",
   "form.submit_btn": "Submit request",
+  "form.sending": "Sending…",
 
   "form.success.title": "Thank you for your interest in TrackFlow!",
   "form.success.message":
     "We have received your request. Our commercial team will review your information and contact you within 24-48 hours to schedule a call and learn about your logistics needs in detail.",
   "form.success.urgent":
     "If you have any urgent questions, write to us directly at ",
+
+  // ─── Error display ───
+  "form.error.title": "Submission error",
+  "form.error.dismiss": "Dismiss",
+  "form.error.unexpected": "An unexpected error occurred. Please try again.",
 
   // ─── Validation errors ───
   "form.error.empresa": "Company name must be at least 2 characters.",
