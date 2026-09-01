@@ -265,9 +265,55 @@
   - Login con credenciales incorrectas → 401
   - `GET /auth/me` → 200 con email, role y perfil vinculado
 
+### 🏗️ Backoffice Next.js — Migración de HTML estático a Next.js 16
+
+**Fase 12 — Migración a Next.js 16 App Router**
+- [x] Proyecto Next.js 16.3.0 con App Router, TypeScript, Tailwind CSS 4 y PostCSS
+- [x] Layout raíz (`app/layout.tsx`) con `AuthGuard` + `Header` + Footer (100% cliente, `force-dynamic`)
+- [x] Página Dashboard (`app/page.tsx`) — punto de entrada principal del backoffice
+- [x] Página de Proveedores (`app/suppliers/page.tsx`) — tabla con filtros, modal de edición, acciones CRUD
+- [x] Página de Incidencias (`app/incidents/page.tsx`) — drag & drop CSV, métricas, tabla de reglas inválidas, descarga
+- [x] Página de Login (`app/login/page.tsx`) — formulario de inicio de sesión
+- [x] Página de Registro (`app/register/page.tsx`) — formulario de registro de usuario
+- [x] Página de Perfil (`app/account/profile/page.tsx`) — visualización y edición del perfil
+- [x] AuthGuard (`components/AuthGuard.tsx`) — protección de rutas en cliente con redirección a login
+- [x] Capa de servicios (`services/api.ts`) — cliente HTTP con funciones CRUD y auth
+- [x] Constantes (`lib/constants.ts`) — `API_BASE = "/api"` y categorías de proveedores
+- [x] Configuración de proxy API (`next.config.ts`) — rewrites de Next.js para FastAPI
+
+### 🐛 Backoffice Next.js — Corrección de errores
+
+**Fase 13 — Hydration error en Header**
+- [x] **Problema**: `getToken()` llamado durante el render SSR causaba `"Unexpected token '<', '<!DOCTYPE' is not valid JSON"` porque el token de `localStorage` no está disponible en servidor.
+- [x] **Solución**: Patrón `useState(false)` + `useEffect` para diferir la detección del token al cliente. Durante SSR y primer render se muestra la versión sin autenticación (logo únicamente). Una vez montado en cliente, `setMounted(true)` + `setTokenState(getToken())` activa la navegación protegida.
+- [x] Archivo modificado: `uis/backoffice/components/Header.tsx`
+
+**Fase 14 — Error JSON en página de Proveedores**
+- [x] **Problema**: Las llamadas a la API de proveedores usaban ruta relativa sin prefijo `/api`, chocando con rutas de página de Next.js.
+- [x] **Solución**: `API_BASE` cambiado de `""` a `"/api"` en `lib/constants.ts` para que todas las llamadas a la API pasen por el proxy de Next.js.
+- [x] Archivo modificado: `uis/backoffice/lib/constants.ts`
+
+**Fase 15 — Navbar no visible tras login sin recarga manual**
+- [x] **Problema**: `useEffect` del Header tenía dependencia `[]` vacía, por lo que no se reevaluaba al navegar desde `/login` a `/` tras el inicio de sesión.
+- [x] **Solución**: Cambiada la dependencia de `useEffect` a `[pathname]` para que al cambiar de ruta se re-evalúe la presencia del token.
+- [x] Archivo modificado: `uis/backoffice/components/Header.tsx`
+
+**Fase 16 — Error 404 en `/api/auth/me` (perfil)**
+- [x] **Problema**: El proxy de Next.js enviaba `/api/auth/me` a `localhost:8000/api/auth/me` pero el backend FastAPI expone `/auth/me` (sin el prefijo `/api`).
+- [x] **Solución**: Configuración de rewrites en `next.config.ts` que elimina el prefijo `/api`: `{ source: "/api/:path*", destination: "http://localhost:8000/:path*" }`.
+- [x] Archivo modificado: `uis/backoffice/next.config.ts`
+
+**Fase 17 — Actualización del logo del backoffice**
+- [x] **Problema**: El Header usaba texto emoji `🚚 TrackFlow` como logo, mientras que website y talent-pipeline-tracker usaban la imagen `Logo TrackFlow.png`.
+- [x] **Solución**: 
+  - Logo `uis/website/public/media/Logo TrackFlow.png` copiado a `uis/backoffice/public/Logo TrackFlow.png`
+  - Header actualizado para usar `<Image src="/Logo TrackFlow.png" />` en lugar del texto emoji
+  - Dimensiones responsive: `h-14 w-auto` (mobile) / `md:h-16` (desktop), `width=112 height=56`
+- [x] Archivos modificados: `uis/backoffice/components/Header.tsx`, nuevo `uis/backoffice/public/Logo TrackFlow.png`
+
 ### 🔐 Frontend Auth Unificado — Backoffice + Talent Pipeline
 
-**Fase 9 — Backoffice auth UX hardening**
+**Fase 9 — Backoffice auth UX hardening** *(previo a migración Next.js)*
 - [x] Protección temprana en páginas protegidas (`index.html`, `incidents.html`, `suppliers.html`, `profile.html`) antes de pintar contenido.
 - [x] Validación de expiración JWT (`exp`) además de presencia de token.
 - [x] Prevención de flash de contenido en rutas protegidas.

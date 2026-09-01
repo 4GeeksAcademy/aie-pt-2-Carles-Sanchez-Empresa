@@ -27,25 +27,28 @@
 |---|---|
 | **TypeScript** | Tipos base compartidos (`Id`, `BaseEntity`) para uso transversal entre proyectos |
 
-### Website corporativo — `uis/website/` (React + Vite)
+### Website corporativo — `uis/website/` (Next.js 16)
 
 | Tecnología | Versión | Propósito |
 |---|---|---|
-| **React** | ^19.2.0 | Biblioteca de interfaz de usuario |
-| **TypeScript** | ^5.9.2 | Tipado estático |
-| **Vite** | ^7.1.3 | Bundler y servidor de desarrollo |
-| **Tailwind CSS** | ^3.4.17 | Framework CSS utilitario (Tailwind v3 con PostCSS) |
-| **React Router DOM** | ^7.9.1 | Ruteo SPA entre landing y formulario |
-| **PostCSS + Autoprefixer** | — | Procesamiento de estilos |
+| **Next.js** | ^16.3.0 | Framework React con App Router |
+| **React** | ^19.2.8 | Biblioteca de interfaz de usuario |
+| **TypeScript** | ^5 | Tipado estático |
+| **Tailwind CSS** | ^4 | Framework CSS utilitario (vía `@tailwindcss/postcss`) |
+| **PostCSS** | — | Procesador de estilos |
+| **next/image** | — | Optimización de imágenes nativa de Next.js |
 
-### Backoffice operacional — `uis/backoffice/` (HTML estático + bundle desde `src` + páginas servidas por FastAPI)
+### Backoffice operacional — `uis/backoffice/` (Next.js 16 App Router)
 
 | Tecnología | Versión | Propósito |
 |---|---|---|
-| **HTML5 + Tailwind CDN** | — | Render del panel manual del backoffice (`index.html`, `incidents.html`, `suppliers.html`) |
-| **JavaScript vanilla** | — | Lógica del Analizador de Incidencias (`js/incidents.js`) con drag & drop, llamadas fetch a la API |
-| **TypeScript** | ^7.0.2 | Fuente única de lógica y handlers reutilizados desde `src/` para el panel de utilidades |
-| **esbuild** | ^0.28.1 | Bundling de navegador en un único archivo `js/app.js` |
+| **Next.js** | ^16.3.0 | Framework React con App Router (Dashboard, Proveedores, Incidencias, Auth) |
+| **React** | ^19.2.8 | Biblioteca de interfaz de usuario |
+| **TypeScript** | ^5 | Tipado estático |
+| **Tailwind CSS** | ^4 | Framework CSS utilitario (vía `@tailwindcss/postcss`) |
+| **PostCSS** | — | Procesador de estilos |
+| **next/image** | — | Optimización de imágenes (logo) |
+| **@trackflow/core** | workspace | Paquete compartido de lógica de dominio + auth (desde `src/`) |
 
 ### Backend API — `services/api/` (FastAPI + TinyDB + JWT Auth)
 
@@ -66,20 +69,30 @@
 
 ```
 aie-pt-2-Carles-Sanchez-Empresa/
-├── src/                    # Lógica de dominio (TypeScript)
+├── src/                    # Lógica de dominio (TypeScript) + auth module (@trackflow/core)
 │   ├── types/models.ts     # Interfaces de dominio (Product, Shipment, Carrier…)
-│   └── utils/              # Colecciones, búsqueda, transformaciones, validaciones
+│   ├── utils/              # Colecciones, búsqueda, transformaciones, validaciones
+│   ├── services/auth.ts    # Módulo compartido de autenticación JWT (login, register, getToken, logout)
+│   ├── data/sampleData.ts  # Datos de ejemplo tipados
+│   ├── ui/handlers.ts      # Entrypoint de interfaz (legacy)
+│   └── index.ts            # Barrel exports
 ├── packages/shared/        # Tipos compartidos (@repo/shared-types)
 ├── uis/                    # Interfaces de usuario
-│   ├── talent-pipeline-tracker/  # Next.js App Router
-│   ├── backoffice/         # HTML estático con bundle generado desde src/
-│   └── website/            # React + Vite (landing corporativa y formulario)
+│   ├── talent-pipeline-tracker/  # Next.js 16 App Router (tracking de candidatos)
+│   ├── backoffice/         # Next.js 16 App Router (Dashboard, Proveedores, Incidencias, Auth)
+│   │   ├── app/            # Páginas: / (dashboard), /suppliers, /incidents, /login, /register, /account/profile
+│   │   ├── components/     # Header, AuthGuard
+│   │   ├── services/       # api.ts (cliente HTTP CRUD)
+│   │   ├── lib/constants.ts # API_BASE="/api", categorías
+│   │   └── public/         # Logo TrackFlow.png
+│   └── website/            # Next.js 16 App Router (landing corporativa + formulario)
+│       └── src/app/        # Páginas: / (landing), /application (formulario)
 ├── services/               # Backend: API unificada (FastAPI)
 │   └── api/                #   analyzer/ (incidencias), routes/ (suppliers, users, profiles, auth), auth.py, services.py, models.py, database.py, main.py, .env
 ├── agents/                 # Agentes de IA (estructura preparada)
 ├── workflows/              # Automatizaciones y workflows (estructura preparada)
-├── skills/                 # Habilidades: code-review, data-analysis, research
-├── scripts/                # Scripts auxiliares
+├── skills/                 # Habilidades: code-review, data-analysis, research, carrier-selection-optimizer, returns-triage-assistant
+├── scripts/                # Scripts auxiliares (analyze.py)
 ├── infra/                  # Infraestructura
 ├── mcps/                   # MCPs
 ├── data/                   # Datos
@@ -124,6 +137,13 @@ Todas las llamadas a la API externa se realizan a través de `/api/proxy/`, evit
 - Este proxy enruta llamadas de autenticación/perfil a FastAPI (`/auth/*`, `/users`, `/profiles/me`) desde el mismo origen del frontend.
 - Objetivo: evitar errores de CORS en Codespaces cuando el navegador está en `-3000` y la API en `-8000`.
 
+### 3.2 Proxy de API para Backoffice Next.js
+
+- Configurado en `uis/backoffice/next.config.ts` mediante `async rewrites()`.
+- Regla principal: `{ source: "/api/:path*", destination: "http://localhost:8000/:path*" }` — elimina el prefijo `/api` para que FastAPI reciba rutas limpias (`/auth/me` en lugar de `/api/auth/me`).
+- Reglas directas adicionales para compatibilidad con `@trackflow/core`: `/auth/:path*`, `/users/:path*`, `/profiles/:path*`.
+- `API_BASE = "/api"` en `lib/constants.ts` para que todos los servicios del backoffice pasen por el proxy.
+
 ### 4. Estado local con hooks (sin librerías externas)
 
 - No se usan **Redux, Zustand, Jotai** ni ninguna otra biblioteca de gestión de estado.
@@ -164,16 +184,29 @@ Todas las llamadas a la API están centralizadas en `services/api.ts`, que expon
 
 Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquetas legibles en español mediante archivos `lib/constants.ts`. Esto evita que términos técnicos aparezcan en la interfaz de usuario.
 
-### 9. Backoffice con fuente única y bundle de navegador
+### 9. Backoffice con fuente única y bundle de navegador (legacy)
 
 - La lógica de negocio del backoffice no se mantiene en `uis/backoffice/` como fuente independiente.
-- `src/` es la única fuente de verdad para tipos, utilidades, datos de ejemplo y handlers de UI.
-- `uis/backoffice/` solo contiene:
-  - `index.html` para el render estático
-  - `package.json` con scripts de build/watch
-  - `js/app.js` como artefacto final consumido por el navegador
-- El build del backoffice se realiza bundlando `../../src/ui/handlers.ts` con `esbuild`, evitando árboles duplicados de salida por módulo.
+- `src/` es la única fuente de verdad para tipos, utilidades y datos de ejemplo.
+- El build legacy del backoffice se realizaba bundlando `../../src/ui/handlers.ts` con `esbuild`, evitando árboles duplicados de salida por módulo.
 - `src/tsconfig.json` usa `noEmit` para separar claramente validación TypeScript y salida de navegador.
+- **Nota**: El backoffice fue migrado a Next.js 16 App Router, y el bundle legacy (`js/app.js`) ya no se usa para las nuevas páginas. Las páginas HTML servidas por FastAPI (index.html, incidents.html, suppliers.html) permanecen como legacy.
+
+### 10. Patrón useState + useEffect para evitar hydration errors
+
+- En componentes que dependen de `localStorage` (como `getToken()`), NO se accede al almacenamiento durante el render.
+- Se usa `const [mounted, setMounted] = useState(false)` + `useEffect(() => { setMounted(true); ... }, [])` para diferir la lógica que depende del cliente.
+- Durante SSR/primer render: se muestra la versión no-autenticada (solo logo).
+- Tras el montaje en cliente: se activa el contenido protegido condicional con `showAuth = mounted && !!token`.
+- Esto evita errores de hidratación por diferencias entre SSR y CSR.
+
+### 11. AuthGuard como layout wrapper
+
+- `AuthGuard.tsx` es un componente cliente que envuelve el layout raíz.
+- Detecta la ruta actual con `usePathname()` y el token con `getToken()`.
+- En páginas de auth (`/login`, `/register`): redirige al dashboard si ya hay sesión.
+- En páginas protegidas: redirige a `/login?redirect=<current_path>` si no hay token.
+- Se ejecuta exclusivamente en cliente (`useEffect`), evitando errores de hidratación.
 
 ---
 
@@ -221,17 +254,29 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
   - `GET /suppliers.html` — sirve la página del directorio de proveedores
   - `GET /js/*` — sirve los archivos JavaScript del backoffice
   - Alias legacy mantenidos: `/login.html`, `/register.html`, `/profile.html`
+- **Módulos de autenticación**:
+  - `auth.py` — configuración JWT (HS256), hashing bcrypt, dependencias `get_current_user` y `require_admin`
+  - `services.py` — capa de servicios con CRUD de usuarios y perfiles en TinyDB
+  - `routes/auth.py` — POST /login, GET /auth/me
+  - `routes/users.py` — CRUD de usuarios con control de roles (admin/manager/user)
+  - `routes/profiles.py` — GET/PUT /profiles/me
 - **Módulos**:
   - `analyzer/_core.py` — 8 reglas de validación, métricas y exportación CSV para incidencias
   - `routes/suppliers.py` — CRUD completo del directorio de proveedores
   - `models.py` — Modelos Pydantic con `SupplierCreate`, `SupplierResponse`, `SupplierUpdateRate`, `SupplierUpdateStatus`, validaciones cruzadas país↔moneda, categorías, estado (Enum)
   - `seed.py` — Poblado inicial con 15 proveedores (9 USA + 6 Spain), idempotente
-- **Base de datos**: TinyDB 4.8+ — persistencia en JSON (`suppliers_db.json`), tabla `suppliers`, consultas con `tinydb.Query`
+- **Base de datos**: TinyDB 4.8+ — persistencia en JSON (`suppliers_db.json`), tablas `suppliers`, `users`, `profiles`, consultas con `tinydb.Query`
+- **Autenticación**:
+  - JWT HS256 con python-jose, expiración configurable via `.env`
+  - Contraseñas hasheadas con bcrypt (libpass)
+  - Token almacenado en localStorage clave `trackflow_token`
+  - `Authorization: Bearer <token>` en todas las peticiones protegidas
+  - Control de acceso por roles (admin/manager/user) con respuestas 403 cuando no autorizado
 - **CORS**: configurado con `allow_origins=["*"]`, `allow_credentials=False`
 - **Ejecución**: `uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload` (o con `uvicorn` directamente)
 - **Instalación**: `uv sync` en `services/api/`
 - **Seed**: `uv run seed` (idempotente, no duplica si ya hay datos)
-- **Frontend**: HTML + Tailwind CDN + JavaScript vanilla (`incidents.js`), servido desde FastAPI (mismo origen, sin CORS ni Mixed Content)
+- **Frontend legacy**: HTML + Tailwind CDN + JavaScript vanilla (`incidents.js`), servido desde FastAPI (mismo origen, sin CORS ni Mixed Content)
 - **Store en memoria**: variable global `_last_result` para la exportación CSV de incidencias
 
 ### Arquitectura Hexagonal (documentada en `docs/ARCHITECTURE_PROPOSAL.md`)
@@ -306,6 +351,40 @@ uis/talent-pipeline-tracker/
     └── index.ts
 ```
 
+### Organización de carpetas (Backoffice Next.js)
+
+```
+uis/backoffice/
+├── app/                    # Páginas (App Router)
+│   ├── layout.tsx          # Layout raíz (AuthGuard + Header + Footer, force-dynamic)
+│   ├── page.tsx            # Dashboard
+│   ├── login/page.tsx      # Login
+│   ├── register/page.tsx   # Registro
+│   ├── account/profile/page.tsx # Perfil de usuario
+│   ├── suppliers/page.tsx  # Directorio de proveedores (CRUD)
+│   ├── incidents/page.tsx  # Analizador de incidencias (CSV)
+│   └── globals.css         # Estilos globales Tailwind
+├── components/             # Componentes reutilizables
+│   ├── Header.tsx          # Cabecera con logo Image + navegación protegida
+│   └── AuthGuard.tsx       # Guard de autenticación en cliente
+├── services/
+│   └── api.ts              # Cliente HTTP con funciones CRUD y auth
+├── lib/
+│   └── constants.ts        # API_BASE="/api", categorías de proveedores
+└── public/
+    └── Logo TrackFlow.png  # Logo corporativo compartido
+```
+│   └── SuccessToast.tsx
+├── lib/                    # Constantes, validaciones, helpers
+│   ├── constants.ts
+│   └── validation.ts
+├── services/               # Capa de API
+│   ├── api.ts
+│   └── auth.ts
+└── types/                  # Tipos TypeScript
+    └── index.ts
+```
+
 ---
 
 ## Dependencias del Proyecto
@@ -346,16 +425,54 @@ uis/talent-pipeline-tracker/
 }
 ```
 
-### Backoffice (`uis/backoffice/`)
+### Backoffice (`uis/backoffice/`) — Next.js App Router
 
 ```json
 {
   "scripts": {
-    "build": "esbuild ../../src/ui/handlers.ts --bundle --platform=browser --format=iife --target=es2020 --outfile=./js/app.js",
-    "build:watch": "esbuild ../../src/ui/handlers.ts --bundle --platform=browser --format=iife --target=es2020 --outfile=./js/app.js --watch"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "esbuild": "^0.28.1"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+```
+
+También consume el paquete workspace `@trackflow/core` (desde `src/`) para el módulo de autenticación (`getToken`, `setToken`, `clearToken`, `getAuthHeaders`, `logout`).
+
+### Website (`uis/website/`) — Next.js App Router
+
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
 ```
