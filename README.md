@@ -25,10 +25,10 @@ The repository currently provides the **base folder structure and documentation 
 
 | Deliverable | Location | Status |
 |---|---|---|
-| **Domain logic** (types, collections, search, transformations, validations) | `src/` | ✅ Complete |
-| **Backoffice operational panel** (HTML + TypeScript → esbuild bundle) | `uis/backoffice/` | ✅ Complete |
-| **Corporate website** (React + Vite + Tailwind) | `uis/website/` | ✅ Complete |
-| **Talent Pipeline Tracker** (Next.js App Router) | `uis/talent-pipeline-tracker/` | ✅ Complete |
+| **Shared domain logic** (types, collections, search, transformations, validations, auth) | `src/` (`@trackflow/core`) | ✅ Complete |
+| **Backoffice** (Next.js 16 + React 19 + Tailwind v4) | `uis/backoffice/` | ✅ Complete |
+| **Corporate website** (Next.js 16 + React 19 + Tailwind v4) | `uis/website/` | ✅ Complete |
+| **Talent Pipeline Tracker** (Next.js 16 + React 19 + Tailwind v4) | `uis/talent-pipeline-tracker/` | ✅ Complete |
 | **Skills** — Carrier Selection Optimizer, Returns Triage Assistant | `skills/` | ✅ Complete |
 | **Architecture proposal** (Hexagonal + FastAPI) | `docs/ARCHITECTURE_PROPOSAL.md` | ✅ Complete |
 | **Incident Analyzer API** — FastAPI backend for CSV incident analysis | `services/api/` | ✅ Complete |
@@ -43,7 +43,10 @@ The repository currently provides the **base folder structure and documentation 
 ai-engineering-company-project-monorepo/
 ├── README.md
 ├── README.es.md
-├── CONTEXT.md                # Placeholder to be replaced with assigned context
+├── CONTEXT.md
+├── AGENTS.md
+├── company-choice.md
+├── package.json              # npm workspaces root (monorepo)
 ├── agents/                   # Agent patterns/templates and tools docs
 ├── data/                     # raw, process, pipelines, eval
 ├── docs/                     # Project and architecture documentation
@@ -53,12 +56,27 @@ ai-engineering-company-project-monorepo/
 ├── packages/
 │   └── shared/               # Shared package (@repo/shared-types)
 ├── scripts/                  # Script conventions/documentation
-├── services/                 # APIs and background workers
+├── services/
+│   └── api/                  # FastAPI backend (auth, users, suppliers, incidents, profiles)
 ├── shared/                   # Shared assets/conventions at repo level
 ├── skills/                   # Reusable agent skills
-├── uis/                      # User interfaces (React, Next.js, Streamlit, HTML)
+├── src/                      # @trackflow/core — shared TS logic used by all UIs
+├── uis/
+│   ├── backoffice/           # Next.js 16 app (port 3001)
+│   ├── website/              # Next.js 16 app (port 3000)
+│   └── talent-pipeline-tracker/  # Next.js 16 app (port 3002)
 └── workflows/                # Automation/orchestration documentation
 ```
+
+### npm workspaces monorepo
+
+The root `package.json` defines workspaces:
+
+```
+["src", "packages/shared", "uis/website", "uis/backoffice", "uis/talent-pipeline-tracker"]
+```
+
+All UIs share logic from `src/` via the `@trackflow/core` package (barrel exports from `src/index.ts`), using path aliases (`@trackflow/core` → `../../src`) and Next.js `transpilePackages`. No code duplication.
 
 ---
 
@@ -72,82 +90,135 @@ ai-engineering-company-project-monorepo/
 
 ---
 
-## Running the project
+## How to start
 
-### 📊 TrackFlow Backoffice + API (recommended flow)
+1. **Use this repository as a template** and create your own project repo.
+2. **Clone** your repository (or open it in Codespaces).
+3. **Replace** `CONTEXT.md` with the full context for your assigned company.
+4. **Review** each top-level folder `README.md` to understand intended responsibilities (`uis/`, `services/`, `data/`, `skills/`, etc.).
+5. **Start implementing** milestone deliverables in `uis/` and `services/`, reusing `packages/shared/` and `data/` as needed.
 
-The backoffice frontend and backend API are both served by FastAPI on port `8000`.
+---
+
+## Running the project (monorepo)
+
+This monorepo uses **npm workspaces**. All Next.js UIs share domain logic from `src/` (`@trackflow/core`).  
+Each service runs on a different port so they can coexist locally or in Codespaces.
+
+### Prerequisites
 
 ```bash
-# 1) Build backoffice bundle
-cd uis/backoffice
+# From the repository root, install all workspace dependencies once
 npm install
-npm run build
-
-# 2) Start API (serves both API and frontend)
-cd ../../services/api
-uv sync
-uv run seed   # optional sample suppliers
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Then open:
+### 🖥️ FastAPI Backend (port 8000)
 
-- `http://localhost:8000/register` to create an account
-- `http://localhost:8000/login` to sign in
-- `http://localhost:8000/` for the main backoffice panel
-- `http://localhost:8000/suppliers.html` for supplier directory
-- `http://localhost:8000/incidents.html` for incident analyzer
-- `http://localhost:8000/account/profile` for profile page
+```bash
+cd services/api
+uv sync                    # install Python deps
+source venv/bin/activate   # enter virtual environment
+uv run seed                # optional: populate sample suppliers
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-Legacy `.html` routes (`/login.html`, `/register.html`, `/profile.html`) still work as aliases.
+> ⚠️ Run `uvicorn` **inside** the venv (`source venv/bin/activate` first), or use `uv run uvicorn main:app ...` as an alternative.
 
-Useful API routes:
+API endpoints:
 
-- `GET /api/health` (public)
-- `POST /auth/login` (public)
-- `POST /users` (public register)
-- `POST /api/incidents/analyze` (protected)
-- `GET /suppliers` (protected)
+| Endpoint | Auth | Description |
+|---|---|---|
+| `GET  /api/health` | No | Health check |
+| `POST /auth/login` | No | Login (email + password → JWT) |
+| `POST /users` | No | Register new user |
+| `GET  /auth/me` | JWT | Current user info |
+| `GET  /profiles/me` | JWT | Current user profile |
+| `PUT  /profiles/me` | JWT | Update profile |
+| `POST /api/incidents/analyze` | JWT | Upload CSV for analysis |
+| `GET  /api/incidents/results/export` | JWT | Export last analysis as CSV |
+| `GET  /suppliers` | JWT | List suppliers |
+| `POST /suppliers` | JWT | Create supplier |
 
-### 🌐 Corporate Website (React + Vite)
+### 🌐 Corporate Website (Next.js — port 3000)
 
 ```bash
 cd uis/website
-npm install
 npm run dev
 ```
 
-### 🎯 Talent Pipeline Tracker (Next.js)
+| Route | Description |
+|---|---|
+| `/` | Main landing page |
+| `/application` | Request form |
+
+### 📊 Backoffice (Next.js — port 3000)
+
+```bash
+cd uis/backoffice
+npm run dev
+```
+
+The backoffice uses **Next.js rewrites** (`next.config.ts`) to proxy API calls to the FastAPI backend so all requests stay same-origin from the browser:
+
+```
+/api/*       → http://localhost:8000/* (strips /api prefix)
+/auth/*      → http://localhost:8000/auth/*
+/users/*     → http://localhost:8000/users/*
+/profiles/*  → http://localhost:8000/profiles/*
+```
+
+> 💡 The frontend uses `API_BASE = "/api"` in `lib/constants.ts`, so all fetch calls (e.g. `fetch("/api/suppliers")`) are proxied to the backend without the `/api` prefix.
+
+| Route | Auth | Description |
+|---|---|---|
+| `/login` | No | Login form |
+| `/register` | No | Registration form |
+| `/` | JWT | Dashboard with inventory, shipments & carriers |
+| `/suppliers` | JWT | Supplier directory CRUD |
+| `/incidents` | JWT | CSV incident analyzer |
+| `/account/profile` | JWT | User profile settings |
+
+### 🎯 Talent Pipeline Tracker (Next.js — port 3002)
 
 ```bash
 cd uis/talent-pipeline-tracker
-npm install
 npm run dev
 ```
 
-Auth-enabled routes in the tracker:
+Uses a built-in Next.js Route Handler proxy (`/api/auth-proxy/*`) to avoid CORS between ports.
 
-- `/login`
-- `/register`
-- `/account/profile`
-- `/` and `/candidates/[id]` (protected)
-
-The tracker shares users with FastAPI auth and uses an internal Next.js auth proxy (`/api/auth-proxy/*`) to avoid CORS in Codespaces.
+| Route | Auth | Description |
+|---|---|---|
+| `/login` | No | Login form |
+| `/register` | No | Registration form |
+| `/` | JWT | Candidate list |
+| `/candidates/[id]` | JWT | Candidate detail |
+| `/account/profile` | JWT | User profile |
 
 ---
 
 ## How to open in Codespaces
 
-When running in GitHub Codespaces, each service is available at a unique HTTPS URL based on its port:
+Each service is available at a unique HTTPS URL:
 
-| Service | Local port | Codespaces URL pattern |
+| Service | Port | Codespaces URL pattern |
 |---|---|---|
-| TrackFlow API + Backoffice | 8000 | `https://<codespace-name>-8000.app.github.dev` |
-| Website (Vite) | 5173 | `https://<codespace-name>-5173.app.github.dev` |
-| Talent Pipeline (Next.js) | 3000 | `https://<codespace-name>-3000.app.github.dev` |
+| FastAPI Backend | 8000 | `https://<codespace-name>-8000.app.github.dev` |
+| Website | 3000 | `https://<codespace-name>-3000.app.github.dev` |
+| Backoffice | 3001 | `https://<codespace-name>-3001.app.github.dev` |
+| Talent Pipeline | 3002 | `https://<codespace-name>-3002.app.github.dev` |
 
-> 💡 Tip: In the VS Code *Ports* tab (bottom panel), you can see the exact public URLs for each port. You can also change port visibility from *Private* to *Public* if needed.
+> 💡 In the VS Code **Ports** tab you can see the exact public URLs and change port visibility from *Private* to *Public* if needed.
+> ⚠️ The backoffice uses port 3000 by default. If port 3000 is already occupied by the website, Next.js will auto-assign port 3001.
+
+---
+
+## Key conventions
+
+- **Zero duplication**: All shared logic lives in `src/` (`@trackflow/core`). UIs import from there, never copy code.
+- **npm workspaces**: Root `npm install` installs deps for all workspaces at once.
+- **Path aliases**: Each UI has `@trackflow/core` → `../../src` in `tsconfig.json`.
+- **transpilePackages**: Each `next.config.ts` includes `transpilePackages: ["@trackflow/core"]` for server-side bundling.
 
 ---
 
