@@ -207,6 +207,7 @@ export default function ProfilePage() {
 }
 
 function ChangePasswordCard() {
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -221,15 +222,15 @@ function ChangePasswordCard() {
 
     // Validaciones client-side
     if (!currentPassword) {
-      setCpError("Introduce tu contraseña actual.");
+      setCpError(t("profile.password.current_required"));
       return;
     }
     if (!newPassword || newPassword.length < 6) {
-      setCpError("La nueva contraseña debe tener al menos 6 caracteres.");
+      setCpError(t("profile.password.length"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setCpError("La nueva contraseña y la confirmación no coinciden.");
+      setCpError(t("profile.password.mismatch"));
       return;
     }
 
@@ -249,16 +250,16 @@ function ChangePasswordCard() {
       });
 
       if (res.ok) {
-        setCpFeedback("✅ Contraseña actualizada correctamente");
+        setCpFeedback(t("profile.password.saved"));
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       } else {
         const data = await res.json();
-        setCpError(data.detail || "Error al cambiar la contraseña");
+        setCpError(data.detail || t("profile.password.error"));
       }
     } catch {
-      setCpError("Error de conexión. Inténtalo de nuevo.");
+      setCpError(t("profile.password.connection"));
     } finally {
       setCpSaving(false);
     }
@@ -268,12 +269,12 @@ function ChangePasswordCard() {
     <div className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2">
         <span className="w-3 h-3 rounded-full bg-orange-500" />
-        Cambiar contraseña
+        {t("profile.password.title")}
       </h2>
 
       <form onSubmit={handleChangePassword} className="space-y-4">
         <div>
-          <label htmlFor="cpCurrentPassword" className="mb-1 block text-sm font-medium text-[#14263a]">Contraseña actual</label>
+          <label htmlFor="cpCurrentPassword" className="mb-1 block text-sm font-medium text-[#14263a]">{t("profile.password.current")}</label>
           <input
             id="cpCurrentPassword"
             type="password"
@@ -286,7 +287,7 @@ function ChangePasswordCard() {
           />
         </div>
         <div>
-          <label htmlFor="cpNewPassword" className="mb-1 block text-sm font-medium text-[#14263a]">Nueva contraseña</label>
+          <label htmlFor="cpNewPassword" className="mb-1 block text-sm font-medium text-[#14263a]">{t("profile.password.new")}</label>
           <input
             id="cpNewPassword"
             type="password"
@@ -296,11 +297,11 @@ function ChangePasswordCard() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
-            placeholder="Mínimo 6 caracteres"
+            placeholder={t("profile.password.new_placeholder")}
           />
         </div>
         <div>
-          <label htmlFor="cpConfirmPassword" className="mb-1 block text-sm font-medium text-[#14263a]">Confirmar nueva contraseña</label>
+          <label htmlFor="cpConfirmPassword" className="mb-1 block text-sm font-medium text-[#14263a]">{t("profile.password.confirm")}</label>
           <input
             id="cpConfirmPassword"
             type="password"
@@ -310,7 +311,7 @@ function ChangePasswordCard() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
-            placeholder="Repite la nueva contraseña"
+            placeholder={t("profile.password.confirm_placeholder")}
           />
         </div>
 
@@ -322,7 +323,7 @@ function ChangePasswordCard() {
           disabled={cpSaving}
           className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2 disabled:opacity-50"
         >
-          {cpSaving ? "⏳ Cambiando…" : "🔑 Cambiar contraseña"}
+          {cpSaving ? t("profile.password.saving") : t("profile.password.submit")}
         </button>
       </form>
     </div>

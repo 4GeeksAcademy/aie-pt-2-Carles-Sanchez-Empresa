@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 interface FileUploadProps {
   onParse: (text: string) => void;
@@ -8,12 +9,13 @@ interface FileUploadProps {
 }
 
 export function FileUpload({ onParse, onError }: FileUploadProps) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File) => {
     onError(null);
     if (!file.name.endsWith(".csv")) {
-      onError("Solo se aceptan archivos .csv");
+      onError(t("incidents.upload.csv_only"));
       return;
     }
     const reader = new FileReader();
@@ -23,7 +25,7 @@ export function FileUpload({ onParse, onError }: FileUploadProps) {
         onParse(text);
       }
     };
-    reader.onerror = () => onError("Error al leer el archivo");
+    reader.onerror = () => onError(t("incidents.upload.read_error"));
     reader.readAsText(file);
   };
 
@@ -42,7 +44,7 @@ export function FileUpload({ onParse, onError }: FileUploadProps) {
     <section className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2">
         <span className="w-3 h-3 rounded-full bg-blue-500" />
-        Cargar CSV de incidencias
+        {t("incidents.upload.title")}
       </h2>
 
       <div
@@ -52,8 +54,8 @@ export function FileUpload({ onParse, onError }: FileUploadProps) {
         onClick={() => fileInputRef.current?.click()}
       >
         <span className="mb-2 text-4xl">📂</span>
-        <p className="text-sm font-medium text-[#14263a]">Arrastra un archivo CSV aquí o haz clic para seleccionar</p>
-        <p className="mt-1 text-xs text-[#2f4a62]">Debe tener cabeceras: type, status, priority, resolution_hours...</p>
+        <p className="text-sm font-medium text-[#14263a]">{t("incidents.upload.drop")}</p>
+        <p className="mt-1 text-xs text-[#2f4a62]">{t("incidents.upload.headers")}</p>
         <input ref={fileInputRef} type="file" accept=".csv" onChange={handleChange} className="hidden" />
       </div>
     </section>

@@ -12,12 +12,14 @@ import {
   type IncidentStatus,
   type IncidentSummary,
 } from "@/services/api";
+import { useTranslation } from "@/lib/i18n";
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
 export function useIncidentManager() {
+  const { t } = useTranslation();
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [summary, setSummary] = useState<IncidentSummary | null>(null);
   const [listLoading, setListLoading] = useState(false);
@@ -34,11 +36,11 @@ export function useIncidentManager() {
     try {
       setIncidents(await fetchIncidents(filters));
     } catch (error) {
-      setListError(errorMessage(error, "No se pudieron cargar las incidencias."));
+      setListError(errorMessage(error, t("incidents.mgr.error.load")));
     } finally {
       setListLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
@@ -46,11 +48,11 @@ export function useIncidentManager() {
     try {
       setSummary(await fetchIncidentSummary());
     } catch (error) {
-      setSummaryError(errorMessage(error, "No se pudo cargar el resumen."));
+      setSummaryError(errorMessage(error, t("incidents.mgr.error.summary")));
     } finally {
       setSummaryLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const addIncident = useCallback(async (input: IncidentCreateInput): Promise<boolean> => {
     setFormLoading(true);
@@ -61,12 +63,12 @@ export function useIncidentManager() {
       setSummary(null);
       return true;
     } catch (error) {
-      setFormError(errorMessage(error, "No se pudo registrar la incidencia."));
+      setFormError(errorMessage(error, t("incidents.mgr.error.create")));
       return false;
     } finally {
       setFormLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const changeStatus = useCallback(async (id: number, status: IncidentStatus): Promise<boolean> => {
     setUpdatingId(id);
@@ -77,12 +79,12 @@ export function useIncidentManager() {
       setSummary(null);
       return true;
     } catch (error) {
-      setListError(errorMessage(error, "No se pudo actualizar el estado."));
+      setListError(errorMessage(error, t("incidents.mgr.error.status")));
       return false;
     } finally {
       setUpdatingId(null);
     }
-  }, []);
+  }, [t]);
 
   return {
     incidents,

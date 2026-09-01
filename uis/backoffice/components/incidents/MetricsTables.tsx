@@ -1,26 +1,28 @@
 "use client";
 
 import type { IncidentStats } from "@/hooks/useIncidentAnalyzer";
+import { useTranslation } from "@/lib/i18n";
 
 interface MetricsTablesProps {
   stats: IncidentStats;
 }
 
 export function MetricsTables({ stats }: MetricsTablesProps) {
+  const { t } = useTranslation();
   return (
     <section className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2">
         <span className="w-3 h-3 rounded-full bg-blue-500" />
-        Métricas detalladas
+        {t("incidents.metrics.title")}
       </h2>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
-          <h3 className="mb-2 text-sm font-semibold text-[#14263a]">Por tipo</h3>
+          <h3 className="mb-2 text-sm font-semibold text-[#14263a]">{t("incidents.metrics.by_type")}</h3>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#c89d66] text-left text-xs text-[#2f4a62]">
-                <th className="pb-1">Tipo</th>
-                <th className="pb-1 text-right">Cantidad</th>
+                <th className="pb-1">{t("incidents.metrics.type")}</th>
+                <th className="pb-1 text-right">{t("incidents.metrics.count")}</th>
               </tr>
             </thead>
             <tbody>
@@ -34,12 +36,12 @@ export function MetricsTables({ stats }: MetricsTablesProps) {
           </table>
         </div>
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
-          <h3 className="mb-2 text-sm font-semibold text-[#14263a]">Por prioridad</h3>
+          <h3 className="mb-2 text-sm font-semibold text-[#14263a]">{t("incidents.metrics.by_priority")}</h3>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#c89d66] text-left text-xs text-[#2f4a62]">
-                <th className="pb-1">Prioridad</th>
-                <th className="pb-1 text-right">Cantidad</th>
+                <th className="pb-1">{t("incidents.metrics.priority")}</th>
+                <th className="pb-1 text-right">{t("incidents.metrics.count")}</th>
               </tr>
             </thead>
             <tbody>

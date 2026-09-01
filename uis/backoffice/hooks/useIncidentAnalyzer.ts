@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 export interface IncidentRow {
   [key: string]: string;
@@ -16,6 +17,7 @@ export interface IncidentStats {
 }
 
 export function useIncidentAnalyzer() {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<IncidentRow[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +26,7 @@ export function useIncidentAnalyzer() {
     try {
       const lines = text.trim().split("\n");
       if (lines.length < 2) {
-        setError("El CSV debe tener al menos una cabecera y una fila de datos");
+        setError(t("incidents.csv.empty"));
         setRows([]);
         return;
       }
@@ -43,10 +45,10 @@ export function useIncidentAnalyzer() {
 
       setRows(parsed);
     } catch (err) {
-      setError("Error al parsear el CSV");
+      setError(t("incidents.csv.parse_error"));
       setRows([]);
     }
-  }, []);
+  }, [t]);
 
   const getStats = useCallback((): IncidentStats | null => {
     if (rows.length === 0) return null;
