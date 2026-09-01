@@ -6,8 +6,10 @@ import { SupplierFilters } from "@/components/suppliers/SupplierFilters";
 import { NewSupplierForm } from "@/components/suppliers/NewSupplierForm";
 import { SupplierTable } from "@/components/suppliers/SupplierTable";
 import type { Supplier } from "@/services/api";
+import { useTranslation } from "@/lib/i18n";
 
 export default function SuppliersPage() {
+  const { t } = useTranslation();
   const { suppliers, loading, error, add, edit, remove } = useSuppliers();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -28,7 +30,7 @@ export default function SuppliersPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm("¿Eliminar este proveedor?")) {
+    if (window.confirm(t("suppliers.delete_confirm"))) {
       await remove(id);
     }
   };
@@ -49,11 +51,11 @@ export default function SuppliersPage() {
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#14263a]">Proveedores</h1>
-          <p className="text-sm text-[#2f4a62]">Gestiona los transportistas y proveedores logísticos</p>
+          <h1 className="text-2xl font-bold text-[#14263a]">{t("suppliers.title")}</h1>
+          <p className="text-sm text-[#2f4a62]">{t("suppliers.subtitle")}</p>
         </div>
         <button onClick={() => { setEditingSupplier(null); setShowForm(!showForm); }} className="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">
-          {showForm ? "Cancelar" : "+ Nuevo proveedor"}
+          {showForm ? t("suppliers.cancel") : t("suppliers.add")}
         </button>
       </div>
 
@@ -90,7 +92,7 @@ export default function SuppliersPage() {
 
       {loading ? (
         <div className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-8 text-center shadow-sm">
-          <p className="text-[#2f4a62]">Cargando proveedores...</p>
+          <p className="text-[#2f4a62]">{t("suppliers.loading")}</p>
         </div>
       ) : (
         <SupplierTable suppliers={filtered} onEdit={handleEdit} onDelete={handleDelete} />

@@ -1,0 +1,135 @@
+/**
+ * i18n/es.ts — Traducciones al español para el backoffice de TrackFlow.
+ * Basado en services/api/i18n/es.py, migrado a TypeScript para Next.js.
+ */
+const es: Record<string, string> = {
+  // ─── General ───
+  "app.loading": "Cargando...",
+  "app.error.generic": "Ha ocurrido un error",
+  "app.footer.copyright": "© 2025 TrackFlow. Todos los derechos reservados.",
+
+  // ─── Auth ───
+  "auth.login.title": "Iniciar sesión",
+  "auth.login.subtitle": "Accede al panel de TrackFlow",
+  "auth.login.email_label": "Email",
+  "auth.login.email_placeholder": "tu@email.com",
+  "auth.login.password_label": "Contraseña",
+  "auth.login.password_placeholder": "••••••••",
+  "auth.login.submit": "Iniciar sesión",
+  "auth.login.submitting": "Iniciando sesión...",
+  "auth.login.error": "Error al iniciar sesión",
+  "auth.login.forgot_password": "¿Olvidaste tu contraseña?",
+  "auth.login.no_account": "¿No tienes cuenta?",
+  "auth.login.register_link": "Regístrate",
+  "auth.login.session_expired": "⏰ Tu sesión ha expirado. Inicia sesión de nuevo.",
+  "auth.login.password_reset_ok": "✅ Contraseña actualizada correctamente. Inicia sesión con tu nueva contraseña.",
+
+  "auth.register.title": "Crear cuenta",
+  "auth.register.subtitle": "Regístrate para acceder al panel de TrackFlow",
+  "auth.register.name_label": "Nombre",
+  "auth.register.name_optional": "(opcional)",
+  "auth.register.name_placeholder": "Tu nombre",
+  "auth.register.email_label": "Email",
+  "auth.register.email_placeholder": "tu@email.com",
+  "auth.register.password_label": "Contraseña",
+  "auth.register.password_placeholder": "••••••••",
+  "auth.register.confirm_label": "Confirmar contraseña",
+  "auth.register.confirm_placeholder": "••••••••",
+  "auth.register.submit": "Crear cuenta",
+  "auth.register.submitting": "Creando cuenta...",
+  "auth.register.error": "Error al registrarse",
+  "auth.register.password_mismatch": "Las contraseñas no coinciden",
+  "auth.register.password_min_length": "La contraseña debe tener al menos 6 caracteres",
+  "auth.register.has_account": "¿Ya tienes cuenta?",
+  "auth.register.login_link": "Inicia sesión",
+
+  "auth.forgot.title": "Recuperar contraseña",
+  "auth.forgot.subtitle": "Introduce tu email y te enviaremos un enlace para restablecer tu contraseña",
+  "auth.forgot.email_label": "Email",
+  "auth.forgot.email_placeholder": "tu@email.com",
+  "auth.forgot.email_required": "Introduce tu email.",
+  "auth.forgot.submit": "Enviar enlace",
+  "auth.forgot.submitting": "Enviando…",
+  "auth.forgot.sent_title": "Correo enviado",
+  "auth.forgot.sent_body": "Si existe una cuenta con ese email, recibirás un enlace para restablecer tu contraseña.",
+  "auth.forgot.back_to_login": "Volver al inicio de sesión",
+  "auth.forgot.remembered": "¿Recordaste tu contraseña?",
+  "auth.forgot.login_link": "Iniciar sesión",
+
+  "auth.reset.title": "Crear nueva contraseña",
+  "auth.reset.subtitle": "Introduce tu nueva contraseña para acceder a TrackFlow",
+  "auth.reset.password_label": "Nueva contraseña",
+  "auth.reset.password_placeholder": "Mínimo 6 caracteres",
+  "auth.reset.confirm_label": "Confirmar contraseña",
+  "auth.reset.confirm_placeholder": "Repite la contraseña",
+  "auth.reset.submit": "Restablecer contraseña",
+  "auth.reset.submitting": "Restableciendo…",
+  "auth.reset.invalid_title": "Enlace inválido",
+  "auth.reset.invalid_body": "El enlace de restablecimiento no es válido o ha caducado. Solicita uno nuevo.",
+  "auth.reset.request_new": "Solicitar nuevo enlace",
+  "auth.reset.error.password_length": "La contraseña debe tener al menos 6 caracteres.",
+  "auth.reset.error.password_mismatch": "Las contraseñas no coinciden.",
+  "auth.reset.error.invalid_token": "El enlace no es válido o ha expirado.",
+  "auth.reset.error.connection": "Error de conexión. Inténtalo de nuevo.",
+  "auth.reset.request_new_link": "Solicitar un nuevo enlace",
+
+  // ─── Header / Navigation ───
+  "nav.dashboard": "Dashboard",
+  "nav.suppliers": "Proveedores",
+  "nav.analyzer": "Analizador",
+  "nav.manager": "Gestor",
+  "nav.profile": "Perfil",
+  "nav.logout": "Salir",
+
+  // ─── Suppliers ───
+  "suppliers.title": "Proveedores",
+  "suppliers.subtitle": "Gestiona los transportistas y proveedores logísticos",
+  "suppliers.add": "+ Nuevo proveedor",
+  "suppliers.cancel": "Cancelar",
+  "suppliers.loading": "Cargando proveedores...",
+  "suppliers.delete_confirm": "¿Eliminar este proveedor?",
+
+  // ─── Incidents Analyzer ───
+  "incidents.title": "Analizador de Incidencias",
+  "incidents.subtitle": "Sube un CSV con incidencias para obtener métricas y estadísticas",
+  "incidents.rows_loaded": "{count} filas cargadas",
+  "incidents.columns": "{count} columnas: {columns}",
+  "incidents.full_data": "Datos completos",
+
+  // ─── Incidents Manager ───
+  "incidents.mgr.breadcrumb": "Operaciones",
+  "incidents.mgr.title": "Gestor centralizado de incidencias",
+  "incidents.mgr.subtitle": "Registra, prioriza y supervisa incidencias de todas las sedes.",
+  "incidents.mgr.tab_form": "Nueva incidencia",
+  "incidents.mgr.tab_list": "Listado",
+  "incidents.mgr.tab_summary": "Resumen",
+
+  // ─── Dashboard ───
+  "dashboard.title": "Dashboard — Verificador de Utilidades",
+  "dashboard.subtitle": "Prueba y verifica las funciones de colecciones, búsqueda, transformaciones y validaciones desde {lib}",
+
+  // ─── Profile ───
+  "profile.title": "Mi perfil",
+  "profile.subtitle": "Gestiona tu información personal",
+  "profile.loading": "Cargando perfil...",
+  "profile.account_info": "Información de la cuenta",
+  "profile.contact_info": "Datos de contacto",
+  "profile.email": "Email:",
+  "profile.role": "Rol:",
+  "profile.role_admin": "Administrador",
+  "profile.role_manager": "Gestor",
+  "profile.role_user": "Usuario",
+  "profile.name_label": "Nombre",
+  "profile.name_placeholder": "Tu nombre",
+  "profile.phone_label": "Teléfono",
+  "profile.phone_placeholder": "+34 600 000 000",
+  "profile.address_label": "Dirección",
+  "profile.address_placeholder": "Calle, ciudad, código postal",
+  "profile.save": "Guardar cambios",
+  "profile.saving": "Guardando...",
+  "profile.saved": "Perfil actualizado correctamente",
+  "profile.error_load": "Error al cargar perfil",
+  "profile.error_save": "Error al guardar",
+};
+
+export default es;

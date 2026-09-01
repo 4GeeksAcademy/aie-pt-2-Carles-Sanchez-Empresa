@@ -1,0 +1,60 @@
+/**
+ * i18n/index.tsx — Sistema de internacionalización para el Talent Pipeline Tracker.
+ *
+ * Uso:
+ *   const { t } = useTranslation();
+ *   <h1>{t("candidates.title")}</h1>
+ */
+
+import { useCallback, useEffect, useState } from "react";
+
+import es from "./es";
+import en from "./en";
+
+type Messages = Record<string, string>;
+
+const messages: Record<string, Messages> = { es, en };
+
+function getBrowserLanguage(): string {
+  if (typeof window === "undefined") return "es";
+  const stored = localStorage.getItem("lang");
+  if (stored && (stored === "es" || stored === "en")) return stored;
+  const html = document.documentElement.getAttribute("lang");
+  if (html === "en") return "en";
+  return "es";
+}
+
+function formatMessage(msg: string, vars?: Record<string, string | number>): string {
+  if (!vars) return msg;
+  return msg.replace(/\{(\w+)\}/g, (_, key) => String(vars[key] ?? `{${key}}`));
+}
+
+export interface TranslationFn {
+  (key: string): string;
+  (key: string, vars: Record<string, string | number>): string;
+}
+
+export function useTranslation() {
+  const [lang, setLangState] = useState<string>("es");
+
+  const setLang = useCallback((newLang: string) => {
+    if (newLang !== "es" && newLang !== "en") return;
+    localStorage.setItem("lang", newLang);
+    document.documentElement.setAttribute("lang", newLang);
+    setLangState(newLang);
+  }, []);
+
+  useEffect(() => {
+    setLangState(getBrowserLanguage());
+  }, []);
+
+  const t: TranslationFn = useCallback(
+    (key: string, vars?: Record<string, string | number>): string => {
+      const msg = messages[lang]?.[key] ?? messages["es"]?.[key] ?? key;
+      return formatMessage(msg, vars);
+    },
+    [lang],
+  );
+
+  return { t, lang, setLang };
+}

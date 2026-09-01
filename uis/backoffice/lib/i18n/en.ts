@@ -1,0 +1,135 @@
+/**
+ * i18n/en.ts — English translations for the TrackFlow backoffice.
+ * Based on services/api/i18n/en.py, migrated to TypeScript for Next.js.
+ */
+const en: Record<string, string> = {
+  // ─── General ───
+  "app.loading": "Loading...",
+  "app.error.generic": "An error has occurred",
+  "app.footer.copyright": "© 2025 TrackFlow. All rights reserved.",
+
+  // ─── Auth ───
+  "auth.login.title": "Sign in",
+  "auth.login.subtitle": "Access the TrackFlow panel",
+  "auth.login.email_label": "Email",
+  "auth.login.email_placeholder": "you@email.com",
+  "auth.login.password_label": "Password",
+  "auth.login.password_placeholder": "••••••••",
+  "auth.login.submit": "Sign in",
+  "auth.login.submitting": "Signing in...",
+  "auth.login.error": "Error signing in",
+  "auth.login.forgot_password": "Forgot your password?",
+  "auth.login.no_account": "Don't have an account?",
+  "auth.login.register_link": "Sign up",
+  "auth.login.session_expired": "⏰ Your session has expired. Please sign in again.",
+  "auth.login.password_reset_ok": "✅ Password updated successfully. Sign in with your new password.",
+
+  "auth.register.title": "Create account",
+  "auth.register.subtitle": "Sign up to access the TrackFlow panel",
+  "auth.register.name_label": "Name",
+  "auth.register.name_optional": "(optional)",
+  "auth.register.name_placeholder": "Your name",
+  "auth.register.email_label": "Email",
+  "auth.register.email_placeholder": "you@email.com",
+  "auth.register.password_label": "Password",
+  "auth.register.password_placeholder": "••••••••",
+  "auth.register.confirm_label": "Confirm password",
+  "auth.register.confirm_placeholder": "••••••••",
+  "auth.register.submit": "Create account",
+  "auth.register.submitting": "Creating account...",
+  "auth.register.error": "Error registering",
+  "auth.register.password_mismatch": "Passwords do not match",
+  "auth.register.password_min_length": "Password must be at least 6 characters",
+  "auth.register.has_account": "Already have an account?",
+  "auth.register.login_link": "Sign in",
+
+  "auth.forgot.title": "Reset password",
+  "auth.forgot.subtitle": "Enter your email and we'll send you a link to reset your password",
+  "auth.forgot.email_label": "Email",
+  "auth.forgot.email_placeholder": "you@email.com",
+  "auth.forgot.email_required": "Please enter your email.",
+  "auth.forgot.submit": "Send link",
+  "auth.forgot.submitting": "Sending…",
+  "auth.forgot.sent_title": "Email sent",
+  "auth.forgot.sent_body": "If an account exists with that email, you will receive a link to reset your password.",
+  "auth.forgot.back_to_login": "Back to sign in",
+  "auth.forgot.remembered": "Remembered your password?",
+  "auth.forgot.login_link": "Sign in",
+
+  "auth.reset.title": "Create new password",
+  "auth.reset.subtitle": "Enter your new password to access TrackFlow",
+  "auth.reset.password_label": "New password",
+  "auth.reset.password_placeholder": "Minimum 6 characters",
+  "auth.reset.confirm_label": "Confirm password",
+  "auth.reset.confirm_placeholder": "Repeat password",
+  "auth.reset.submit": "Reset password",
+  "auth.reset.submitting": "Resetting…",
+  "auth.reset.invalid_title": "Invalid link",
+  "auth.reset.invalid_body": "The reset link is invalid or has expired. Please request a new one.",
+  "auth.reset.request_new": "Request new link",
+  "auth.reset.error.password_length": "Password must be at least 6 characters.",
+  "auth.reset.error.password_mismatch": "Passwords do not match.",
+  "auth.reset.error.invalid_token": "The link is invalid or has expired.",
+  "auth.reset.error.connection": "Connection error. Please try again.",
+  "auth.reset.request_new_link": "Request a new link",
+
+  // ─── Header / Navigation ───
+  "nav.dashboard": "Dashboard",
+  "nav.suppliers": "Suppliers",
+  "nav.analyzer": "Analyzer",
+  "nav.manager": "Manager",
+  "nav.profile": "Profile",
+  "nav.logout": "Log out",
+
+  // ─── Suppliers ───
+  "suppliers.title": "Suppliers",
+  "suppliers.subtitle": "Manage carriers and logistics providers",
+  "suppliers.add": "+ New supplier",
+  "suppliers.cancel": "Cancel",
+  "suppliers.loading": "Loading suppliers...",
+  "suppliers.delete_confirm": "Delete this supplier?",
+
+  // ─── Incidents Analyzer ───
+  "incidents.title": "Incident Analyzer",
+  "incidents.subtitle": "Upload a CSV with incidents to get metrics and statistics",
+  "incidents.rows_loaded": "{count} rows loaded",
+  "incidents.columns": "{count} columns: {columns}",
+  "incidents.full_data": "Full data",
+
+  // ─── Incidents Manager ───
+  "incidents.mgr.breadcrumb": "Operations",
+  "incidents.mgr.title": "Centralized Incident Manager",
+  "incidents.mgr.subtitle": "Register, prioritize and monitor incidents from all branches.",
+  "incidents.mgr.tab_form": "New incident",
+  "incidents.mgr.tab_list": "List",
+  "incidents.mgr.tab_summary": "Summary",
+
+  // ─── Dashboard ───
+  "dashboard.title": "Dashboard — Utilities Verifier",
+  "dashboard.subtitle": "Test and verify collections, search, transformations and validations from {lib}",
+
+  // ─── Profile ───
+  "profile.title": "My profile",
+  "profile.subtitle": "Manage your personal information",
+  "profile.loading": "Loading profile...",
+  "profile.account_info": "Account information",
+  "profile.contact_info": "Contact details",
+  "profile.email": "Email:",
+  "profile.role": "Role:",
+  "profile.role_admin": "Administrator",
+  "profile.role_manager": "Manager",
+  "profile.role_user": "User",
+  "profile.name_label": "Name",
+  "profile.name_placeholder": "Your name",
+  "profile.phone_label": "Phone",
+  "profile.phone_placeholder": "+34 600 000 000",
+  "profile.address_label": "Address",
+  "profile.address_placeholder": "Street, city, postal code",
+  "profile.save": "Save changes",
+  "profile.saving": "Saving...",
+  "profile.saved": "Profile updated successfully",
+  "profile.error_load": "Error loading profile",
+  "profile.error_save": "Error saving",
+};
+
+export default en;

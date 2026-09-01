@@ -215,3 +215,47 @@ export async function updateProfile(data: ProfileUpdatePayload): Promise<Profile
 
   return (await res.json()) as ProfileResponse;
 }
+
+// ─── Forgot Password ───
+
+export async function forgotPassword(email: string): Promise<void> {
+  const res = await fetch(`${AUTH_API_BASE}/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as AuthErrorBody;
+    throw new Error(body.detail || "Error sending reset link");
+  }
+}
+
+// ─── Reset Password ───
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  const res = await fetch(`${AUTH_API_BASE}/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as AuthErrorBody;
+    throw new Error(body.detail || "Error resetting password");
+  }
+}
+
+// ─── Change Password (authenticated) ───
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await fetch(`${AUTH_API_BASE}/auth/change-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as AuthErrorBody;
+    throw new Error(body.detail || "Error changing password");
+  }
+}
+
+export type { AuthErrorBody };
