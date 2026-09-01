@@ -203,14 +203,15 @@
   - `DELETE /suppliers/{id}` — eliminar
 - [x] Seeder `seed.py` con 15 proveedores iniciales (9 USA, 6 Spain), idempotente
 - [x] Inclusión del router en `main.py`: `app.include_router(suppliers_router)`
-- [x] Nuevos endpoints frontend servidos: `GET /suppliers.html`
 - [x] Dependencias: `tinydb>=4.8.0`, `python-multipart>=0.0.6`
 - [x] Documentación `README.md` bilingüe con comandos uv
 
-### 🗂️ Backoffice Operacional — `uis/backoffice/` (nuevas páginas)
+### 🗂️ Backoffice Operacional — `uis/backoffice/` (páginas legacy HTML)
+
+*(Nota: Todo el backoffice fue migrado posteriormente a Next.js 16 App Router en la Fase 12. Estas páginas HTML legacy ya no se sirven desde FastAPI.)*
 
 **Fase 5 — Analizador de Incidencias (página dedicada)**
-- [x] Nueva página `incidents.html` con:
+- [x] Nueva página `incidents.html` (posteriormente migrada a `/incidents` en Next.js)
   - Cabecera TrackFlow (gradiente azul-verde) y navegación a otras páginas
   - Zona drag & drop para subir CSV con feedback visual
   - Botón de análisis con estado disabled hasta seleccionar archivo
@@ -265,9 +266,55 @@
   - Login con credenciales incorrectas → 401
   - `GET /auth/me` → 200 con email, role y perfil vinculado
 
+### 🏗️ Backoffice Next.js — Migración de HTML estático a Next.js 16
+
+**Fase 12 — Migración a Next.js 16 App Router**
+- [x] Proyecto Next.js 16.3.0 con App Router, TypeScript, Tailwind CSS 4 y PostCSS
+- [x] Layout raíz (`app/layout.tsx`) con `AuthGuard` + `Header` + Footer (100% cliente, `force-dynamic`)
+- [x] Página Dashboard (`app/page.tsx`) — punto de entrada principal del backoffice
+- [x] Página de Proveedores (`app/suppliers/page.tsx`) — tabla con filtros, modal de edición, acciones CRUD
+- [x] Página de Incidencias (`app/incidents/page.tsx`) — drag & drop CSV, métricas, tabla de reglas inválidas, descarga
+- [x] Página de Login (`app/login/page.tsx`) — formulario de inicio de sesión
+- [x] Página de Registro (`app/register/page.tsx`) — formulario de registro de usuario
+- [x] Página de Perfil (`app/account/profile/page.tsx`) — visualización y edición del perfil
+- [x] AuthGuard (`components/AuthGuard.tsx`) — protección de rutas en cliente con redirección a login
+- [x] Capa de servicios (`services/api.ts`) — cliente HTTP con funciones CRUD y auth
+- [x] Constantes (`lib/constants.ts`) — `API_BASE = "/api"` y categorías de proveedores
+- [x] Configuración de proxy API (`next.config.ts`) — rewrites de Next.js para FastAPI
+
+### 🐛 Backoffice Next.js — Corrección de errores
+
+**Fase 13 — Hydration error en Header**
+- [x] **Problema**: `getToken()` llamado durante el render SSR causaba `"Unexpected token '<', '<!DOCTYPE' is not valid JSON"` porque el token de `localStorage` no está disponible en servidor.
+- [x] **Solución**: Patrón `useState(false)` + `useEffect` para diferir la detección del token al cliente. Durante SSR y primer render se muestra la versión sin autenticación (logo únicamente). Una vez montado en cliente, `setMounted(true)` + `setTokenState(getToken())` activa la navegación protegida.
+- [x] Archivo modificado: `uis/backoffice/components/Header.tsx`
+
+**Fase 14 — Error JSON en página de Proveedores**
+- [x] **Problema**: Las llamadas a la API de proveedores usaban ruta relativa sin prefijo `/api`, chocando con rutas de página de Next.js.
+- [x] **Solución**: `API_BASE` cambiado de `""` a `"/api"` en `lib/constants.ts` para que todas las llamadas a la API pasen por el proxy de Next.js.
+- [x] Archivo modificado: `uis/backoffice/lib/constants.ts`
+
+**Fase 15 — Navbar no visible tras login sin recarga manual**
+- [x] **Problema**: `useEffect` del Header tenía dependencia `[]` vacía, por lo que no se reevaluaba al navegar desde `/login` a `/` tras el inicio de sesión.
+- [x] **Solución**: Cambiada la dependencia de `useEffect` a `[pathname]` para que al cambiar de ruta se re-evalúe la presencia del token.
+- [x] Archivo modificado: `uis/backoffice/components/Header.tsx`
+
+**Fase 16 — Error 404 en `/api/auth/me` (perfil)**
+- [x] **Problema**: El proxy de Next.js enviaba `/api/auth/me` a `localhost:8000/api/auth/me` pero el backend FastAPI expone `/auth/me` (sin el prefijo `/api`).
+- [x] **Solución**: Configuración de rewrites en `next.config.ts` que elimina el prefijo `/api`: `{ source: "/api/:path*", destination: "http://localhost:8000/:path*" }`.
+- [x] Archivo modificado: `uis/backoffice/next.config.ts`
+
+**Fase 17 — Actualización del logo del backoffice**
+- [x] **Problema**: El Header usaba texto emoji `🚚 TrackFlow` como logo, mientras que website y talent-pipeline-tracker usaban la imagen `Logo TrackFlow.png`.
+- [x] **Solución**: 
+  - Logo `uis/website/public/media/Logo TrackFlow.png` copiado a `uis/backoffice/public/Logo TrackFlow.png`
+  - Header actualizado para usar `<Image src="/Logo TrackFlow.png" />` en lugar del texto emoji
+  - Dimensiones responsive: `h-14 w-auto` (mobile) / `md:h-16` (desktop), `width=112 height=56`
+- [x] Archivos modificados: `uis/backoffice/components/Header.tsx`, nuevo `uis/backoffice/public/Logo TrackFlow.png`
+
 ### 🔐 Frontend Auth Unificado — Backoffice + Talent Pipeline
 
-**Fase 9 — Backoffice auth UX hardening**
+**Fase 9 — Backoffice auth UX hardening** *(previo a migración Next.js)*
 - [x] Protección temprana en páginas protegidas (`index.html`, `incidents.html`, `suppliers.html`, `profile.html`) antes de pintar contenido.
 - [x] Validación de expiración JWT (`exp`) además de presencia de token.
 - [x] Prevención de flash de contenido en rutas protegidas.
@@ -288,6 +335,16 @@
 - [x] Eliminación de dependencia de llamadas cross-origin directas desde `-3000` a `-8000` para login/registro/perfil.
 
 ---
+
+### 🧬 Merge feature/password-reset → feature/gestor-de-incidencias
+
+- [x] Fusión sin commit de la rama `feature/password-reset` (Next.js + password reset) en `feature/gestor-de-incidencias`
+- [x] Resolución de conflictos en:
+  - `services/api/main.py`: conservados ambos conjuntos de endpoints (gestor + auth/password-reset), eliminadas rutas de frontend HTML estático
+  - `uis/backoffice/README.es.md`: adoptada guía Next.js + documentación de la nueva ruta `/incidents-manager`
+  - `uis/backoffice/index.html`: eliminado al ser sustituido por Next.js (correcto)
+  - `services/api/suppliers_db.json`: conservada la versión del gestor (96 incidencias)
+- [x] Artefactos generados eliminados del índice: `__pycache__/`, `*.pyc`, `build/`, `*.egg-info/`
 
 ### 🚀 Gestor Centralizado de Incidencias — Backend + Frontend
 
@@ -313,7 +370,7 @@
   4. `GET /api/incidents/{id}` → detalle por ID, 404 si no existe
   5. `PATCH /api/incidents/{id}/status` → valida transición contra `VALID_TRANSITIONS`, 400 con field+error
 - [x] `routes/__init__.py` — exporta `incidents_router`
-- [x] `main.py` — router incluido con `Depends(get_current_user)`, frontend route `GET /incidents-manager.html`, global error handler (captura Exception→500 JSON sin stack trace)
+- [x] `main.py` — router incluido con `Depends(get_current_user)`, global error handler (captura Exception→500 JSON sin stack trace)
 - [x] `pyproject.toml` — dependencia `trackflow-shared` añadida como ruta local
 - [x] `analyzer/_core.py` — refactorizado: ya NO duplica constantes ni validate_record()/compute_metrics(), importa todo desde `trackflow_shared.legacy`
 
@@ -322,16 +379,14 @@
 - [x] **Idempotente**: comprueba `csv_incident_id` antes de insertar
 - [x] Resultado verificado: 1ª ejecución → 95 insertadas, 5 inválidas (TRF-000003 tracking_invalid, TRF-000025 carrier_invalid, TRF-000042 category_invalid, TRF-000068 email_invalid, TRF-000097 closed_no_score); 2ª ejecución → 0 insertadas, 95 omitidas como duplicadas
 
-**UI Backoffice (`uis/backoffice/`) — Gestor de Incidencias**
-- [x] `incidents-manager.html` — 3 tabs (Formulario, Listado, Resumen) con auth guard JWT (mismo patrón que suppliers.html), Tailwind CSS CDN
-- [x] `js/incidents-manager.js` — lógica completa:
-  - Formulario: estados loading (botón deshabilitado + spinner), success (limpia + mensaje verde 4s), error (mensajes por campo + error general)
-  - Resaltado de sede cuando origen="branch" (clase CSS `origin-branch-highlight`)
-  - Listado: filtros por estado/origen/sede, tabla con todos los estados (loading, empty, error), cambio de estado inline con rollback en error
-  - Resumen: tarjetas de métricas por estado/categoría/origen/sede, estados loading/error/empty aislados
-- [x] `index.html` — nav link "🚨 Gestor incidencias" añadido
-- [x] `README.es.md` — ruta `/incidents-manager.html` documentada
-- [x] `services/api/README.md` — actualizado con los 5 nuevos endpoints protegidos
+**UI Backoffice (`uis/backoffice/`) — Gestor de Incidencias (Next.js)**
+- [x] Migración de las 3 vistas (Formulario, Listado, Resumen) a Next.js App Router: `/incidents-manager`
+- [x] Componentes React: `IncidentForm`, `IncidentList`, `IncidentSummary`
+- [x] Hook `useIncidentManager` con estados independientes por pestaña (loading, error, empty)
+- [x] Contrato tipado en `services/api.ts` (incident types, fetch, create, patch status, summary)
+- [x] Constantes de UI en `lib/incidents.ts` (categorías, estados, orígenes, sedes, transiciones)
+- [x] Rewrite específico en `next.config.ts` para `/api/incidents/*`
+- [x] Navegación actualizada en `Header.tsx`: "Analizador" (CSV) y "Gestor" (centralizado)
 
 **Verificación completa con curl**
 - [x] App FastAPI arranca sin errores
@@ -343,3 +398,42 @@
 - [x] `GET /api/incidents/9999` → **404** "No se encontró la incidencia con id 9999"
 - [x] `POST /api/incidents` con datos válidos → **201** creada
 - [x] `POST /api/incidents` con datos inválidos (title vacío, desc corta, categoría inválida) → **422** con errores por campo
+
+---
+
+### 🧬 Merge feature/password-reset → feature/gestor-de-incidencias
+
+- [x] Fusión sin commit de la rama `feature/password-reset` (Next.js + password reset) en `feature/gestor-de-incidencias`
+- [x] Resolución de conflictos en:
+  - `services/api/main.py`: conservados ambos conjuntos de endpoints (gestor + auth/password-reset), eliminadas rutas de frontend HTML estático
+  - `uis/backoffice/README.es.md`: adoptada guía Next.js + documentación de la nueva ruta `/incidents-manager`
+  - `uis/backoffice/index.html`: eliminado al ser sustituido por Next.js (correcto)
+  - `services/api/suppliers_db.json`: conservada la versión del gestor (96 incidencias)
+- [x] Artefactos generados eliminados del índice: `__pycache__/`, `*.pyc`, `build/`, `*.egg-info/`
+- [x] `.gitignore` del usuario restaurado correctamente tras la fusión
+
+### 🔐 Password Reset — Backend + Frontend
+
+**API Backend (`services/api/`)**
+- [x] `email_service.py` — integración con Resend para envío de emails transaccionales
+- [x] `routes/auth.py` — endpoints `POST /auth/forgot-password` y `POST /auth/reset-password`
+- [x] Token de reset con expiración (JWT firmado con propósito específico)
+
+**Frontend Next.js (`uis/backoffice/`)**
+- [x] `app/forgot-password/page.tsx` — formulario de solicitud de reset
+- [x] `app/reset-password/page.tsx` — formulario de nueva contraseña con token
+
+### ✅ Validación Post-Merge
+
+- [x] **TypeScript estricto**: `npx tsc --noEmit` → 0 errores en `uis/backoffice/`
+- [x] **Build Next.js**: `npm run build` → 11/11 rutas compiladas, incluido `/incidents-manager`
+- [x] **API Backend**: `openapi()` → 6 rutas críticas verificadas
+  - 4 del gestor: `POST /api/incidents`, `GET /api/incidents`, `GET /api/incidents/summary`, `PATCH /api/incidents/{incident_id}/status`
+  - 2 de auth/password-reset: `POST /auth/forgot-password`, `POST /auth/reset-password`
+- [x] **Migración del gestor a Next.js completada**: HTML+JS estático → componentes React Client Components
+
+### 📝 Documentación Actualizada
+
+- [x] Memory Bank (`progress.md`, `techContext.md`) reflejan el estado post-merge
+- [x] `uis/backoffice/README.es.md` actualizado con rutas Next.js + `/incidents-manager`
+- [x] Referencias a páginas HTML servidas por FastAPI eliminadas de techContext.md

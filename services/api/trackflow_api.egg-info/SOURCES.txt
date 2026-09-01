@@ -1,9 +1,0 @@
-README.md
-pyproject.toml
-seed.py
-trackflow_api.egg-info/PKG-INFO
-trackflow_api.egg-info/SOURCES.txt
-trackflow_api.egg-info/dependency_links.txt
-trackflow_api.egg-info/entry_points.txt
-trackflow_api.egg-info/requires.txt
-trackflow_api.egg-info/top_level.txt
