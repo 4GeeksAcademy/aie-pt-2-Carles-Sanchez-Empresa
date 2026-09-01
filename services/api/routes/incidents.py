@@ -7,9 +7,7 @@ de métricas agregadas.
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
-
-from i18n import get_language_from_request, get_translator
+from fastapi import APIRouter, HTTPException, Query
 
 from database import incidents_table, IncidentQuery
 from models import (
@@ -27,7 +25,7 @@ router = APIRouter(prefix="/api/incidents", tags=["Incidents"])
 # ──────────────────────────── POST ────────────────────────────
 
 @router.post("", response_model=IncidentResponse, status_code=201)
-async def create_incident(payload: IncidentCreate, request: Request):
+async def create_incident(payload: IncidentCreate):
     """
     Crea una nueva incidencia.
 
@@ -135,17 +133,16 @@ async def get_summary():
 # ──────────────────────────── GET by id ────────────────────────────
 
 @router.get("/{incident_id}", response_model=IncidentResponse)
-async def get_incident(incident_id: int, request: Request):
+async def get_incident(incident_id: int):
     """
     Devuelve el detalle de una incidencia por su ID.
     Devuelve 404 si no existe.
     """
-    t = get_translator(get_language_from_request(request))
     doc = incidents_table.get(doc_id=incident_id)
     if not doc:
         raise HTTPException(
             status_code=404,
-            detail=t("incident_not_found"),
+            detail=f"No se encontró la incidencia con id {incident_id}",
         )
 
     doc_dict = dict(doc)
@@ -155,7 +152,7 @@ async def get_incident(incident_id: int, request: Request):
 # ──────────────────────────── PATCH status ────────────────────────────
 
 @router.patch("/{incident_id}/status", response_model=IncidentResponse)
-async def update_incident_status(incident_id: int, payload: IncidentStatusUpdate, request: Request):
+async def update_incident_status(incident_id: int, payload: IncidentStatusUpdate):
     """
     Actualiza únicamente el estado de una incidencia.
 
@@ -164,12 +161,11 @@ async def update_incident_status(incident_id: int, payload: IncidentStatusUpdate
       - in_progress → resolved, discarded
       - resolved y discarded son terminales (no se puede avanzar desde ellos)
     """
-    t = get_translator(get_language_from_request(request))
     doc = incidents_table.get(doc_id=incident_id)
     if not doc:
         raise HTTPException(
             status_code=404,
-            detail=t("incident_not_found"),
+            detail=f"No se encontró la incidencia con id {incident_id}",
         )
 
     current_status = doc.get("status", "")
@@ -182,15 +178,15 @@ async def update_incident_status(incident_id: int, payload: IncidentStatusUpdate
             status_code=400,
             detail=[{
                 "field": "status",
-                "error": t("invalid_transition", current=current_status, next=new_status),
+                "error": f"El estado '{current_status}' no es válido.",
             }],
         )
 
     if new_status not in allowed:
         if current_status in ("resolved", "discarded"):
-            msg = t("invalid_transition", current=current_status, next=new_status)
+            msg = f"No se puede cambiar el estado. Los estados '{current_status}' son finales."
         else:
-            msg = t("invalid_transition", current=current_status, next=new_status)
+            msg = f"No se puede pasar de '{current_status}' a '{new_status}'. Transiciones permitidas: {', '.join(sorted(allowed))}"
         raise HTTPException(
             status_code=400,
             detail=[{"field": "status", "error": msg}],
