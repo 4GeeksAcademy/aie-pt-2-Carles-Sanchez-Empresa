@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getToken, login } from "@/services/auth";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -58,6 +59,18 @@ export default function LoginPage() {
         <h1 className="text-2xl font-semibold text-[#14263a]">Iniciar sesión</h1>
         <p className="mt-1 text-sm text-[#2f4a62]">Accede al Talent Pipeline Tracker de TrackFlow.</p>
 
+        {sessionExpired && (
+          <div className="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-700">
+            Tu sesión ha expirado. Inicia sesión de nuevo.
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-[#2f4a62]">
@@ -91,28 +104,34 @@ export default function LoginPage() {
             />
           </div>
 
-          {(error || sessionExpired) && (
-            <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error || "Tu sesión ha expirado. Inicia sesión de nuevo."}
-            </p>
-          )}
-
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:opacity-50"
+            className="w-full rounded-lg bg-[#c89d66] px-4 py-2 text-sm font-medium text-[#14263a] transition hover:bg-[#b88a4d] disabled:opacity-50"
           >
-            {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
+            {isSubmitting ? "Iniciando sesión…" : "Iniciar sesión"}
           </button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-[#2f4a62]">
+        <p className="mt-4 text-center text-sm text-[#2f4a62]">
           ¿No tienes cuenta?{" "}
-          <Link href="/register" className="font-medium text-[#14263a] underline decoration-[#c89d66] underline-offset-4">
+          <Link href="/register" className="font-medium text-[#c89d66] hover:underline">
             Regístrate
           </Link>
         </p>
       </section>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-center px-4 py-10">
+        <p className="text-[#2f4a62]">⏳ Cargando...</p>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
