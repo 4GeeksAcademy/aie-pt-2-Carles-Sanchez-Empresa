@@ -21,12 +21,16 @@ All shared domain logic is imported from `@trackflow/core` (located in `src/` at
 # From the repo root, install all workspace deps once
 npm install
 
-# Start dev server (port 3000)
+# Start dev server (port 3001)
 cd uis/backoffice
 npm run dev
 ```
 
-> ⚠️ If port 3000 is already in use (e.g. by the website), Next.js will automatically use port 3001.
+The `dev` script uses port 3001. FastAPI must be running on port 8000 or proxied data requests will fail with `ECONNREFUSED`.
+
+## Languages
+
+The `EN | ES` control in the navbar changes the complete interface immediately. The selected language is stored in `localStorage` under `lang`, so it persists across routes and browser reloads.
 
 ---
 
@@ -71,7 +75,7 @@ uv run seed                # optional: sample suppliers
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 2. Backoffice (port 3000)
+### 2. Backoffice (port 3001)
 
 ```bash
 cd uis/backoffice
@@ -81,12 +85,12 @@ npm run dev
 ### 3. Open in browser
 
 ```
-http://localhost:3000
+http://localhost:3001
 ```
 
-- **Login**: `http://localhost:3000/login`
-- **Register**: `http://localhost:3000/register`
-- **Dashboard**: `http://localhost:3000/` (after login)
+- **Login**: `http://localhost:3001/login`
+- **Register**: `http://localhost:3001/register`
+- **Dashboard**: `http://localhost:3001/` (after login)
 
 ---
 

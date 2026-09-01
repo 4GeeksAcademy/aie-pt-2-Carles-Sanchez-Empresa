@@ -70,7 +70,7 @@ export default function SuppliersPage() {
             country: editingSupplier.country,
             rate_per_shipment: String(editingSupplier.rate_per_shipment),
             currency: editingSupplier.currency,
-            categories: editingSupplier.categories ?? "",
+            categories: editingSupplier.categories[0] ?? "",
             service_zone: editingSupplier.service_zone ?? "",
             contact_email: editingSupplier.contact_email ?? "",
             notes: editingSupplier.notes ?? "",

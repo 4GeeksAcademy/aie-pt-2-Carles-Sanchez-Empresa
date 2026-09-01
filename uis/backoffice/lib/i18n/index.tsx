@@ -11,7 +11,9 @@
  *   <h1>{t("auth.login.title")}</h1>
  */
 
-import { useCallback, useEffect, useState } from "react";
+"use client";
+
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import es from "./es";
 import en from "./en";
@@ -39,7 +41,15 @@ export interface TranslationFn {
   (key: string, vars: Record<string, string | number>): string;
 }
 
-export function useTranslation() {
+interface I18nContextValue {
+  t: TranslationFn;
+  lang: string;
+  setLang: (lang: string) => void;
+}
+
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<string>("es");
 
   const setLang = useCallback((newLang: string) => {
@@ -61,5 +71,15 @@ export function useTranslation() {
     [lang],
   );
 
-  return { t, lang, setLang };
+  const value = useMemo(() => ({ t, lang, setLang }), [t, lang, setLang]);
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useTranslation(): I18nContextValue {
+  const context = useContext(I18nContext);
+  if (!context) {
+    throw new Error("useTranslation must be used within LanguageProvider");
+  }
+  return context;
 }

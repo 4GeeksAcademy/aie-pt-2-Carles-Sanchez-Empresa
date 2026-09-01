@@ -19,10 +19,6 @@ export function Header() {
   const [mounted, setMounted] = useState(false);
   const [token, setTokenState] = useState<string | null>(null);
 
-  const toggleLang = () => {
-    setLang(lang === "es" ? "en" : "es");
-  };
-
   const protectedLinks: HeaderLink[] = [
     { href: "/", labelKey: "nav.dashboard" },
     { href: "/suppliers", labelKey: "nav.suppliers" },
@@ -53,14 +49,7 @@ export function Header() {
               priority
             />
           </Link>
-          <button
-            type="button"
-            onClick={toggleLang}
-            className="rounded-md border border-[#c89d66] bg-[#f8fbff] px-2.5 py-1.5 text-xs font-medium text-[#2f4a62] hover:bg-[#e5be83] transition"
-            aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
-          >
-            {lang === "es" ? "EN" : "ES"}
-          </button>
+          <LanguageSelector lang={lang} setLang={setLang} />
         </div>
       </header>
     );
@@ -119,15 +108,28 @@ export function Header() {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={toggleLang}
-          className="rounded-md border border-[#c89d66] bg-[#f8fbff] px-2.5 py-1.5 text-xs font-medium text-[#2f4a62] hover:bg-[#e5be83] transition"
-          aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
-        >
-          {lang === "es" ? "EN" : "ES"}
-        </button>
+        <LanguageSelector lang={lang} setLang={setLang} />
       </div>
     </header>
+  );
+}
+
+function LanguageSelector({ lang, setLang }: { lang: string; setLang: (lang: string) => void }) {
+  return (
+    <div className="inline-flex shrink-0 items-center rounded-md border border-[#c89d66] bg-[#f8fbff] p-1 text-xs font-semibold" aria-label="Language selector">
+      {(["en", "es"] as const).map((option, index) => (
+        <span key={option} className="inline-flex items-center">
+          {index > 0 && <span className="px-1 text-[#c89d66]">|</span>}
+          <button
+            type="button"
+            onClick={() => setLang(option)}
+            className={`rounded px-2 py-1 transition ${lang === option ? "bg-[#14263a] text-white" : "text-[#2f4a62] hover:bg-[#e5be83]"}`}
+            aria-pressed={lang === option}
+          >
+            {option.toUpperCase()}
+          </button>
+        </span>
+      ))}
+    </div>
   );
 }

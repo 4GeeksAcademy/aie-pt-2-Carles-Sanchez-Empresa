@@ -2,7 +2,7 @@
 
 import { AuthGuard } from "@/components/AuthGuard";
 import { Header } from "@/components/Header";
-import { useTranslation } from "@/lib/i18n";
+import { LanguageProvider, useTranslation } from "@/lib/i18n";
 import "./globals.css";
 
 // Este panel es 100% cliente (usa localStorage para auth), no prerenderizar
@@ -32,9 +32,11 @@ export default function BackofficeLayout({ children }: { children: React.ReactNo
   return (
     <html lang="es" className="h-full antialiased">
       <body className="flex min-h-full flex-col bg-[#c6dced] text-[#2f4a62]">
-        <AuthGuard>
-          <BackofficeContent>{children}</BackofficeContent>
-        </AuthGuard>
+        <LanguageProvider>
+          <AuthGuard>
+            <BackofficeContent>{children}</BackofficeContent>
+          </AuthGuard>
+        </LanguageProvider>
       </body>
     </html>
   );

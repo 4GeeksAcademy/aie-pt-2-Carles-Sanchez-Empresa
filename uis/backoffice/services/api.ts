@@ -60,7 +60,7 @@ export interface Supplier {
   country: "USA" | "Spain";
   rate_per_shipment: number;
   currency: string;
-  categories: string;
+  categories: string[];
   service_zone?: string;
   contact_email?: string;
   notes?: string;

@@ -112,6 +112,7 @@ Alias legacy también disponibles:
 | `PATCH` | `/api/incidents/{id}/status` | Actualizar estado (con validación de transiciones) |
 | `GET` | `/api/incidents/summary` | Métricas agregadas (por estado, categoría, origen, sede) |
 | `POST` | `/suppliers` | Crear proveedor |
+| `PUT` | `/suppliers/{id}` | Actualizar todos los campos editables del proveedor |
 | `GET` | `/suppliers` | Listar proveedores (`?country=...&category=...`) |
 | `GET` | `/suppliers/{id}` | Obtener proveedor por ID |
 | `PATCH` | `/suppliers/{id}/rate` | Actualizar tarifa de proveedor |

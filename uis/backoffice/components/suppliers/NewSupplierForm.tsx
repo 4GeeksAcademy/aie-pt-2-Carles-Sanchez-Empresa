@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SUPPLIER_CATEGORIES, COUNTRIES } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n";
 
 interface SupplierFormData {
   name: string;
@@ -35,6 +36,7 @@ const defaultForm: SupplierFormData = {
 };
 
 export function NewSupplierForm({ onSubmit, initial, isEditing, onCancel }: NewSupplierFormProps) {
+  const { t } = useTranslation();
   const [form, setForm] = useState(initial ?? defaultForm);
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -47,8 +49,8 @@ export function NewSupplierForm({ onSubmit, initial, isEditing, onCancel }: NewS
     e.preventDefault();
     setLocalError(null);
 
-    if (!form.name.trim()) { setLocalError("El nombre es obligatorio"); return; }
-    if (!form.rate_per_shipment || parseFloat(form.rate_per_shipment) < 0) { setLocalError("Tarifa inválida"); return; }
+    if (!form.name.trim()) { setLocalError(t("suppliers.form.name_required")); return; }
+    if (!form.rate_per_shipment || parseFloat(form.rate_per_shipment) < 0) { setLocalError(t("suppliers.form.invalid_rate")); return; }
 
     setSubmitting(true);
     const ok = await onSubmit({
@@ -56,7 +58,7 @@ export function NewSupplierForm({ onSubmit, initial, isEditing, onCancel }: NewS
       country: form.country,
       rate_per_shipment: parseFloat(form.rate_per_shipment),
       currency: form.currency,
-      categories: form.categories,
+      categories: [form.categories],
       service_zone: form.service_zone || undefined,
       contact_email: form.contact_email || undefined,
       notes: form.notes || undefined,
@@ -67,59 +69,59 @@ export function NewSupplierForm({ onSubmit, initial, isEditing, onCancel }: NewS
     if (ok) {
       if (!isEditing) setForm(defaultForm);
     } else {
-      setLocalError("Error al guardar el proveedor");
+      setLocalError(t("suppliers.form.save_error"));
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm space-y-4">
-      <h3 className="text-lg font-semibold text-[#14263a]">{isEditing ? "Editar proveedor" : "Nuevo proveedor"}</h3>
+      <h3 className="text-lg font-semibold text-[#14263a]">{t(isEditing ? "suppliers.form.edit" : "suppliers.form.new")}</h3>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">Nombre *</label>
+          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.name")} *</label>
           <input type="text" value={form.name} onChange={(e) => handleChange("name", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" required />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">País</label>
+          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.country")}</label>
           <select value={form.country} onChange={(e) => handleChange("country", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]">
             {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">Tarifa por envío *</label>
+          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.rate")}</label>
           <input type="number" step="0.01" min="0" value={form.rate_per_shipment} onChange={(e) => handleChange("rate_per_shipment", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" required />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">Moneda</label>
+          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.currency")}</label>
           <input type="text" value={form.currency} onChange={(e) => handleChange("currency", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder="EUR" />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">Categorías</label>
+          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.categories")}</label>
           <select value={form.categories} onChange={(e) => handleChange("categories", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]">
-            <option value="">Seleccionar...</option>
-            {SUPPLIER_CATEGORIES.map((cat) => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
+            <option value="">{t("suppliers.form.select")}</option>
+            {SUPPLIER_CATEGORIES.map((cat) => <option key={cat.value} value={cat.value}>{t(cat.labelKey)}</option>)}
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">Zona de servicio</label>
-          <input type="text" value={form.service_zone ?? ""} onChange={(e) => handleChange("service_zone", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder="Nacional / Internacional" />
+          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.zone")}</label>
+          <input type="text" value={form.service_zone ?? ""} onChange={(e) => handleChange("service_zone", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder={t("suppliers.form.zone_placeholder")} />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">Email de contacto</label>
+          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.contact")}</label>
           <input type="email" value={form.contact_email ?? ""} onChange={(e) => handleChange("contact_email", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder="proveedor@email.com" />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">Estado</label>
+          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.status")}</label>
           <select value={form.status} onChange={(e) => handleChange("status", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]">
-            <option value="active">Activo</option>
-            <option value="suspended">Suspendido</option>
+            <option value="active">{t("suppliers.active")}</option>
+            <option value="suspended">{t("suppliers.suspended")}</option>
           </select>
         </div>
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-[#14263a]">Notas</label>
+        <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.notes")}</label>
         <textarea value={form.notes ?? ""} onChange={(e) => handleChange("notes", e.target.value)} rows={3} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" />
       </div>
 
@@ -127,11 +129,11 @@ export function NewSupplierForm({ onSubmit, initial, isEditing, onCancel }: NewS
 
       <div className="flex gap-3">
         <button type="submit" disabled={submitting} className="rounded-lg bg-[#14263a] px-6 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:opacity-50">
-          {submitting ? "Guardando..." : isEditing ? "Actualizar" : "Crear proveedor"}
+          {submitting ? t("suppliers.form.saving") : t(isEditing ? "suppliers.form.update" : "suppliers.form.create")}
         </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className="rounded-lg border border-[#c89d66] bg-[#f8fbff] px-6 py-2 text-sm font-medium text-[#14263a] transition hover:bg-[#f3ddba]">
-            Cancelar
+            {t("suppliers.cancel")}
           </button>
         )}
       </div>

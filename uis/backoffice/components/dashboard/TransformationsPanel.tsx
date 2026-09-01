@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 interface TransformationsPanelProps {
   carriers: unknown[];
@@ -20,6 +21,7 @@ export function TransformationsPanel({
   onScoreCarrier, onSelectBest, onCountByCategory, onInventoryValue,
   onAvgDistance, onGroupByStatus, onTopCarriers
 }: TransformationsPanelProps) {
+  const { t } = useTranslation();
   const [carrierIdx, setCarrierIdx] = useState("0");
   const [shipmentIdx, setShipmentIdx] = useState("0");
   const [productIdx, setProductIdx] = useState("0");
@@ -37,47 +39,47 @@ export function TransformationsPanel({
     <section className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2">
         <span className="w-3 h-3 rounded-full bg-blue-500" />
-        Transformaciones — Scoring, Reportes, Agrupación
+        {t("dashboard.transform.title")}
       </h2>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
-          <p className="mb-2 text-sm font-medium text-[#14263a]">Puntuar transportista para envío</p>
+          <p className="mb-2 text-sm font-medium text-[#14263a]">{t("dashboard.transform.score")}</p>
           <div className="mb-2 flex flex-wrap gap-2">
-            <label className="text-xs text-[#2f4a62]">Transportista: <input type="number" min="0" max={carriers.length - 1} value={carrierIdx} onChange={(e) => setCarrierIdx(e.target.value)} className="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" /></label>
-            <label className="text-xs text-[#2f4a62]">Envío: <input type="number" min="0" max={shipments.length - 1} value={shipmentIdx} onChange={(e) => setShipmentIdx(e.target.value)} className="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" /></label>
-            <label className="text-xs text-[#2f4a62]">Producto: <input type="number" min="0" max={products.length - 1} value={productIdx} onChange={(e) => setProductIdx(e.target.value)} className="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" /></label>
-            <button onClick={() => showResult("score", onScoreCarrier(clamp(carrierIdx, carriers.length), clamp(shipmentIdx, shipments.length), clamp(productIdx, products.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Puntuar</button>
+            <label className="text-xs text-[#2f4a62]">{t("dashboard.transform.carrier")} <input type="number" min="0" max={carriers.length - 1} value={carrierIdx} onChange={(e) => setCarrierIdx(e.target.value)} className="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" /></label>
+            <label className="text-xs text-[#2f4a62]">{t("dashboard.transform.shipment")} <input type="number" min="0" max={shipments.length - 1} value={shipmentIdx} onChange={(e) => setShipmentIdx(e.target.value)} className="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" /></label>
+            <label className="text-xs text-[#2f4a62]">{t("dashboard.transform.product")} <input type="number" min="0" max={products.length - 1} value={productIdx} onChange={(e) => setProductIdx(e.target.value)} className="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" /></label>
+            <button onClick={() => showResult("score", onScoreCarrier(clamp(carrierIdx, carriers.length), clamp(shipmentIdx, shipments.length), clamp(productIdx, products.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.transform.score_action")}</button>
           </div>
           <pre className="mt-1 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.score}</pre>
         </div>
 
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
-          <p className="mb-2 text-sm font-medium text-[#14263a]">Seleccionar mejor transportista para envío</p>
+          <p className="mb-2 text-sm font-medium text-[#14263a]">{t("dashboard.transform.best")}</p>
           <div className="mb-2 flex gap-2">
-            <label className="text-xs text-[#2f4a62]">Envío: <input type="number" min="0" max={shipments.length - 1} value={shipmentIdx} onChange={(e) => setShipmentIdx(e.target.value)} className="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" /></label>
-            <button onClick={() => showResult("best", onSelectBest(clamp(shipmentIdx, shipments.length), clamp(productIdx, products.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Seleccionar</button>
+            <label className="text-xs text-[#2f4a62]">{t("dashboard.transform.shipment")} <input type="number" min="0" max={shipments.length - 1} value={shipmentIdx} onChange={(e) => setShipmentIdx(e.target.value)} className="w-12 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" /></label>
+            <button onClick={() => showResult("best", onSelectBest(clamp(shipmentIdx, shipments.length), clamp(productIdx, products.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.transform.select_action")}</button>
           </div>
           <pre className="mt-1 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.best}</pre>
         </div>
 
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
-          <p className="mb-2 text-sm font-medium text-[#14263a]">Resumenes</p>
+          <p className="mb-2 text-sm font-medium text-[#14263a]">{t("dashboard.transform.summaries")}</p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => { showResult("countCat", onCountByCategory()); setSummaryLastKey("countCat"); }} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Contar por categoría</button>
-            <button onClick={() => { showResult("invVal", onInventoryValue()); setSummaryLastKey("invVal"); }} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Valor inventario</button>
-            <button onClick={() => { showResult("avgDist", onAvgDistance()); setSummaryLastKey("avgDist"); }} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Distancia media</button>
+            <button onClick={() => { showResult("countCat", onCountByCategory()); setSummaryLastKey("countCat"); }} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.transform.count_category")}</button>
+            <button onClick={() => { showResult("invVal", onInventoryValue()); setSummaryLastKey("invVal"); }} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.transform.inventory_value")}</button>
+            <button onClick={() => { showResult("avgDist", onAvgDistance()); setSummaryLastKey("avgDist"); }} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.transform.avg_distance")}</button>
           </div>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results[summaryLastKey]}</pre>
         </div>
 
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
-          <p className="mb-2 text-sm font-medium text-[#14263a]">Agrupaciones y rankings</p>
+          <p className="mb-2 text-sm font-medium text-[#14263a]">{t("dashboard.transform.groups")}</p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => showResult("groupStatus", onGroupByStatus())} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Envíos por estado</button>
+            <button onClick={() => showResult("groupStatus", onGroupByStatus())} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.transform.by_status")}</button>
             <div className="flex gap-1">
               <label className="text-xs text-[#2f4a62] self-center">Top: <input type="number" min="1" max="10" value={topN} onChange={(e) => setTopN(e.target.value)} className="w-10 rounded border border-[#c89d66] bg-[#f3ddba] px-1 py-0.5 text-xs" /></label>
-              <button onClick={() => showResult("topC", onTopCarriers(parseInt(topN) || 3))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">Top transportistas</button>
+              <button onClick={() => showResult("topC", onTopCarriers(parseInt(topN) || 3))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.transform.top_carriers")}</button>
             </div>
           </div>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.groupStatus || results.topC}</pre>

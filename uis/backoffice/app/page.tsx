@@ -25,9 +25,7 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#14263a]">{t("dashboard.title")}</h1>
-        <p className="text-sm text-[#2f4a62]">
-          Prueba y verifica las funciones de colecciones, búsqueda, transformaciones y validaciones desde <code className="rounded bg-[#f3ddba] px-1 text-xs">@trackflow/core</code>
-        </p>
+        <p className="text-sm text-[#2f4a62]">{t("dashboard.subtitle", { lib: "@trackflow/core" })}</p>
       </div>
 
       <DataEditor
