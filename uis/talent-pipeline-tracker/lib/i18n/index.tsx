@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * i18n/index.tsx — Sistema de internacionalización para el Talent Pipeline Tracker.
  *
@@ -6,7 +8,7 @@
  *   <h1>{t("candidates.title")}</h1>
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
 
 import es from "./es";
 import en from "./en";
@@ -34,27 +36,56 @@ export interface TranslationFn {
   (key: string, vars: Record<string, string | number>): string;
 }
 
-export function useTranslation() {
-  const [lang, setLangState] = useState<string>("es");
+interface LanguageContextValue {
+  t: TranslationFn;
+  lang: string;
+  setLang: (newLang: string) => void;
+}
+
+const LanguageContext = createContext<LanguageContextValue | null>(null);
+
+// Store externo: el idioma vive en localStorage y se comparte entre pestañas.
+const listeners = new Set<() => void>();
+
+function subscribeLang(onChange: () => void) {
+  listeners.add(onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    listeners.delete(onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const lang = useSyncExternalStore(
+    subscribeLang,
+    getBrowserLanguage,
+    () => "es",
+  );
 
   const setLang = useCallback((newLang: string) => {
     if (newLang !== "es" && newLang !== "en") return;
     localStorage.setItem("lang", newLang);
-    document.documentElement.setAttribute("lang", newLang);
-    setLangState(newLang);
+    listeners.forEach((listener) => listener());
   }, []);
 
   useEffect(() => {
-    setLangState(getBrowserLanguage());
-  }, []);
+    document.documentElement.setAttribute("lang", lang);
+  }, [lang]);
 
-  const t: TranslationFn = useCallback(
-    (key: string, vars?: Record<string, string | number>): string => {
+  const value = useMemo<LanguageContextValue>(() => {
+    const t: TranslationFn = (key: string, vars?: Record<string, string | number>): string => {
       const msg = messages[lang]?.[key] ?? messages["es"]?.[key] ?? key;
       return formatMessage(msg, vars);
-    },
-    [lang],
-  );
+    };
+    return { t, lang, setLang };
+  }, [lang, setLang]);
 
-  return { t, lang, setLang };
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+}
+
+export function useTranslation(): LanguageContextValue {
+  const ctx = useContext(LanguageContext);
+  if (!ctx) throw new Error("useTranslation debe usarse dentro de <LanguageProvider>");
+  return ctx;
 }
