@@ -7,11 +7,10 @@ CRUD completo de usuarios con control de roles y contraseñas hasheadas.
 from enum import Enum
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, field_validator
 
 from auth import get_current_user, require_admin
-from i18n import get_language_from_request, get_translator
 from services import (
     create_user,
     get_user_by_id,
@@ -89,7 +88,7 @@ class UserWithProfileResponse(BaseModel):
 # ───────────────────── Endpoints ─────────────────────
 
 @router.post("", response_model=UserWithProfileResponse, status_code=201)
-async def register_user(payload: UserCreate, request: Request):
+async def register_user(payload: UserCreate):
     """
     Registra un nuevo usuario.
 
@@ -97,13 +96,11 @@ async def register_user(payload: UserCreate, request: Request):
     - Si se proporcionan name, phone o address, crea el perfil vinculado.
     - El rol por defecto es 'user'.
     """
-    t = get_translator(get_language_from_request(request))
     try:
         user = create_user(
             email=payload.email,
             password=payload.password,
             role=payload.role.value if isinstance(payload.role, UserRole) else payload.role,
-            lang=get_language_from_request(request),
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
@@ -132,27 +129,22 @@ async def list_users(current_user: dict = Depends(require_admin)):
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user(
-    user_id: int,
-    request: Request,
-    current_user: dict = Depends(get_current_user),
-):
+async def get_user(user_id: int, current_user: dict = Depends(get_current_user)):
     """
     Obtiene un usuario por su ID.
 
     Solo el propio usuario o un administrador pueden acceder.
     """
-    t = get_translator(get_language_from_request(request))
     # Control de acceso: solo el propio usuario o admin
     if current_user["id"] != user_id and current_user.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=t("no_permission_view_user"),
+            detail="No tienes permiso para ver este usuario",
         )
 
     user = get_user_by_id(user_id)
     if user is None:
-        raise HTTPException(status_code=404, detail=t("user_not_found"))
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     return UserResponse(**user)
 
@@ -161,7 +153,6 @@ async def get_user(
 async def update_user_endpoint(
     user_id: int,
     payload: UserUpdate,
-    request: Request,
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -170,7 +161,6 @@ async def update_user_endpoint(
     Solo el propio usuario o un administrador pueden modificar.
     Solo los administradores pueden cambiar el rol.
     """
-    t = get_translator(get_language_from_request(request))
     # Control de acceso
     is_self = current_user["id"] == user_id
     is_admin = current_user.get("role") == "admin"
@@ -178,14 +168,14 @@ async def update_user_endpoint(
     if not is_self and not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=t("no_permission_edit_user"),
+            detail="No tienes permiso para modificar este usuario",
         )
 
     # Solo admin puede cambiar el rol
     if payload.role is not None and not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=t("only_admin_change_role"),
+            detail="Solo los administradores pueden cambiar el rol",
         )
 
     # Construir datos a actualizar
@@ -196,11 +186,11 @@ async def update_user_endpoint(
         data["role"] = payload.role.value if isinstance(payload.role, UserRole) else payload.role
 
     if not data:
-        raise HTTPException(status_code=400, detail=t("email_updated"))
+        raise HTTPException(status_code=400, detail="No se proporcionaron campos para actualizar")
 
     user = update_user(user_id, data)
     if user is None:
-        raise HTTPException(status_code=404, detail=t("user_not_found"))
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     return UserResponse(**user)
 
@@ -208,7 +198,6 @@ async def update_user_endpoint(
 @router.delete("/{user_id}", status_code=200)
 async def delete_user_endpoint(
     user_id: int,
-    request: Request,
     current_user: dict = Depends(require_admin),
 ):
     """
@@ -216,15 +205,14 @@ async def delete_user_endpoint(
 
     Solo accesible por administradores.
     """
-    t = get_translator(get_language_from_request(request))
     if current_user["id"] == user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=t("cannot_delete_self"),
+            detail="No puedes eliminarte a ti mismo",
         )
 
     deleted = delete_user(user_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail=t("user_not_found"))
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    return {"message": t("user_deleted"), "id": user_id}
+    return {"message": "Usuario y perfil eliminados correctamente", "id": user_id}

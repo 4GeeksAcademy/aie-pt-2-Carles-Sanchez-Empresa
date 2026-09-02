@@ -108,6 +108,7 @@ Legacy aliases are also available:
 | `POST` | `/api/incidents/analyze` | Analyze uploaded CSV |
 | `GET` | `/api/incidents/results/export` | Export last analysis as CSV |
 | `POST` | `/suppliers` | Create supplier |
+| `PUT` | `/suppliers/{id}` | Update all editable supplier fields |
 | `GET` | `/suppliers` | List suppliers (`?country=...&category=...`) |
 | `GET` | `/suppliers/{id}` | Get supplier by ID |
 | `PATCH` | `/suppliers/{id}/rate` | Update supplier rate |
