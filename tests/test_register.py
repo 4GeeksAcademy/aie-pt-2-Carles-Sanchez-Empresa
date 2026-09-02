@@ -11,32 +11,14 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 
-# ───────────────────── Helpers ─────────────────────
-
-class MockRequest:
-    """Request simulado para pruebas de registro."""
-    def __init__(self, lang="es"):
-        self._headers = {"X-Language": lang}
-        self._query_params = {}
-
-    @property
-    def headers(self):
-        return self._headers
-
-    @property
-    def query_params(self):
-        return self._query_params
-
-
 async def call_register(payload_data):
     """Helper que invoca el endpoint register con datos dados."""
     from routes.users import register_user, UserCreate
 
     # Validar y crear el payload Pydantic
     payload = UserCreate(**payload_data)
-    request = MockRequest()
 
-    return await register_user(payload, request)
+    return await register_user(payload)
 
 
 # ───────────────────── HAPPY PATH ─────────────────────

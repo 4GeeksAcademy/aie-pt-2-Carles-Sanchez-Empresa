@@ -15,23 +15,6 @@ Endpoints:
 import pytest
 from fastapi import HTTPException
 
-
-# ───────────────────── Helpers ─────────────────────
-
-class MockRequest:
-    def __init__(self, lang="es"):
-        self._headers = {"X-Language": lang}
-        self._query_params = {}
-
-    @property
-    def headers(self):
-        return self._headers
-
-    @property
-    def query_params(self):
-        return self._query_params
-
-
 # ═══════════════════════════════════════════════════════
 #  CREATE SUPPLIER
 # ═══════════════════════════════════════════════════════
@@ -56,8 +39,7 @@ class TestCreateSupplier:
             currency="EUR",
             status=SupplierStatus.ACTIVE,
         )
-        req = MockRequest()
-        result = await create_supplier(payload, req)
+        result = await create_supplier(payload)
 
         assert result.name == "New Carrier"
         assert result.country == "Spain"
@@ -121,7 +103,6 @@ class TestCreateSupplier:
                 status=SupplierStatus.ACTIVE,
             )
 
-
 # ═══════════════════════════════════════════════════════
 #  LIST SUPPLIERS
 # ═══════════════════════════════════════════════════════
@@ -142,14 +123,14 @@ class TestListSuppliers:
             name="Test Carrier Inc.", country="USA",
             categories=["carrier_last_mile"], rate_per_shipment=5.50,
             currency="USD", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
         await create_supplier(SupplierCreate(
             name="Transportes España SL", country="Spain",
             categories=["carrier_international"], rate_per_shipment=3.20,
             currency="EUR", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
 
-        results = await list_suppliers(MockRequest(), country=None, category=None)
+        results = await list_suppliers(country=None, category=None)
         assert len(results) >= 2
         names = [s.name for s in results]
         assert "Test Carrier Inc." in names
@@ -168,14 +149,14 @@ class TestListSuppliers:
             name="Carrier USA", country="USA",
             categories=["carrier_last_mile"], rate_per_shipment=5.50,
             currency="USD", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
         await create_supplier(SupplierCreate(
             name="Carrier Spain", country="Spain",
             categories=["carrier_international"], rate_per_shipment=3.20,
             currency="EUR", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
 
-        results = await list_suppliers(MockRequest(), country="Spain", category=None)
+        results = await list_suppliers(country="Spain", category=None)
         assert len(results) == 1
         assert results[0].country == "Spain"
 
@@ -192,14 +173,14 @@ class TestListSuppliers:
             name="Last Mile Co", country="USA",
             categories=["carrier_last_mile"], rate_per_shipment=5.50,
             currency="USD", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
         await create_supplier(SupplierCreate(
             name="International Co", country="Spain",
             categories=["carrier_international"], rate_per_shipment=3.20,
             currency="EUR", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
 
-        results = await list_suppliers(MockRequest(), category="carrier_international", country=None)
+        results = await list_suppliers(category="carrier_international", country=None)
         assert len(results) == 1
         assert "carrier_international" in results[0].categories
 
@@ -210,7 +191,7 @@ class TestListSuppliers:
         Filtro que no coincide → lista vacía (nunca 404)
         """
         from routes.suppliers import list_suppliers
-        results = await list_suppliers(MockRequest(), country="Spain", category=None)
+        results = await list_suppliers(country="Spain", category=None)
         assert results == []
 
     @pytest.mark.asyncio
@@ -226,17 +207,16 @@ class TestListSuppliers:
             name="USA Last Mile", country="USA",
             categories=["carrier_last_mile"], rate_per_shipment=5.50,
             currency="USD", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
         await create_supplier(SupplierCreate(
             name="Spain Intl", country="Spain",
             categories=["carrier_international"], rate_per_shipment=3.20,
             currency="EUR", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
 
-        results = await list_suppliers(MockRequest(), country="USA", category="carrier_last_mile")
+        results = await list_suppliers(country="USA", category="carrier_last_mile")
         assert len(results) == 1
         assert results[0].country == "USA"
-
 
 # ═══════════════════════════════════════════════════════
 #  GET SUPPLIER
@@ -258,9 +238,9 @@ class TestGetSupplier:
             name="Test Carrier Inc.", country="USA",
             categories=["carrier_last_mile"], rate_per_shipment=5.50,
             currency="USD", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
 
-        result = await get_supplier(created.id, MockRequest())
+        result = await get_supplier(created.id)
         assert result.id == created.id
         assert result.name == "Test Carrier Inc."
         assert result.country == "USA"
@@ -273,9 +253,8 @@ class TestGetSupplier:
         """
         from routes.suppliers import get_supplier
         with pytest.raises(HTTPException) as exc:
-            await get_supplier(9999, MockRequest())
+            await get_supplier(9999)
         assert exc.value.status_code == 404
-
 
 # ═══════════════════════════════════════════════════════
 #  UPDATE RATE
@@ -297,15 +276,15 @@ class TestUpdateRate:
             name="Test Carrier", country="USA",
             categories=["carrier_last_mile"], rate_per_shipment=5.50,
             currency="USD", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
 
         payload = SupplierUpdateRate(rate_per_shipment=8.75)
-        result = await update_supplier_rate(created.id, payload, MockRequest())
+        result = await update_supplier_rate(created.id, payload)
         assert result.rate_per_shipment == 8.75
         assert result.id == created.id
 
         # Verificar persistencia
-        result2 = await update_supplier_rate(created.id, payload, MockRequest())
+        result2 = await update_supplier_rate(created.id, payload)
         assert result2.rate_per_shipment == 8.75
 
     def test_update_rate_negative_fails(self, mock_db):
@@ -328,9 +307,8 @@ class TestUpdateRate:
         from routes.suppliers import update_supplier_rate, SupplierUpdateRate
         payload = SupplierUpdateRate(rate_per_shipment=5.0)
         with pytest.raises(HTTPException) as exc:
-            await update_supplier_rate(9999, payload, MockRequest())
+            await update_supplier_rate(9999, payload)
         assert exc.value.status_code == 404
-
 
 # ═══════════════════════════════════════════════════════
 #  UPDATE STATUS
@@ -352,15 +330,15 @@ class TestUpdateStatus:
             name="Test Carrier", country="USA",
             categories=["carrier_last_mile"], rate_per_shipment=5.50,
             currency="USD", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
 
         payload = SupplierUpdateStatus(status=SupplierStatus.SUSPENDED)
-        result = await update_supplier_status(created.id, payload, MockRequest())
+        result = await update_supplier_status(created.id, payload)
         assert result.status == SupplierStatus.SUSPENDED
 
         # Volver a active
         payload2 = SupplierUpdateStatus(status=SupplierStatus.ACTIVE)
-        result2 = await update_supplier_status(created.id, payload2, MockRequest())
+        result2 = await update_supplier_status(created.id, payload2)
         assert result2.status == SupplierStatus.ACTIVE
 
     @pytest.mark.asyncio
@@ -374,9 +352,8 @@ class TestUpdateStatus:
 
         payload = SupplierUpdateStatus(status=SupplierStatus.SUSPENDED)
         with pytest.raises(HTTPException) as exc:
-            await update_supplier_status(9999, payload, MockRequest())
+            await update_supplier_status(9999, payload)
         assert exc.value.status_code == 404
-
 
 # ═══════════════════════════════════════════════════════
 #  DELETE SUPPLIER
@@ -398,15 +375,15 @@ class TestDeleteSupplier:
             name="Test Carrier", country="USA",
             categories=["carrier_last_mile"], rate_per_shipment=5.50,
             currency="USD", status=SupplierStatus.ACTIVE,
-        ), MockRequest())
+        ))
 
-        result = await delete_supplier(created.id, MockRequest())
+        result = await delete_supplier(created.id)
         assert result["message"] is not None
         assert result["id"] == created.id
 
         # Verificar que ya no existe
         with pytest.raises(HTTPException) as exc:
-            await get_supplier(created.id, MockRequest())
+            await get_supplier(created.id)
         assert exc.value.status_code == 404
 
     @pytest.mark.asyncio
@@ -417,5 +394,5 @@ class TestDeleteSupplier:
         """
         from routes.suppliers import delete_supplier
         with pytest.raises(HTTPException) as exc:
-            await delete_supplier(9999, MockRequest())
+            await delete_supplier(9999)
         assert exc.value.status_code == 404
