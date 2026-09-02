@@ -19,7 +19,6 @@ def create_user(
     email: str,
     password: str,
     role: str = "user",
-    lang: str = "es",
 ) -> dict:
     """
     Crea un nuevo usuario con contraseña hasheada.
@@ -28,7 +27,6 @@ def create_user(
         email: Email único del usuario.
         password: Contraseña en texto plano (se hashea antes de guardar).
         role: Rol del usuario. Por defecto "user".
-        lang: Código de idioma para los mensajes de error.
 
     Returns:
         Diccionario con los datos del usuario creado (sin contraseña).
@@ -36,12 +34,10 @@ def create_user(
     Raises:
         ValueError: Si el email ya está registrado.
     """
-    from i18n import get_translator
-    t = get_translator(lang)
     # Verificar email único
     existing = users_table.get(UserQuery.email == email)
     if existing:
-        raise ValueError(t("email_already_registered").format(email))
+        raise ValueError(f"El email '{email}' ya está registrado")
 
     now = generate_timestamp()
 

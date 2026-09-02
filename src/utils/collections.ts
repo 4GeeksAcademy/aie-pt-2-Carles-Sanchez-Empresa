@@ -1,6 +1,6 @@
 //Operaciones de Colecciones
 
-import { Product, ProductCategory, WarehouseLocation, Carrier } from '../types/models.js';
+import { Product, ProductCategory, WarehouseLocation, Carrier } from '../types/models';
 
 // Funciones:
 

@@ -20,13 +20,12 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.hash import bcrypt
 
 from database import users_table, used_tokens_table, TokenQuery
-from i18n import get_translator, get_language_from_request
 
 # ───────────────────── Cargar configuración ─────────────────────
 
@@ -84,10 +83,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 # ───────────────────── Dependencia: get_current_user ─────────────────────
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    request: Request = None,
-) -> dict:
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     """
     Dependencia de FastAPI que extrae y valida el token JWT,
     busca el usuario en TinyDB y lo devuelve.
@@ -97,11 +93,9 @@ async def get_current_user(
       - El token ha expirado
       - El usuario no existe en la base de datos
     """
-    lang = get_language_from_request(request) if request else "es"
-    t = get_translator(lang)
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=t("credentials_invalid"),
+        detail="No se pudieron validar las credenciales",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
@@ -127,21 +121,16 @@ async def get_current_user(
 
 # ───────────────────── Dependencia: require_admin ─────────────────────
 
-async def require_admin(
-    current_user: dict = Depends(get_current_user),
-    request: Request = None,
-) -> dict:
+async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
     """
     Dependencia que verifica que el usuario autenticado sea administrador.
 
     Lanza HTTPException(403) si el usuario no tiene rol 'admin'.
     """
     if current_user.get("role") != "admin":
-        lang = get_language_from_request(request) if request else "es"
-        t = get_translator(lang)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=t("admin_required"),
+            detail="Se requieren permisos de administrador para acceder a este recurso",
         )
     return current_user
 
@@ -174,7 +163,7 @@ def create_reset_token(user_id: int) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def verify_reset_token(token: str, lang: str = "es") -> int:
+def verify_reset_token(token: str) -> int:
     """
     Verifica un token de restablecimiento.
 
@@ -186,7 +175,6 @@ def verify_reset_token(token: str, lang: str = "es") -> int:
 
     Args:
         token: El token JWT a verificar.
-        lang: Código de idioma para los mensajes de error.
 
     Returns:
         user_id (int) si el token es válido.
@@ -194,15 +182,14 @@ def verify_reset_token(token: str, lang: str = "es") -> int:
     Raises:
         HTTPException(400) si el token es inválido, expirado o ya usado.
     """
-    t = get_translator(lang)
     invalid_error = HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail=t("reset_link_invalid"),
+        detail="El enlace de restablecimiento no es válido o ha expirado. Solicita uno nuevo.",
     )
 
     used_error = HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail=t("reset_link_used"),
+        detail="Este enlace de restablecimiento ya ha sido utilizado. Solicita uno nuevo.",
     )
 
     # 1. Verificar firma y expiración

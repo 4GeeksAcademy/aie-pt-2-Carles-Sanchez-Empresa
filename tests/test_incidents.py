@@ -15,23 +15,7 @@ import pytest
 from fastapi import HTTPException
 
 
-# ───────────────────── Helpers ─────────────────────
-
-class MockRequest:
-    def __init__(self, lang="es"):
-        self._headers = {"X-Language": lang}
-        self._query_params = {}
-
-    @property
-    def headers(self):
-        return self._headers
-
-    @property
-    def query_params(self):
-        return self._query_params
-
-
-# ═══════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════# ═══════════════════════════════════════════════════════
 #  CREATE INCIDENT
 # ═══════════════════════════════════════════════════════
 
@@ -52,7 +36,7 @@ class TestCreateIncident:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
 
         assert created.id is not None
         assert created.title == "Paquete perdido"
@@ -76,7 +60,7 @@ class TestCreateIncident:
             origin="branch",
             branch="zaragoza_warehouse",
             status="in_progress",
-        ), MockRequest())
+        ))
 
         assert created.status == "in_progress"
 
@@ -174,14 +158,14 @@ class TestListIncidents:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
         await create_incident(IncidentCreate(
             title="Incidencia B",
             description="Descripción de la incidencia B.",
             category="delivery_failure",
             origin="branch",
             branch="la_warehouse",
-        ), MockRequest())
+        ))
 
         results = await list_incidents(
             status=None, origin=None, branch=None, category=None,
@@ -205,7 +189,7 @@ class TestListIncidents:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
         await create_incident(IncidentCreate(
             title="En progreso",
             description="Descripción de incidencia en progreso.",
@@ -213,7 +197,7 @@ class TestListIncidents:
             origin="branch",
             branch="la_warehouse",
             status="in_progress",
-        ), MockRequest())
+        ))
 
         results = await list_incidents(status="open", origin=None, branch=None, category=None)
         assert len(results) == 1
@@ -233,14 +217,14 @@ class TestListIncidents:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
         await create_incident(IncidentCreate(
             title="Interno",
             description="Descripción interno.",
             category="system_failure",
             origin="internal",
             branch="la_office",
-        ), MockRequest())
+        ))
 
         results = await list_incidents(origin="customer", status=None, branch=None, category=None)
         assert len(results) == 1
@@ -260,14 +244,14 @@ class TestListIncidents:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
         await create_incident(IncidentCreate(
             title="Warehouse",
             description="Descripción warehouse.",
             category="delivery_failure",
             origin="branch",
             branch="la_warehouse",
-        ), MockRequest())
+        ))
 
         results = await list_incidents(branch="central", status=None, origin=None, category=None)
         assert len(results) == 1
@@ -287,14 +271,14 @@ class TestListIncidents:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
         await create_incident(IncidentCreate(
             title="Entrega",
             description="Descripción entrega.",
             category="delivery_failure",
             origin="branch",
             branch="la_warehouse",
-        ), MockRequest())
+        ))
 
         results = await list_incidents(category="lost_parcel", status=None, origin=None, branch=None)
         assert len(results) == 1
@@ -347,7 +331,7 @@ class TestGetSummary:
                 category="lost_parcel",
                 origin="customer",
                 branch="central",
-            ), MockRequest())
+            ))
 
         await create_incident(IncidentCreate(
             title="Resuelta",
@@ -356,7 +340,7 @@ class TestGetSummary:
             origin="branch",
             branch="la_warehouse",
             status="resolved",
-        ), MockRequest())
+        ))
 
         summary = await get_summary()
         assert summary["total"] == 4
@@ -391,9 +375,9 @@ class TestGetIncident:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
 
-        result = await get_incident(created.id, MockRequest())
+        result = await get_incident(created.id)
         assert result.id == created.id
         assert result.title == "Test"
         assert result.category == "lost_parcel"
@@ -407,7 +391,7 @@ class TestGetIncident:
         from routes.incidents import get_incident
 
         with pytest.raises(HTTPException) as exc:
-            await get_incident(9999, MockRequest())
+            await get_incident(9999)
         assert exc.value.status_code == 404
 
 
@@ -432,12 +416,11 @@ class TestUpdateIncidentStatus:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
 
         updated = await update_incident_status(
             created.id,
-            IncidentStatusUpdate(status="in_progress"),
-            MockRequest(),
+            IncidentStatusUpdate(status="in_progress")
         )
         assert updated.status == "in_progress"
 
@@ -455,19 +438,17 @@ class TestUpdateIncidentStatus:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
 
         # open → in_progress
         await update_incident_status(
             created.id,
-            IncidentStatusUpdate(status="in_progress"),
-            MockRequest(),
+            IncidentStatusUpdate(status="in_progress")
         )
         # in_progress → resolved
         updated = await update_incident_status(
             created.id,
-            IncidentStatusUpdate(status="resolved"),
-            MockRequest(),
+            IncidentStatusUpdate(status="resolved")
         )
         assert updated.status == "resolved"
 
@@ -485,13 +466,12 @@ class TestUpdateIncidentStatus:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ), MockRequest())
+        ))
 
         with pytest.raises(HTTPException) as exc:
             await update_incident_status(
                 created.id,
-                IncidentStatusUpdate(status="resolved"),
-                MockRequest(),
+                IncidentStatusUpdate(status="resolved")
             )
         assert exc.value.status_code == 400
 
@@ -510,13 +490,12 @@ class TestUpdateIncidentStatus:
             origin="customer",
             branch="central",
             status="resolved",
-        ), MockRequest())
+        ))
 
         with pytest.raises(HTTPException) as exc:
             await update_incident_status(
                 created.id,
-                IncidentStatusUpdate(status="in_progress"),
-                MockRequest(),
+                IncidentStatusUpdate(status="in_progress")
             )
         assert exc.value.status_code == 400
 
@@ -531,8 +510,7 @@ class TestUpdateIncidentStatus:
         with pytest.raises(HTTPException) as exc:
             await update_incident_status(
                 9999,
-                IncidentStatusUpdate(status="in_progress"),
-                MockRequest(),
+                IncidentStatusUpdate(status="in_progress")
             )
         assert exc.value.status_code == 404
 

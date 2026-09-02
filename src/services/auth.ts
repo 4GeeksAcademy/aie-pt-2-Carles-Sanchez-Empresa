@@ -16,18 +16,22 @@ const API_ORIGIN = ""; // Rutas relativas (mismo servidor FastAPI)
 // ════════════════════════════════════════════
 
 export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
   return localStorage.getItem(STORAGE_KEY);
 }
 
 export function setToken(token: string): void {
+  if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, token);
 }
 
 export function clearToken(): void {
+  if (typeof window === "undefined") return;
   localStorage.removeItem(STORAGE_KEY);
 }
 
 export function getAuthHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
   const token = getToken();
   if (!token) return {};
   return { Authorization: `Bearer ${token}` };
@@ -38,6 +42,7 @@ export function getAuthHeaders(): Record<string, string> {
  * Útil para páginas protegidas del backoffice.
  */
 export function requireAuth(): void {
+  if (typeof window === "undefined") return;
   const token = getToken();
   if (!token) {
     const currentPath = window.location.pathname;
@@ -285,5 +290,7 @@ export async function updateProfile(data: {
  */
 export function logout(): void {
   clearToken();
-  window.location.href = "/login";
+  if (typeof window !== "undefined") {
+    window.location.href = "/login";
+  }
 }
