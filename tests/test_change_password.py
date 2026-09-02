@@ -11,24 +11,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from auth import hash_password
 
-
-# ───────────────────── Helpers ─────────────────────
-
-class MockRequest:
-    def __init__(self, lang="es"):
-        self._headers = {"X-Language": lang}
-        self._query_params = {}
-
-    @property
-    def headers(self):
-        return self._headers
-
-    @property
-    def query_params(self):
-        return self._query_params
-
-
-# ═══════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════# ═══════════════════════════════════════════════════════
 #  CHANGE PASSWORD
 # ═══════════════════════════════════════════════════════
 
@@ -48,10 +31,9 @@ class TestChangePassword:
             current_password="SecurePass123!",
             new_password="NewSecurePass456!",
         )
-        request = MockRequest()
         current_user = {"id": sample_user, "email": "test@trackflow.com", "role": "user"}
 
-        result = await change_password(payload, request, current_user=current_user)
+        result = await change_password(payload, current_user=current_user)
 
         assert result["message"] is not None
 
@@ -75,11 +57,10 @@ class TestChangePassword:
             current_password="WrongCurrentPass!",
             new_password="NewPass123!",
         )
-        request = MockRequest()
         current_user = {"id": sample_user, "email": "test@trackflow.com", "role": "user"}
 
         with pytest.raises(HTTPException) as exc:
-            await change_password(payload, request, current_user=current_user)
+            await change_password(payload, current_user=current_user)
 
         assert exc.value.status_code == 400
 
@@ -111,12 +92,11 @@ class TestChangePassword:
             current_password="SomePass123!",
             new_password="NewPass456!",
         )
-        request = MockRequest()
         # Usar un ID que no existe en la BD
         current_user = {"id": 9999, "email": "ghost@trackflow.com", "role": "user"}
 
         with pytest.raises(HTTPException) as exc:
-            await change_password(payload, request, current_user=current_user)
+            await change_password(payload, current_user=current_user)
 
         assert exc.value.status_code == 404
 
@@ -132,11 +112,10 @@ class TestChangePassword:
             current_password="",
             new_password="NewPass123!",
         )
-        request = MockRequest()
         current_user = {"id": sample_user, "email": "test@trackflow.com", "role": "user"}
 
         with pytest.raises(HTTPException) as exc:
-            await change_password(payload, request, current_user=current_user)
+            await change_password(payload, current_user=current_user)
 
         assert exc.value.status_code in (400, 422)
 
@@ -153,10 +132,9 @@ class TestChangePassword:
             current_password="SecurePass123!",
             new_password="SecurePass123!",
         )
-        request = MockRequest()
         current_user = {"id": sample_user, "email": "test@trackflow.com", "role": "user"}
 
-        result = await change_password(payload, request, current_user=current_user)
+        result = await change_password(payload, current_user=current_user)
 
         assert result["message"] is not None
 
