@@ -1,0 +1,53 @@
+# ─────────────────────────────────────────────────────────────
+# docker-compose.yml — TrackFlow Monorepo
+# Entorno de desarrollo reproducible para todo el equipo.
+# Uso: docker compose up --build
+# ─────────────────────────────────────────────────────────────
+
+services:
+  # ─── Servicio de interfaces (website + backoffice) ───────
+  interfaces:
+    build:
+      context: .
+      dockerfile: uis/Dockerfile
+    container_name: trackflow-interfaces
+    ports:
+      - "3000:3000"   # website
+      - "3001:3001"   # backoffice
+    volumes:
+      # Bind mounts para recarga en caliente
+      - ./uis/website:/app/uis/website
+      - ./uis/backoffice:/app/uis/backoffice
+      - ./src:/app/src
+      - ./packages/shared:/app/packages/shared
+      - ./package.json:/app/package.json
+    env_file:
+      - .env
+    environment:
+      - NEXT_PUBLIC_API_HOST=api
+      - NEXT_PUBLIC_API_PORT=8000
+    networks:
+      - trackflow-net
+
+  # ─── Servicio backend (FastAPI) ──────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    container_name: trackflow-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Bind mount para recarga en caliente (--reload)
+      - ./services/api:/app/api
+      - ./packages/shared-py:/app/packages/shared-py
+    env_file:
+      - .env
+    networks:
+      - trackflow-net
+
+# ─── Red Docker ────────────────────────────────────────────
+networks:
+  trackflow-net:
+    name: trackflow-network
+    driver: bridge

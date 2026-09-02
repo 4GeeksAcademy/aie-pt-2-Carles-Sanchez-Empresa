@@ -1,17 +1,18 @@
 import type { NextConfig } from "next";
 
+const API_HOST = process.env.NEXT_PUBLIC_API_HOST || "api";
+const API_PORT = process.env.NEXT_PUBLIC_API_PORT || "8000";
+
 const nextConfig: NextConfig = {
   transpilePackages: ["@trackflow/core"],
   async rewrites() {
+    const apiTarget = `http://${API_HOST}:${API_PORT}`;
     return [
-      // Preserve the backend prefix used by the centralized incident manager.
-      { source: "/api/incidents/:path*", destination: "http://localhost:8000/api/incidents/:path*" },
-      // Proxy /api/* → backend stripping /api prefix
-      { source: "/api/:path*", destination: "http://localhost:8000/:path*" },
-      // Direct proxies for routes called by @trackflow/core without /api prefix
-      { source: "/auth/:path*", destination: "http://localhost:8000/auth/:path*" },
-      { source: "/users/:path*", destination: "http://localhost:8000/users/:path*" },
-      { source: "/profiles/:path*", destination: "http://localhost:8000/profiles/:path*" },
+      { source: "/api/incidents/:path*", destination: `${apiTarget}/api/incidents/:path*` },
+      { source: "/api/:path*", destination: `${apiTarget}/:path*` },
+      { source: "/auth/:path*", destination: `${apiTarget}/auth/:path*` },
+      { source: "/users/:path*", destination: `${apiTarget}/users/:path*` },
+      { source: "/profiles/:path*", destination: `${apiTarget}/profiles/:path*` },
     ];
   },
 };
