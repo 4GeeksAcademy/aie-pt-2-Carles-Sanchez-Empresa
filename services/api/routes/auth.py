@@ -10,6 +10,8 @@ from json import JSONDecodeError
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ValidationError
 
+from i18n import get_translator
+
 logger = logging.getLogger(__name__)
 
 from auth import (
@@ -23,8 +25,9 @@ from auth import (
 )
 from database import users_table, UserQuery
 from email_service import send_reset_email
-from i18n import get_language_from_request, get_translator
 from services import get_user_by_email, get_profile_by_user_id, update_user
+
+t = get_translator("es")
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -64,8 +67,6 @@ async def login(request: Request):
     El token debe incluirse en las peticiones protegidas como:
         Authorization: Bearer <token>
     """
-    t = get_translator(get_language_from_request(request))
-
     async def _extract_credentials() -> tuple[str, str]:
         """
         Extrae credenciales en ambos formatos soportados:
@@ -81,7 +82,7 @@ async def login(request: Request):
             if not raw_username or not raw_password:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=t("missing_credentials"),
+                    detail="Faltan campos requeridos: username y password",
                 )
             return raw_username, raw_password
 
@@ -90,13 +91,13 @@ async def login(request: Request):
         except (ValidationError, JSONDecodeError, ValueError):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=t("invalid_json_body"),
+                detail="Body JSON inválido. Use email/password o username/password",
             )
         login_id = (payload.email or payload.username or "").strip().lower()
         if not login_id or not payload.password:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=t("missing_login_credentials"),
+                detail="Faltan credenciales de acceso",
             )
         return login_id, payload.password
 
@@ -108,7 +109,7 @@ async def login(request: Request):
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=t("email_or_password_incorrect"),
+            detail="Email o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -117,7 +118,7 @@ async def login(request: Request):
     if not verify_password(password, hashed):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=t("email_or_password_incorrect"),
+            detail="Email o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -125,7 +126,7 @@ async def login(request: Request):
     if not user.get("is_active", True):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=t("account_disabled"),
+            detail="La cuenta está desactivada",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -177,7 +178,7 @@ class ChangePasswordRequest(BaseModel):
 
 
 @router.post("/forgot-password")
-async def forgot_password(payload: ForgotPasswordRequest, request: Request):
+async def forgot_password(payload: ForgotPasswordRequest):
     """
     Solicita un enlace de restablecimiento de contraseña.
 
@@ -187,26 +188,26 @@ async def forgot_password(payload: ForgotPasswordRequest, request: Request):
     Si el usuario existe, genera un token JWT de corta duración,
     construye una URL de restablecimiento y la envía por email.
     """
-    t = get_translator(get_language_from_request(request))
-    lang = get_language_from_request(request)
     email = payload.email.strip().lower()
     user = get_user_by_email(email)
 
     if user:
         token = create_reset_token(user["id"])
         try:
-            send_reset_email(to_email=email, token=token, lang=lang)
+            send_reset_email(to_email=email, token=token)
         except Exception:
             logger.exception(
                 "Error al enviar email de restablecimiento a %s", email
             )
             # No se interrumpe el flujo — el usuario ve confirmación igualmente
 
-    return {"message": t("forgot_password_success")}
+    return {
+        "message": "Formulario rellenado correctamente, recibirás un enlace en breves",
+    }
 
 
 @router.post("/reset-password")
-async def reset_password(payload: ResetPasswordRequest, request: Request):
+async def reset_password(payload: ResetPasswordRequest):
     """
     Restablece la contraseña usando un token válido.
 
@@ -216,22 +217,19 @@ async def reset_password(payload: ResetPasswordRequest, request: Request):
 
     Devuelve 400 si el token es inválido, ha expirado o ya fue usado.
     """
-    t = get_translator(get_language_from_request(request))
-    lang = get_language_from_request(request)
-    user_id = verify_reset_token(payload.token, lang=lang)
+    user_id = verify_reset_token(payload.token)
 
     hashed = hash_password(payload.new_password)
     update_user(user_id, {"hashed_password": hashed})
 
     invalidate_reset_token(payload.token)
 
-    return {"message": t("password_updated")}
+    return {"message": "Contraseña actualizada correctamente"}
 
 
 @router.post("/change-password")
 async def change_password(
     payload: ChangePasswordRequest,
-    request: Request,
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -242,7 +240,6 @@ async def change_password(
 
     Devuelve 400 si la contraseña actual es incorrecta.
     """
-    t = get_translator(get_language_from_request(request))
     user_id = current_user["id"]
     user = users_table.get(doc_id=user_id)
 
@@ -256,10 +253,10 @@ async def change_password(
     if not verify_password(payload.current_password, user.get("hashed_password", "")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=t("email_or_password_incorrect"),
+            detail="La contraseña actual no es correcta",
         )
 
     hashed = hash_password(payload.new_password)
     update_user(user_id, {"hashed_password": hashed})
 
-    return {"message": t("password_updated")}
+    return {"message": "Contraseña actualizada correctamente"}

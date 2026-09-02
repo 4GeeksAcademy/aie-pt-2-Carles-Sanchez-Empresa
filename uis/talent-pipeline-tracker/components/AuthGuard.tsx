@@ -8,7 +8,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isAuthPage = useMemo(() => pathname === "/login" || pathname === "/register", [pathname]);
+  const isAuthPage = useMemo(
+    () =>
+      pathname === "/login" ||
+      pathname === "/register" ||
+      pathname === "/forgot-password" ||
+      pathname === "/reset-password",
+    [pathname],
+  );
 
   useEffect(() => {
     const token = getToken();

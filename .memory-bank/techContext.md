@@ -183,6 +183,12 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
 - El build del backoffice se realiza bundlando `../../src/ui/handlers.ts` con `esbuild`, evitando árboles duplicados de salida por módulo.
 - `src/tsconfig.json` usa `noEmit` para separar claramente validación TypeScript y salida de navegador.
 
+### 9.1 Internacionalización reactiva del backoffice Next.js
+
+- `uis/backoffice/lib/i18n/index.tsx` expone un único `LanguageProvider` para toda la aplicación.
+- El selector `EN | ES` actualiza todas las vistas sin recarga y persiste la selección en `localStorage` con la clave `lang`.
+- Los valores técnicos enviados a FastAPI se mantienen estables; solo sus etiquetas de presentación se traducen.
+
 ### 10. Gestor de Incidencias — Paquete compartido Python (`packages/shared-py/`)
 
 - Los enums, validaciones y transformaciones CSV de incidencias se centralizan en `trackflow-shared`, un paquete Python instalable localmente.
