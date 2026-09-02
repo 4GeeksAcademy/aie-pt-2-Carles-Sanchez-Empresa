@@ -8,13 +8,13 @@
 
 ## Resumen de hallazgos por severidad
 
-| Severidad | Conteo |
-|-----------|--------|
-| CRÍTICO   | 4      |
-| ALTO      | 11     |
-| MEDIO     | 13     |
-| BAJO      | 9      |
-| **Total** | **37** |
+| Severidad | Original | Post-merge (2026-09-01) |
+|-----------|----------|--------------------------|
+| CRÍTICO   | 4        | 4                        |
+| ALTO      | 11       | 11                       |
+| MEDIO     | 13       | 15                       |
+| BAJO      | 9        | 11                       |
+| **Total** | **37**   | **41**                   |
 
 ---
 
@@ -108,11 +108,12 @@
 - **Corrección aplicada:** `2026-08-27` — Se añadió `logger.exception("Excepción no controlada")` justo antes de devolver la respuesta 500, registrando la traza completa en el servidor sin exponerla al cliente. ✅
 
 ### M-2. Catch demasiado amplio en tabla de listado de incidencias
-- **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 335-342
+- **Archivo (legacy):** `uis/backoffice/js/incidents-manager.js` — líneas 335-342
 - **Categoría:** 2 · Catch demasiado amplio
-- **Problema:** `loadList()` captura genéricamente en el `catch(err)` y muestra `err.message` al usuario. El mensaje de error de red (`Failed to fetch`) se muestra directamente al usuario sin procesar.
+- **Problema:** (Versión legacy HTML/JS) `loadList()` captura genéricamente en el `catch(err)` y muestra `err.message` al usuario. El mensaje de error de red (`Failed to fetch`) se muestra directamente al usuario sin procesar.
 - **Corrección sugerida:** Detectar errores de red específicamente y mostrar mensajes amigables. Mantener `err.message` para errores de validación conocidos.
-- **Corrección aplicada:** `2026-08-27` — Se añadió detección de errores de red (`"Failed to fetch"` / `"NetworkError"`) en el catch de `loadList()`, mostrando un mensaje amigable. Para otros errores, se sanitiza con `escHtml()` antes de mostrar al usuario. Tambien se añadió botón "Reintentar" que invoca `loadList()`. ✅
+- **Corrección aplicada:** `2026-08-27` — Se añadió detección de errores de red (`"Failed to fetch"` / `"NetworkError"`) en el catch de `loadList()`, mostrando un mensaje amigable. Para otros errores, se sanitiza con `escHtml()` antes de mostrar al usuario. También se añadió botón "Reintentar" que invoca `loadList()`. ✅
+- **Nota post-merge (2026-09-01):** Este archivo JS legacy ha sido migrado a componentes React (`uis/backoffice/hooks/useIncidentManager.ts`, `uis/backoffice/components/incidents-manager/`). La nueva implementación en `useIncidentManager.ts` utiliza el helper `errorMessage(error, fallback)` que captura errores con mensajes amigables y diferenciados por operación (`listError`, `summaryError`, `formError`, `statusError`), además de integrar estados `loading` y `error` tipados en los componentes `IncidentList`, `IncidentForm` e `IncidentSummary`. La migración a React mejora el manejo de errores respecto a la versión JS legacy.
 
 ### M-3. Estados de carga/error ausentes en perfil de cuenta
 - **Archivo:** `uis/talent-pipeline-tracker/app/account/profile/page.tsx` — líneas 19-29
@@ -385,3 +386,51 @@ Las áreas más críticas detectadas en esta segunda revisión son:
 ---
 
 **Estado final: 37 hallazgos — 37 corregidos (4 CRÍTICOS ✅, 11 ALTOS ✅, 13 MEDIOS ✅, 9 BAJOS ✅). Auditoría completada.**
+
+---
+
+## ACTUALIZACIÓN POST-MERGE (2026-09-01) — Migración a Next.js/React
+
+> **Contexto:** Se ha realizado el merge de la rama `language-selector` sobre `feature/error-handling-audit`, que migró todas las vistas del backoffice de HTML/JS plano a Next.js 16 + React 19 + Tailwind v4, y las vistas del website de React+Vite a Next.js 16 + Tailwind v4. Se han revisado los nuevos archivos en busca de problemas de manejo de errores no cubiertos previamente.
+
+### N-1 (MEDIO) — Fallo silencioso en parseo JSON del Dashboard (Backoffice Next.js)
+- **Archivo:** `uis/backoffice/hooks/useDashboard.ts` — líneas 35, 39, 43
+- **Categoría:** 3 · Fallo silencioso
+- **Problema:** Las tres funciones `updateProducts`, `updateShipments` y `updateCarriers` usan `try { setProducts(JSON.parse(raw)); } catch { /* ignore */ }`. Cuando el usuario pega JSON inválido en el editor de datos, el error se silencia completamente sin registro ni feedback. El usuario no sabe si sus cambios se aplicaron o no, y el desarrollador no tiene trazabilidad del error.
+- **Corrección sugerida:** Reemplazar `catch { /* ignore */ }` por `console.warn("[dashboard] JSON inválido en ...")` siguiendo el patrón de A-4. Alternativamente, mostrar un mensaje de error sutíl (toast) al usuario.
+
+### N-2 (MEDIO) — Sin comprobación defensiva de `res.ok` en forgot-password del backoffice
+- **Archivo:** `uis/backoffice/app/forgot-password/page.tsx` — líneas 26-35
+- **Categoría:** 3 · Fallo silencioso
+- **Problema:** El handler `handleSubmit` del formulario forgot-password hace `fetch()` sin comprobar `res.ok`. Cualquier error HTTP (500, 503, 404) se ignora completamente y el usuario siempre ve la pantalla de "email enviado" aunque el backend haya fallado. No hay logging del error en el cliente.
+- **Corrección sugerida:** Mantener la experiencia de usuario actual (no revelar si el email existe) pero añadir `console.warn()` en el catch y verificar `res.ok` en la respuesta para logging interno.
+
+### N-3 (BAJO) — Estados de carga con texto plano en componentes del backoffice
+- **Archivos:**
+  - `uis/backoffice/app/forgot-password/page.tsx` — línea 117
+  - `uis/backoffice/app/login/page.tsx` — línea 133
+  - `uis/backoffice/app/reset-password/page.tsx` — línea 143
+  - `uis/backoffice/app/suppliers/page.tsx` — línea 95
+- **Categoría:** 6 · Estados de carga/error ausentes en UI
+- **Problema:** Las páginas de autenticación usan `<Suspense fallback={<div ...><p>{t("app.loading")}</p></div>}>` con texto plano y sin el componente `LoadingSpinner`. La página de proveedores usa un `<p>` simple. No hay consistencia visual en los estados de carga del backoffice.
+- **Corrección sugerida:** Crear un componente `LoadingSpinner` compartido en el backoffice (similar al de `talent-pipeline-tracker/components/LoadingSpinner.tsx`) y usarlo en todos los estados de carga.
+
+### N-4 (BAJO) — `reset-password` del backoffice parsea JSON sin try/catch defensivo
+- **Archivo:** `uis/backoffice/app/reset-password/page.tsx` — línea 68
+- **Categoría:** 1 · Try/catch ausente
+- **Problema:** `const data = await res.json();` no tiene try/catch. Si el backend devuelve HTML o texto plano (ej. error 502 de nginx), el parseo fallará con `SyntaxError` no controlado, propagándose al catch genérico de la línea 70 pero sin logging del error real.
+- **Corrección sugerida:** Envolver `res.json()` en un bloque `try/catch` o usar `.json().catch(() => ({}))` como ya se hace en `talent-pipeline-tracker/services/auth.ts` (líneas 241, 255, 269).
+
+---
+
+## Resumen actualizado de hallazgos por severidad
+
+| Severidad | Original | Nuevos | Total |
+|-----------|----------|--------|-------|
+| CRÍTICO   | 4        | 0      | 4     |
+| ALTO      | 11       | 0      | 11    |
+| MEDIO     | 13       | 2      | 15    |
+| BAJO      | 9        | 2      | 11    |
+| **Total** | **37**   | **4**  | **41** |
+
+> **Nota:** Los nuevos hallazgos (N-1 a N-4) están documentados pero pendientes de corrección. Reflejan el estado actual tras la migración a Next.js/React.

@@ -13,24 +13,7 @@ from unittest.mock import patch, AsyncMock
 from fastapi import HTTPException
 from jose import jwt
 
-
-# ───────────────────── Helpers ─────────────────────
-
-class MockRequest:
-    def __init__(self, lang="es"):
-        self._headers = {"X-Language": lang}
-        self._query_params = {}
-
-    @property
-    def headers(self):
-        return self._headers
-
-    @property
-    def query_params(self):
-        return self._query_params
-
-
-# ═══════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════# ═══════════════════════════════════════════════════════
 #  FORGOT PASSWORD
 # ═══════════════════════════════════════════════════════
 
@@ -46,9 +29,8 @@ class TestForgotPassword:
         from routes.auth import forgot_password, ForgotPasswordRequest
 
         payload = ForgotPasswordRequest(email="test@trackflow.com")
-        request = MockRequest()
 
-        result = await forgot_password(payload, request)
+        result = await forgot_password(payload)
 
         # Respuesta 200 con mensaje
         assert result["message"] is not None
@@ -58,7 +40,6 @@ class TestForgotPassword:
         call_args = mock_email_service.call_args[1]
         assert call_args["to_email"] == "test@trackflow.com"
         assert "token" in call_args
-        assert call_args["lang"] == "es"
 
     @pytest.mark.asyncio
     async def test_forgot_password_nonexistent_user(self, mock_db, mock_email_service):
@@ -70,9 +51,8 @@ class TestForgotPassword:
         from routes.auth import forgot_password, ForgotPasswordRequest
 
         payload = ForgotPasswordRequest(email="noexiste@trackflow.com")
-        request = MockRequest()
 
-        result = await forgot_password(payload, request)
+        result = await forgot_password(payload)
 
         # misma respuesta 200
         assert result["message"] is not None
@@ -93,9 +73,8 @@ class TestForgotPassword:
         from routes import auth as auth_routes
         with patch.object(auth_routes, 'send_reset_email', side_effect=RuntimeError("API key inválida")):
             payload = ForgotPasswordRequest(email="test@trackflow.com")
-            request = MockRequest()
 
-            result = await forgot_password(payload, request)
+            result = await forgot_password(payload)
 
             # El usuario sigue viendo éxito
             assert result["message"] is not None
@@ -116,9 +95,8 @@ class TestForgotPassword:
         from routes.auth import forgot_password, ForgotPasswordRequest
 
         payload = ForgotPasswordRequest(email="")
-        request = MockRequest()
 
-        result = await forgot_password(payload, request)
+        result = await forgot_password(payload)
         assert result["message"] is not None
 
     @pytest.mark.asyncio
@@ -132,7 +110,6 @@ class TestForgotPassword:
         payload = ForgotPasswordRequest(email="not-an-email")
         # Pydantic acepta cualquier string en este modelo (no tiene EmailStr)
         assert payload.email == "not-an-email"
-
 
 # ═══════════════════════════════════════════════════════
 #  RESET PASSWORD
@@ -154,9 +131,8 @@ class TestResetPassword:
         token = create_reset_token(user_id=sample_user)
 
         payload = ResetPasswordRequest(token=token, new_password="NewStrongPass456!")
-        request = MockRequest()
 
-        result = await reset_password(payload, request)
+        result = await reset_password(payload)
 
         assert result["message"] is not None
 
@@ -192,10 +168,9 @@ class TestResetPassword:
         expired_token = jwt.encode(expired_payload, SECRET_KEY, algorithm="HS256")
 
         payload = ResetPasswordRequest(token=expired_token, new_password="NewPass123!")
-        request = MockRequest()
 
         with pytest.raises(HTTPException) as exc:
-            await reset_password(payload, request)
+            await reset_password(payload)
         assert exc.value.status_code == 400
 
     @pytest.mark.asyncio
@@ -207,10 +182,9 @@ class TestResetPassword:
         from routes.auth import reset_password, ResetPasswordRequest
 
         payload = ResetPasswordRequest(token="not-a-valid-token", new_password="NewPass123!")
-        request = MockRequest()
 
         with pytest.raises(HTTPException) as exc:
-            await reset_password(payload, request)
+            await reset_password(payload)
         assert exc.value.status_code == 400
 
     @pytest.mark.asyncio
@@ -228,10 +202,9 @@ class TestResetPassword:
         invalidate_reset_token(token)
 
         payload = ResetPasswordRequest(token=token, new_password="NewPass123!")
-        request = MockRequest()
 
         with pytest.raises(HTTPException) as exc:
-            await reset_password(payload, request)
+            await reset_password(payload)
         assert exc.value.status_code == 400
 
     @pytest.mark.asyncio
@@ -245,9 +218,8 @@ class TestResetPassword:
 
         token = create_reset_token(user_id=sample_user)
         payload = ResetPasswordRequest(token=token, new_password="AnotherPass789!")
-        request = MockRequest()
 
-        await reset_password(payload, request)
+        await reset_password(payload)
 
         users = mock_db["users"]
         user = users.get(doc_id=sample_user)

@@ -1,5 +1,4 @@
 import type { ApplicationFormData, FormErrors } from "../types/application";
-import type { Translations } from "../i18n/en";
 
 const WEB_PATTERN = /^(https?:\/\/).+/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -11,7 +10,11 @@ export function getRemainingCharacters(comments: string): number {
   return MAX_COMMENT_LENGTH - comments.length;
 }
 
-export function getProductVolumeWarning(producto: string, volumen: string, t: Translations["validation"]): string {
+export function getProductVolumeWarning(
+  producto: string,
+  volumen: string,
+  t: (key: string) => string
+): string {
   const lowerProduct = producto.trim().toLowerCase();
   const isOtherProduct = lowerProduct === "otro" || lowerProduct === "otros";
   const shouldWarn = producto !== "" && !isOtherProduct && volumen === "0-100";
@@ -20,59 +23,62 @@ export function getProductVolumeWarning(producto: string, volumen: string, t: Tr
     return "";
   }
 
-  return t.volumeWarning;
+  return t("form.warning.volumen");
 }
 
-export function validateApplicationForm(data: ApplicationFormData, t: Translations["validation"]): FormErrors {
+export function validateApplicationForm(
+  data: ApplicationFormData,
+  t: (key: string, vars?: Record<string, string | number>) => string
+): FormErrors {
   const errors: FormErrors = {};
 
   if (data.empresa.trim().length < 2) {
-    errors.empresa = t.empresaMinLength;
+    errors.empresa = t("form.error.empresa");
   }
 
   if (data.contacto.trim().split(/\s+/).filter(Boolean).length < 2) {
-    errors.contacto = t.contactoFullName;
+    errors.contacto = t("form.error.contacto");
   }
 
   if (!EMAIL_PATTERN.test(data.email.trim())) {
-    errors.email = t.emailInvalid;
+    errors.email = t("form.error.email");
   }
 
   if (!PHONE_PATTERN.test(data.telefono.trim())) {
-    errors.telefono = t.phoneInvalid;
+    errors.telefono = t("form.error.telefono");
   }
 
   if (!WEB_PATTERN.test(data.web.trim())) {
-    errors.web = t.webInvalid;
+    errors.web = t("form.error.web");
   }
 
   if (data.pais === "") {
-    errors.pais = t.paisRequired;
+    errors.pais = t("form.error.pais");
   }
 
   if (data.producto === "") {
-    errors.producto = t.productoRequired;
+    errors.producto = t("form.error.producto");
   }
 
   if (data.volumen === "") {
-    errors.volumen = t.volumenRequired;
+    errors.volumen = t("form.error.volumen");
   }
 
   if (data.servicios.length === 0) {
-    errors.servicios = t.serviciosRequired;
+    errors.servicios = t("form.error.servicios");
   }
 
   if (data.otro_3pl === "") {
-    errors.otro_3pl = t.otro3plRequired;
+    errors.otro_3pl = t("form.error.otro_3pl");
   }
 
   const remaining = getRemainingCharacters(data.comentarios);
   if (remaining < 0) {
-    errors.comentarios = t.comentariosMax(remaining);
+    errors.comentarios = t("form.error.comentarios", { count: Math.max(0, remaining) });
   }
 
   if (!data.politica_privacidad) {
-    errors.politica_privacidad = t.politicaRequired;
+    errors.politica_privacidad = t("form.error.politica_privacidad");
   }
 
   return errors;
