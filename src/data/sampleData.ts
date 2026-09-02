@@ -3,7 +3,7 @@
  * Este archivo contiene los datos de demostración usados en la interfaz.
  */
 
-import type { Product, Shipment, Carrier } from '../types/models.js';
+import type { Product, Shipment, Carrier } from '../types/models';
 
 export const sampleProducts: Product[] = [
   { sku: "SHOE-BLK-42", name: "Zapatillas Negras Running - Talla 42", category: "Fashion", weightKg: 0.8, dimensions: { lengthCm: 35, widthCm: 22, heightCm: 12 }, warehouse: "Los Angeles", stockQuantity: 45, minStockThreshold: 20, unitCostUSD: 35.0, isFragile: false, status: "Active" },

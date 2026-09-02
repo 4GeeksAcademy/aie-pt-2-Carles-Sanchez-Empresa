@@ -3,12 +3,12 @@
  * Conecta los botones del HTML con las funciones de lógica TypeScript.
  */
 
-import { filterProductsByWarehouse, filterProductsByCategory, filterLowStockProducts, sortProductsByStock, sortCarriersByReliability } from '../utils/collections.js';
-import { findProductBySKU, findShipmentById, binarySearchProductByWeight } from '../utils/search.js';
-import { scoreCarrierForShipment, selectBestCarrier, countProductsByCategory, calculateTotalInventoryValue, calculateAverageShipmentDistance, groupShipmentsByStatus, findTopCarriers } from '../utils/transformations.js';
-import { validateProduct, validateShipment, validateCarrier } from '../utils/validations.js';
-import { sampleProducts, sampleShipments, sampleCarriers } from '../data/sampleData.js';
-import { Shipment } from '../types/models.js';
+import { filterProductsByWarehouse, filterProductsByCategory, filterLowStockProducts, sortProductsByStock, sortCarriersByReliability } from '../utils/collections';
+import { findProductBySKU, findShipmentById, binarySearchProductByWeight } from '../utils/search';
+import { scoreCarrierForShipment, selectBestCarrier, countProductsByCategory, calculateTotalInventoryValue, calculateAverageShipmentDistance, groupShipmentsByStatus, findTopCarriers } from '../utils/transformations';
+import { validateProduct, validateShipment, validateCarrier } from '../utils/validations';
+import { sampleProducts, sampleShipments, sampleCarriers } from '../data/sampleData';
+import { Shipment } from '../types/models';
 import {
   login,
   register,
@@ -21,7 +21,7 @@ import {
   getAuthMe,
   getProfile,
   updateProfile,
-} from '../services/auth.js';
+} from '../services/auth';
 
 // ───────────────────────────────────────────────
 // State global mutable (el usuario puede modificarlo)
