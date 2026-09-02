@@ -24,18 +24,38 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8000")
 
 resend.api_key = RESEND_API_TOKEN
 
+if not RESEND_API_TOKEN:
+    logger.warning(
+        "RESEND_API_TOKEN no está configurado. Los emails de restablecimiento "
+        "no se enviarán realmente. Configúralo en el archivo .env"
+    )
+
 
 def send_reset_email(to_email: str, token: str) -> None:
     """
     Envía un email con el enlace de restablecimiento de contraseña.
 
+    Si RESEND_API_TOKEN no está configurado, lanza una excepción
+    con un mensaje claro para que el llamador (forgot-password)
+    pueda registrar el error adecuadamente.
+
     Args:
         to_email: Dirección de correo del destinatario.
         token: Token JWT de restablecimiento (se incluye en la URL).
+
+    Raises:
+        RuntimeError: Si RESEND_API_TOKEN no está configurado.
+        Exception: Si la API de Resend devuelve un error.
     """
     reset_url = f"{FRONTEND_URL}/reset-password?token={token}"
 
     html_body = _build_email_html(reset_url)
+
+    if not RESEND_API_TOKEN:
+        raise RuntimeError(
+            "RESEND_API_TOKEN no está configurado. No se puede enviar el email. "
+            "Configúralo en el archivo .env"
+        )
 
     try:
         response = resend.Emails.send({
@@ -46,8 +66,8 @@ def send_reset_email(to_email: str, token: str) -> None:
         })
         logger.info("Email enviado a %s: %s", to_email, response)
     except Exception as e:
-        # En desarrollo, no queremos que falle el flujo si el email no se envía
-        logger.exception("Error al enviar email a %s", to_email)
+        logger.exception("Error al enviar email a %s: %s", to_email, e)
+        raise
 
 
 def _build_email_html(reset_url: str) -> str:

@@ -123,10 +123,9 @@ class TestChangePassword:
     async def test_change_password_same_password(self, sample_user, mock_db):
         """
         C-E2: change_password_same_password
-        Nueva contraseña igual a la actual → técnicamente permitido (nuevo hash por salt)
+        Nueva contraseña igual a la actual → 400 (no permitido)
         """
         from routes.auth import change_password, ChangePasswordRequest
-        from auth import verify_password
 
         payload = ChangePasswordRequest(
             current_password="SecurePass123!",
@@ -134,11 +133,8 @@ class TestChangePassword:
         )
         current_user = {"id": sample_user, "email": "test@trackflow.com", "role": "user"}
 
-        result = await change_password(payload, current_user=current_user)
+        with pytest.raises(HTTPException) as exc:
+            await change_password(payload, current_user=current_user)
 
-        assert result["message"] is not None
-
-        # La contraseña sigue siendo válida (el hash es distinto por bcrypt salt)
-        users = mock_db["users"]
-        user = users.get(doc_id=sample_user)
-        assert verify_password("SecurePass123!", user["hashed_password"])
+        assert exc.value.status_code == 400
+        assert "igual" in exc.value.detail.lower()
