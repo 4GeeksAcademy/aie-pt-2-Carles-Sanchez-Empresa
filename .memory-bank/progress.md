@@ -209,6 +209,14 @@
 
 ### 🗂️ Backoffice Operacional — `uis/backoffice/` (nuevas páginas)
 
+**Fase 12 — Internacionalización completa y estabilización de la migración Next.js**
+- [x] Selector segmentado `EN | ES` con idioma activo visible y persistencia durante la navegación.
+- [x] Estado i18n centralizado con `LanguageProvider`; cambio inmediato sin recargar la página.
+- [x] Traducción completa de dashboard, proveedores, analizador CSV, gestor de incidencias, autenticación y perfil.
+- [x] Logo TrackFlow restaurado desde el asset compartido por las demás UIs.
+- [x] Contrato de categorías de proveedores alineado como lista y endpoint `PUT /suppliers/{id}` añadido.
+- [x] Todas las rutas verificadas con HTTP 200; proxies protegidos alcanzan FastAPI y responden 401 sin token.
+
 **Fase 5 — Analizador de Incidencias (página dedicada)**
 - [x] Nueva página `incidents.html` con:
   - Cabecera TrackFlow (gradiente azul-verde) y navegación a otras páginas

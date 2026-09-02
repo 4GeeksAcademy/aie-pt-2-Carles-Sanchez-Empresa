@@ -27,8 +27,8 @@ const organizationSchema = {
   },
   sameAs: ["https://linkedin.com/company/trackflow"],
   areaServed: [
-    { "@type": "Country", name: "US" },
-    { "@type": "Country", name: "ES" },
+    { "@type": "Country", name: "Estados Unidos" },
+    { "@type": "Country", name: "Spain" },
   ],
 };
 
