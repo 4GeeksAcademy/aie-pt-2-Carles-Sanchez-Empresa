@@ -3,10 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="i18n-title" content="suppliers.title">
   <title>TrackFlow - Directorio de Proveedores</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body.auth-pending {
+      visibility: hidden;
+    }
+
+    .auth-ok body.auth-pending {
+      visibility: visible;
+    }
+  </style>
   <script>
-    tailwind.config = {
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
       theme: {
         extend: {
           colors: {
@@ -15,22 +26,67 @@
           }
         }
       }
-    }
+    };
+
+    // ── Protección inmediata: validar JWT antes de pintar el body ──
+    (function () {
+      try {
+      function decodeBase64Url(base64Url) {
+        var normalized = String(base64Url || '').replace(/-/g, '+').replace(/_/g, '/');
+        while (normalized.length % 4 !== 0) normalized += '=';
+        return atob(normalized);
+      }
+
+      function isExpiredJwt(token) {
+        if (!token || typeof token !== 'string') return true;
+        var parts = token.split('.');
+        if (parts.length !== 3) return true;
+        try {
+          var payload = JSON.parse(decodeBase64Url(parts[1]));
+          if (typeof payload.exp !== 'number') return true;
+          var now = Math.floor(Date.now() / 1000);
+          return payload.exp <= now;
+        } catch (e) {
+          return true;
+        }
+      }
+
+      var loginUrl = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      var token = null;
+      try { token = localStorage.getItem('trackflow_token'); } catch (e) {}
+      if (!token || isExpiredJwt(token)) {
+        try { localStorage.removeItem('trackflow_token'); } catch (e) {}
+        window.location.replace(loginUrl);
+        return;
+      }
+
+      document.documentElement.classList.add('auth-ok');
+      } catch (e) {
+        document.documentElement.classList.add('auth-ok');
+        window.location.replace('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      }
+    })();
   </script>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans">
+<body class="auth-pending bg-gray-50 text-gray-800 font-sans">
 
   <header class="bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6 shadow-lg">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
-        <p class="text-blue-100 mt-1">Directorio de Proveedores — USA y España</p>
-      </div>
       <div class="flex items-center gap-3">
-        <a href="/"
-           class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          🏠 Volver al inicio
-        </a>
+        <button id="sidebarToggle">☰</button>
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
+          <p class="text-blue-100 mt-1" data-i18n="suppliers.header_subtitle">Directorio de Proveedores — USA y España</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="window.__toggleLang()" id="langToggle"
+                class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
+          ES | EN
+        </button>
+      </div>
+    </div>
+  </header>
       </div>
     </div>
   </header>
@@ -42,7 +98,7 @@
     <!-- ════════════════════════════════════════════ -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div class="flex flex-wrap items-center gap-4">
-        <h2 class="text-lg font-semibold flex items-center gap-2">
+        <h2 class="text-lg font-semibold flex items-center gap-2" data-i18n="suppliers.filters">
           <span class="w-3 h-3 rounded-full bg-blue-500"></span>
           Filtros
         </h2>
@@ -50,7 +106,7 @@
         <select id="filterCountry"
                 class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
                 onchange="applyFilters()">
-          <option value="">Todos los países</option>
+          <option value="" data-i18n="suppliers.all_countries">Todos los países</option>
           <option value="USA">USA</option>
           <option value="Spain">Spain</option>
         </select>
@@ -58,7 +114,7 @@
         <select id="filterCategory"
                 class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
                 onchange="applyFilters()">
-          <option value="">Todas las categorías</option>
+          <option value="" data-i18n="suppliers.all_categories">Todas las categorías</option>
           <option value="carrier_last_mile">🚚 Última milla</option>
           <option value="carrier_international">✈️ Internacional</option>
           <option value="warehouse_supplies">🏭 Suministros almacén</option>
@@ -71,7 +127,7 @@
 
         <button onclick="loadSuppliers()"
                 class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-          🔄 Recargar
+          🔄 <span data-i18n="suppliers.reload">Recargar</span>
         </button>
 
         <span id="supplierCount" class="text-sm text-gray-500 ml-auto"></span>
@@ -82,40 +138,41 @@
     <!-- FORMULARIO NUEVO PROVEEDOR -->
     <!-- ════════════════════════════════════════════ -->
     <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2" data-i18n="suppliers.new_supplier">
         <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
         Nuevo proveedor
       </h2>
 
-      <form id="newSupplierForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <form id="newSupplierForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" novalidate>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Nombre *</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="suppliers.name_label">Nombre *</label>
           <input type="text" id="fieldName" required
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">País *</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="suppliers.country_label">País *</label>
           <select id="fieldCountry" required
                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
                   onchange="updateCurrencyFromCountry()">
-            <option value="">Seleccionar...</option>
+            <option value="" data-i18n="suppliers.select_country">Seleccionar...</option>
             <option value="USA">USA</option>
             <option value="Spain">Spain</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Tarifa por envío *</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="suppliers.rate_label">Tarifa por envío *</label>
           <input type="number" id="fieldRate" step="0.01" min="0.01" required
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Moneda</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="suppliers.currency_label">Moneda</label>
           <input type="text" id="fieldCurrency" readonly
                  class="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-500"
-                 placeholder="Selecciona país primero">
+                 placeholder="Selecciona país primero"
+                 data-i18n-placeholder="suppliers.currency_placeholder">
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Estado *</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="suppliers.status_label">Estado *</label>
           <select id="fieldStatus" required
                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
             <option value="active">✅ Active</option>
@@ -123,7 +180,7 @@
           </select>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Categorías *</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="suppliers.categories_label">Categorías *</label>
           <select id="fieldCategories" multiple size="3"
                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
             <option value="carrier_last_mile">🚚 Última milla</option>
@@ -135,30 +192,33 @@
             <option value="it_and_wms_software">💻 IT y WMS</option>
             <option value="cleaning_and_facilities">🧹 Limpieza</option>
           </select>
-          <p class="text-xs text-gray-400 mt-1">Ctrl+click para seleccionar varias</p>
+          <p class="text-xs text-gray-400 mt-1" data-i18n="suppliers.ctrl_hint">Ctrl+click para seleccionar varias</p>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Zona de servicio</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="suppliers.zone_label">Zona de servicio</label>
           <input type="text" id="fieldZone"
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                 placeholder="Ej: West Coast">
+                 placeholder="Ej: West Coast"
+                 data-i18n-placeholder="suppliers.zone_placeholder">
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Email de contacto</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="suppliers.email_label">Email de contacto</label>
           <input type="email" id="fieldEmail"
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                 placeholder="proveedor@ejemplo.com">
+                 placeholder="proveedor@ejemplo.com"
+                 data-i18n-placeholder="suppliers.email_placeholder">
         </div>
         <div class="md:col-span-2 lg:col-span-4">
-          <label class="block text-xs font-medium text-gray-600 mb-1">Notas</label>
+          <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="suppliers.notes_label">Notas</label>
           <input type="text" id="fieldNotes"
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                 placeholder="Observaciones del equipo de operaciones">
+                 placeholder="Observaciones del equipo de operaciones"
+                 data-i18n-placeholder="suppliers.notes_placeholder">
         </div>
         <div class="md:col-span-2 lg:col-span-4 flex items-center gap-3">
           <button type="submit"
                   class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
-            ➕ Añadir proveedor
+            ➕ <span data-i18n="suppliers.add">Añadir proveedor</span>
           </button>
           <span id="formFeedback" class="text-sm"></span>
         </div>
@@ -173,15 +233,15 @@
         <table class="w-full text-sm">
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th class="text-left px-4 py-3 font-medium text-gray-600">ID</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-600">Nombre</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-600">País</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-600">Categorías</th>
-              <th class="text-right px-4 py-3 font-medium text-gray-600">Tarifa</th>
-              <th class="text-left px-6 py-3 font-medium text-gray-600 whitespace-nowrap">Estado</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-600">Zona</th>
-              <th class="text-left px-4 py-3 font-medium text-gray-600">Actualizado</th>
-              <th class="text-center px-2 py-3 font-medium text-gray-600" colspan="3">Acciones</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600" data-i18n="suppliers.th_id">ID</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600" data-i18n="suppliers.th_name">Nombre</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600" data-i18n="suppliers.th_country">País</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600" data-i18n="suppliers.th_categories">Categorías</th>
+              <th class="text-right px-4 py-3 font-medium text-gray-600" data-i18n="suppliers.th_rate">Tarifa</th>
+              <th class="text-left px-6 py-3 font-medium text-gray-600 whitespace-nowrap" data-i18n="suppliers.th_status">Estado</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600" data-i18n="suppliers.th_zone">Zona</th>
+              <th class="text-left px-4 py-3 font-medium text-gray-600" data-i18n="suppliers.th_updated">Actualizado</th>
+              <th class="text-center px-2 py-3 font-medium text-gray-600" colspan="3" data-i18n="suppliers.th_actions">Acciones</th>
             </tr>
           </thead>
           <tbody id="suppliersTableBody" class="divide-y divide-gray-200">
@@ -190,19 +250,25 @@
         </table>
       </div>
       <div id="loadingState" class="text-center py-12 text-gray-400">
-        <p class="text-lg">⏳ Cargando proveedores...</p>
+        <p class="text-lg" data-i18n="suppliers.loading">⏳ Cargando proveedores...</p>
       </div>
       <div id="emptyState" class="text-center py-12 text-gray-400 hidden">
-        <p class="text-lg">📭 No hay proveedores que coincidan con los filtros.</p>
+        <p class="text-lg" data-i18n="suppliers.empty">📭 No hay proveedores que coincidan con los filtros.</p>
       </div>
     </section>
   </main>
 
-  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200">
+  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200" data-i18n="app.footer">
     TrackFlow — Directorio de Proveedores
   </footer>
 
+  <script src="/js/i18n.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script src="/js/app.js"></script>
   <script>
+    // ── Proteger página ──
+    if (window.requireAuth) window.requireAuth();
+
     // ────────────────────────────────────────────────────────────
     // CONSTANTES
     // ────────────────────────────────────────────────────────────
@@ -220,6 +286,22 @@
     };
 
     const CURRENCY_BY_COUNTRY = { USA: 'USD', Spain: 'EUR' };
+
+    // ────────────────────────────────────────────────────────────
+    // API helper con autenticación
+    // ────────────────────────────────────────────────────────────
+    async function apiFetch(url, options = {}) {
+      const headers = { ...(options.headers || {}) };
+      const token = window.getToken ? window.getToken() : null;
+      if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+      }
+      const res = await fetch(url, { ...options, headers });
+      if (res.status === 401 && window.handleAuthError) {
+        window.handleAuthError(new Error('401 Unauthorized'));
+      }
+      return res;
+    }
 
     // ────────────────────────────────────────────────────────────
     // CARGA INICIAL
@@ -260,7 +342,7 @@
         if (category) params.push(`category=${encodeURIComponent(category)}`);
         if (params.length) url += '?' + params.join('&');
 
-        const res = await fetch(url);
+        const res = await apiFetch(url);
         if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
         const suppliers = await res.json();
@@ -268,11 +350,11 @@
 
         if (suppliers.length === 0) {
           empty.classList.remove('hidden');
-          count.textContent = '0 proveedores';
+          count.textContent = window.__ ? window.__('suppliers.count_zero') : '0 proveedores';
           return;
         }
 
-        count.textContent = `${suppliers.length} proveedore(s)`;
+        count.textContent = `${suppliers.length} ${window.__ ? window.__('suppliers.count_format') : 'proveedore(s)'}`;
 
         for (const s of suppliers) {
           const tr = document.createElement('tr');
@@ -292,12 +374,12 @@
           tr.innerHTML = `
             <td class="px-4 py-3 text-gray-500 font-mono text-xs">${s.id}</td>
             <td class="px-4 py-3 font-medium">${escHtml(s.name)}</td>
-            <td class="px-4 py-3">${s.country === 'USA' ? '🇺🇸 USA' : '🇪🇸 Spain'}</td>
+            <td class="px-4 py-3">${s.country === 'USA' ? (window.__ ? window.__('suppliers.usa_label') : '🇺🇸 USA') : (window.__ ? window.__('suppliers.spain_label') : '🇪🇸 Spain')}</td>
             <td class="px-4 py-3 align-top">${cats}</td>
             <td class="px-4 py-3 text-right font-mono">${formattedRate}</td>
             <td class="px-6 py-3 whitespace-nowrap">
               <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass}">
-                ${isActive ? '✅ Active' : '⛔ Suspended'}
+                ${isActive ? (window.__ ? window.__('suppliers.status_badge_active') : '✅ Active') : (window.__ ? window.__('suppliers.status_badge_suspended') : '⛔ Suspended')}
               </span>
             </td>
             <td class="px-4 py-3 text-gray-500 text-xs">${escHtml(s.service_zone || '—')}</td>
@@ -305,21 +387,21 @@
             <td class="px-2 py-3 text-center">
               <button onclick="editRate(${s.id})"
                       class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded text-xs font-medium transition whitespace-nowrap"
-                      title="Actualizar tarifa">
-                💰 Tarifa
+                      title="${window.__ ? window.__('suppliers.btn_rate_title') : 'Actualizar tarifa'}">
+                ${window.__ ? window.__('suppliers.btn_rate') : '💰 Tarifa'}
               </button>
             </td>
             <td class="px-2 py-3 text-center">
               <button onclick="toggleStatus(${s.id}, '${s.status}')"
                       class="${isActive ? 'bg-red-50 hover:bg-red-100 text-red-600' : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600'} px-3 py-1.5 rounded text-xs font-medium transition whitespace-nowrap"
-                      title="${isActive ? 'Suspender proveedor' : 'Activar proveedor'}">
-                ${isActive ? '⛔ Suspender' : '✅ Activar'}
+                      title="${isActive ? (window.__ ? window.__('suppliers.btn_suspend_title') : 'Suspender proveedor') : (window.__ ? window.__('suppliers.btn_activate_title') : 'Activar proveedor')}">
+                ${isActive ? (window.__ ? window.__('suppliers.btn_suspend') : '⛔ Suspender') : (window.__ ? window.__('suppliers.btn_activate') : '✅ Activar')}
               </button>
             </td>
             <td class="px-2 py-3 text-center">
               <button onclick="deleteSupplier(${s.id})"
                       class="bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 px-3 py-1.5 rounded text-xs font-medium transition"
-                      title="Eliminar proveedor">
+                      title="${window.__ ? window.__('suppliers.btn_delete_title') : 'Eliminar proveedor'}">
                 🗑️
               </button>
             </td>
@@ -331,7 +413,7 @@
         tbody.innerHTML = `
           <tr>
             <td colspan="11" class="text-center py-8 text-red-500">
-              ❌ Error al cargar proveedores: ${escHtml(err.message)}
+              ❌ ${window.__ ? window.__('suppliers.error_load') : 'Error al cargar proveedores'}: ${escHtml(err.message)}
             </td>
           </tr>`;
       }
@@ -352,29 +434,56 @@
       const feedback = document.getElementById('formFeedback');
       feedback.className = 'text-sm';
 
+      // Validar campos requeridos
+      const name = document.getElementById('fieldName').value.trim();
+      const country = document.getElementById('fieldCountry').value;
+      const rate = document.getElementById('fieldRate').value;
+      const status = document.getElementById('fieldStatus').value;
+
+      if (!name) {
+        feedback.className = 'text-sm text-red-500';
+        feedback.textContent = '❌ ' + (window.__ ? window.__('suppliers.error_name_required') : 'El nombre es obligatorio.');
+        return;
+      }
+      if (!country) {
+        feedback.className = 'text-sm text-red-500';
+        feedback.textContent = '❌ ' + (window.__ ? window.__('suppliers.error_country_required') : 'Selecciona un país.');
+        return;
+      }
+      if (!rate || parseFloat(rate) <= 0) {
+        feedback.className = 'text-sm text-red-500';
+        feedback.textContent = '❌ ' + (window.__ ? window.__('suppliers.error_rate_required') : 'La tarifa es obligatoria.');
+        return;
+      }
+      if (!status) {
+        feedback.className = 'text-sm text-red-500';
+        feedback.textContent = '❌ ' + (window.__ ? window.__('suppliers.error_status_required') : 'Selecciona un estado.');
+        return;
+      }
+
       const selectedOptions = document.getElementById('fieldCategories').selectedOptions;
       const categories = Array.from(selectedOptions).map(o => o.value);
 
       if (categories.length === 0) {
         feedback.className = 'text-sm text-red-500';
-        feedback.textContent = '❌ Selecciona al menos una categoría.';
+        feedback.textContent = '❌ ' + (window.__ ? window.__('suppliers.error_categories_required') : 'Selecciona al menos una categoría.');
         return;
       }
 
       const payload = {
-        name: document.getElementById('fieldName').value.trim(),
-        country: document.getElementById('fieldCountry').value,
+        name: name,
+        country: country,
         categories: categories,
-        rate_per_shipment: parseFloat(document.getElementById('fieldRate').value),
+        rate_per_shipment: parseFloat(rate),
         currency: document.getElementById('fieldCurrency').value,
-        status: document.getElementById('fieldStatus').value,
+        status: status,
         service_zone: document.getElementById('fieldZone').value.trim() || null,
         contact_email: document.getElementById('fieldEmail').value.trim() || null,
         notes: document.getElementById('fieldNotes').value.trim() || null,
       };
 
       try {
-        const res = await fetch(API_BASE, {
+        const res = await apiFetch(API_BASE, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -382,20 +491,20 @@
 
         if (res.status === 201) {
           feedback.className = 'text-sm text-emerald-600';
-          feedback.textContent = '✅ Proveedor creado correctamente.';
+          feedback.textContent = window.__ ? window.__('suppliers.success_created') : '✅ Proveedor creado correctamente.';
           document.getElementById('newSupplierForm').reset();
           document.getElementById('fieldCurrency').value = '';
           loadSuppliers();
         } else {
           const err = await res.json();
-          const detail = err.detail || err.message || 'Error desconocido';
+          const detail = err.detail || err.message || (window.__ ? window.__('suppliers.error_unknown') : 'Error desconocido');
           const msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
           feedback.className = 'text-sm text-red-500';
           feedback.textContent = `❌ ${res.status}: ${msg}`;
         }
       } catch (err) {
         feedback.className = 'text-sm text-red-500';
-        feedback.textContent = `❌ Error de conexión: ${err.message}`;
+        feedback.textContent = `❌ ${window.__ ? window.__('suppliers.error_connection') : 'Error de conexión'}: ${err.message}`;
       }
     }
 
@@ -403,17 +512,17 @@
     // ACTUALIZAR TARIFA
     // ────────────────────────────────────────────────────────────
     async function editRate(id) {
-      const newRate = prompt('Nueva tarifa por envío (debe ser > 0):');
+      const newRate = prompt(window.__ ? window.__('suppliers.rate_prompt') : 'Nueva tarifa por envío (debe ser > 0):');
       if (newRate === null) return;
 
       const rate = parseFloat(newRate);
       if (isNaN(rate) || rate <= 0) {
-        alert('❌ La tarifa debe ser un número positivo.');
+        alert('❌ ' + (window.__ ? window.__('suppliers.rate_error') : 'La tarifa debe ser un número positivo.'));
         return;
       }
 
       try {
-        const res = await fetch(`${API_BASE}/${id}/rate`, {
+        const res = await apiFetch(`${API_BASE}/${id}/rate`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rate_per_shipment: rate }),
@@ -426,7 +535,7 @@
           alert(`❌ Error: ${err.detail || JSON.stringify(err)}`);
         }
       } catch (err) {
-        alert(`❌ Error de conexión: ${err.message}`);
+        alert(`❌ ${window.__ ? window.__('suppliers.error_connection') : 'Error de conexión'}: ${err.message}`);
       }
     }
 
@@ -435,12 +544,12 @@
     // ────────────────────────────────────────────────────────────
     async function toggleStatus(id, currentStatus) {
       const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
-      const action = newStatus === 'active' ? 'activar' : 'suspender';
+      const action = newStatus === 'active' ? (window.__ ? window.__('suppliers.action_activate') : 'activar') : (window.__ ? window.__('suppliers.action_suspend') : 'suspender');
 
-      if (!confirm(`¿Estás seguro de que quieres ${action} este proveedor?`)) return;
+      if (!confirm((newStatus === 'active' ? (window.__ ? window.__('suppliers.confirm_activate') : '¿Estás seguro de que quieres activar este proveedor?') : (window.__ ? window.__('suppliers.confirm_suspend') : '¿Estás seguro de que quieres suspender este proveedor?')))) return;
 
       try {
-        const res = await fetch(`${API_BASE}/${id}/status`, {
+        const res = await apiFetch(`${API_BASE}/${id}/status`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: newStatus }),
@@ -453,7 +562,7 @@
           alert(`❌ Error: ${err.detail || JSON.stringify(err)}`);
         }
       } catch (err) {
-        alert(`❌ Error de conexión: ${err.message}`);
+        alert(`❌ ${window.__ ? window.__('suppliers.error_connection') : 'Error de conexión'}: ${err.message}`);
       }
     }
 
@@ -461,10 +570,10 @@
     // ELIMINAR PROVEEDOR
     // ────────────────────────────────────────────────────────────
     async function deleteSupplier(id) {
-      if (!confirm(`¿Estás seguro de que quieres eliminar el proveedor #${id}?`)) return;
+      if (!confirm(`${window.__ ? window.__('suppliers.confirm_delete') : '¿Estás seguro de que quieres eliminar el proveedor'} #${id}?`)) return;
 
       try {
-        const res = await fetch(`${API_BASE}/${id}`, {
+        const res = await apiFetch(`${API_BASE}/${id}`, {
           method: 'DELETE',
         });
 
@@ -475,7 +584,7 @@
           alert(`❌ Error: ${err.detail || JSON.stringify(err)}`);
         }
       } catch (err) {
-        alert(`❌ Error de conexión: ${err.message}`);
+        alert(`❌ ${window.__ ? window.__('suppliers.error_connection') : 'Error de conexión'}: ${err.message}`);
       }
     }
 
@@ -493,7 +602,7 @@
       if (!isoStr) return '—';
       try {
         const d = new Date(isoStr);
-        return d.toLocaleDateString('es-ES', {
+        return d.toLocaleDateString(window.__ ? window.__('locale') : 'es-ES', {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric',

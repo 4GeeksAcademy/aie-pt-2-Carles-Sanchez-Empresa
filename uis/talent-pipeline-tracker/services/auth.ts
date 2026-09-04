@@ -1,0 +1,274 @@
+const STORAGE_KEY = "trackflow_token";
+const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const AUTH_API_BASE = "/api/auth-proxy";
+
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
+
+interface AuthErrorBody {
+  detail?: string;
+}
+
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  name?: string;
+  phone?: string;
+  address?: string;
+}
+
+export interface AuthMeResponse {
+  id: number;
+  email: string;
+  role: string;
+  profile: {
+    id: number;
+    user_id: number;
+    name: string | null;
+    phone: string | null;
+    address: string | null;
+    created_at: string;
+    updated_at: string;
+  } | null;
+}
+
+export interface ProfileResponse {
+  id: number;
+  user_id: number;
+  name: string | null;
+  phone: string | null;
+  address: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProfileUpdatePayload {
+  name?: string;
+  phone?: string;
+  address?: string;
+}
+
+function decodeBase64Url(base64Url: string): string {
+  let normalized = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  while (normalized.length % 4 !== 0) normalized += "=";
+  return atob(normalized);
+}
+
+export function isExpiredJwt(token: string): boolean {
+  if (!token) return true;
+  const parts = token.split(".");
+  if (parts.length !== 3) return true;
+
+  try {
+    const payload = JSON.parse(decodeBase64Url(parts[1])) as { exp?: number };
+    if (typeof payload.exp !== "number") return true;
+    const now = Math.floor(Date.now() / 1000);
+    return payload.exp <= now;
+  } catch {
+    return true;
+  }
+}
+
+function setTokenCookie(token: string): void {
+  document.cookie = `${STORAGE_KEY}=${encodeURIComponent(token)}; Path=/; Max-Age=${COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+}
+
+function clearTokenCookie(): void {
+  document.cookie = `${STORAGE_KEY}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+export function getToken(): string | null {
+  const token = localStorage.getItem(STORAGE_KEY);
+  if (!token) return null;
+
+  if (isExpiredJwt(token)) {
+    clearToken();
+    return null;
+  }
+
+  return token;
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(STORAGE_KEY, token);
+  setTokenCookie(token);
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(STORAGE_KEY);
+  clearTokenCookie();
+}
+
+export function getAuthHeaders(): Record<string, string> {
+  const token = getToken();
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
+export function isValidPhoneForRegister(phone: string): boolean {
+  return /^[\d\s+\-()]{6,20}$/.test(phone);
+}
+
+const HTTP_ERROR_MESSAGES: Record<number, string> = {
+  400: "Datos inválidos. Revisa la información ingresada.",
+  401: "Credenciales incorrectas. Verifica tu email y contraseña.",
+  403: "No tienes permiso para realizar esta acción.",
+  404: "El recurso solicitado no existe.",
+  409: "El recurso ya existe (posiblemente el email ya está registrado).",
+  422: "Los datos enviados no son válidos.",
+  429: "Demasiadas solicitudes. Inténtalo de nuevo en unos segundos.",
+  500: "Error interno del servidor. Inténtalo más tarde.",
+  502: "El servicio no está disponible en este momento.",
+  503: "El servicio está temporalmente fuera de servicio.",
+};
+
+async function parseError(res: Response): Promise<string> {
+  const friendlyMessage = HTTP_ERROR_MESSAGES[res.status];
+  try {
+    const body = (await res.json()) as AuthErrorBody;
+    return body.detail || friendlyMessage || `Error ${res.status}`;
+  } catch {
+    return friendlyMessage || `Error ${res.status}`;
+  }
+}
+
+function handleUnauthorizedRedirect(): never {
+  clearToken();
+  if (typeof window !== "undefined") {
+    const url = new URL("/login?reason=session_expired", window.location.origin);
+    window.location.href = url.toString();
+  }
+  throw new Error("Sesión expirada");
+}
+
+export async function login(email: string, password: string): Promise<string> {
+  const res = await fetch(`${AUTH_API_BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseError(res));
+  }
+
+  const data = (await res.json()) as LoginResponse;
+  setToken(data.access_token);
+  return data.access_token;
+}
+
+export async function register(payload: RegisterPayload): Promise<string> {
+  const registerPayload: RegisterPayload = {
+    email: payload.email,
+    password: payload.password,
+  };
+
+  if (payload.name) registerPayload.name = payload.name;
+  if (payload.phone) registerPayload.phone = payload.phone;
+  if (payload.address) registerPayload.address = payload.address;
+
+  const regRes = await fetch(`${AUTH_API_BASE}/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(registerPayload),
+  });
+
+  if (!regRes.ok) {
+    throw new Error(await parseError(regRes));
+  }
+
+  return login(payload.email, payload.password);
+}
+
+export async function getAuthMe(): Promise<AuthMeResponse> {
+  const token = getToken();
+  if (!token) {
+    throw new Error("No hay sesión activa.");
+  }
+
+  const res = await fetch(`${AUTH_API_BASE}/auth/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      handleUnauthorizedRedirect();
+    }
+    throw new Error(await parseError(res));
+  }
+
+  return (await res.json()) as AuthMeResponse;
+}
+
+export async function updateProfile(data: ProfileUpdatePayload): Promise<ProfileResponse> {
+  const token = getToken();
+  if (!token) {
+    throw new Error("No hay sesión activa.");
+  }
+
+  const res = await fetch(`${AUTH_API_BASE}/profiles/me`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      handleUnauthorizedRedirect();
+    }
+    throw new Error(await parseError(res));
+  }
+
+  return (await res.json()) as ProfileResponse;
+}
+
+// ─── Forgot Password ───
+
+export async function forgotPassword(email: string): Promise<void> {
+  const res = await fetch(`${AUTH_API_BASE}/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as AuthErrorBody;
+    throw new Error(body.detail || "Error sending reset link");
+  }
+}
+
+// ─── Reset Password ───
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  const res = await fetch(`${AUTH_API_BASE}/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as AuthErrorBody;
+    throw new Error(body.detail || "Error resetting password");
+  }
+}
+
+// ─── Change Password (authenticated) ───
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const res = await fetch(`${AUTH_API_BASE}/auth/change-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as AuthErrorBody;
+    throw new Error(body.detail || "Error changing password");
+  }
+}
+
+export type { AuthErrorBody };

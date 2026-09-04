@@ -15,11 +15,11 @@ import sys
 import os
 
 # Añadir el directorio actual al path para importar módulos de services/api/
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(__file__))
 
 from datetime import datetime, timezone
 from database import suppliers_table
-from models import VALID_CATEGORIES, SupplierStatus
+from pydantic_models import VALID_CATEGORIES, SupplierStatus
 
 
 # ──────────────────────────── Datos iniciales ────────────────────────────
@@ -195,6 +195,7 @@ def seed():
         print(f"⚠️  La tabla de proveedores ya contiene {existing_count} registro(s).")
         print("   No se insertaron datos para evitar duplicados.")
         print("   Si necesitas recargar los datos, vacía la tabla primero o elimina suppliers_db.json.")
+        print("   Saliendo con código 0 — no es un error, pero no se realizó ninguna inserción.")
         return
 
     now = datetime.now(timezone.utc).isoformat()
