@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrackFlow - Gestor de Incidencias</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body.auth-pending {
+      visibility: hidden;
+    }
+    .auth-ok body.auth-pending {
+      visibility: visible;
+    }
+
+    /* Tab activo */
+    .tab-btn.active {
+      background-color: #3B82F6;
+      color: white;
+      border-color: #3B82F6;
+    }
+
+    /* Transiciones */
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Spinner */
+    .spinner {
+      border: 3px solid #e5e7eb;
+      border-top: 3px solid #3B82F6;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Mensajes */
+    .msg-success {
+      background-color: #d1fae5;
+      border: 1px solid #6ee7b7;
+      color: #065f46;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+    }
+    .msg-error {
+      background-color: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+    }
+    .field-error {
+      color: #dc2626;
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Estado vacío */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #9ca3af;
+    }
+
+    /* Resaltado origen branch */
+    .origin-branch-highlight {
+      background-color: #fef3c7;
+      border-color: #f59e0b;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+  </style>
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#10B981',
+          }
+        }
+      }
+    };
+
+    // ── Protección inmediata: validar JWT antes de pintar el body ──
+    (function () {
+      try {
+      function decodeBase64Url(base64Url) {
+        var normalized = String(base64Url || '').replace(/-/g, '+').replace(/_/g, '/');
+        while (normalized.length % 4 !== 0) normalized += '=';
+        return atob(normalized);
+      }
+
+      function isExpiredJwt(token) {
+        if (!token || typeof token !== 'string') return true;
+        var parts = token.split('.');
+        if (parts.length !== 3) return true;
+        try {
+          var payload = JSON.parse(decodeBase64Url(parts[1]));
+          if (typeof payload.exp !== 'number') return true;
+          var now = Math.floor(Date.now() / 1000);
+          return payload.exp <= now;
+        } catch (e) {
+          return true;
+        }
+      }
+
+      var loginUrl = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      var token = null;
+      try { token = localStorage.getItem('trackflow_token'); } catch (e) {}
+      if (!token || isExpiredJwt(token)) {
+        try { localStorage.removeItem('trackflow_token'); } catch (e) {}
+        window.location.replace(loginUrl);
+        return;
+      }
+      document.documentElement.classList.add('auth-ok');
+      } catch (e) {
+        document.documentElement.classList.add('auth-ok');
+        window.location.replace('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      }
+    })();
+  </script>
+</head>
+<body class="auth-pending bg-gray-50 text-gray-800 font-sans">
+
+  <header class="bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6 shadow-lg">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button id="sidebarToggle">☰</button>
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
+          <p class="text-blue-100 mt-1" data-i18n="incmgr.header_subtitle">Gestor Centralizado de Incidencias</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="window.__toggleLang()" id="langToggle"
+                class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
+          ES | EN
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6">
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- TABS -->
+    <!-- ════════════════════════════════════════════ -->
+    <div class="flex gap-2 mb-6 border-b border-gray-200 pb-2">
+      <button class="tab-btn active px-5 py-2 rounded-t-lg text-sm font-medium border border-b-0 border-gray-200 bg-white text-blue-600 hover:bg-gray-50 transition"
+              data-tab="form" onclick="switchTab('form')" data-i18n="incmgr.tab_new">
+        ✏️ Nueva incidencia
+      </button>
+      <button class="tab-btn px-5 py-2 rounded-t-lg text-sm font-medium border border-b-0 border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition"
+              data-tab="list" onclick="switchTab('list')" data-i18n="incmgr.tab_list">
+        📋 Listado
+      </button>
+      <button class="tab-btn px-5 py-2 rounded-t-lg text-sm font-medium border border-b-0 border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition"
+              data-tab="summary" onclick="switchTab('summary')" data-i18n="incmgr.tab_summary">
+        📊 Resumen
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- TAB 1: FORMULARIO -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="panel-form" class="tab-panel active">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-w-2xl">
+        <h2 class="text-xl font-semibold mb-6 flex items-center gap-2" data-i18n="incmgr.form_title">
+          <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+          Registrar nueva incidencia
+        </h2>
+
+        <div id="formSuccess" class="msg-success hidden mb-4"></div>
+        <div id="formError" class="msg-error hidden mb-4"></div>
+
+        <form id="incidentForm" class="space-y-4" onsubmit="return handleSubmit(event)" novalidate>
+          <!-- Título -->
+          <div>
+            <label for="fieldTitle" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_title">Título *</label>
+            <input type="text" id="fieldTitle" required
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                   data-i18n-placeholder="incmgr.field_title_placeholder"
+                   placeholder="Ej: Paquete retenido en aduana">
+            <div id="fieldTitleError" class="field-error hidden"></div>
+          </div>
+
+          <!-- Descripción -->
+          <div>
+            <label for="fieldDescription" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_description">Descripción *</label>
+            <textarea id="fieldDescription" required rows="3"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      data-i18n-placeholder="incmgr.field_desc_placeholder"
+                      placeholder="Detalle del incidente..."></textarea>
+            <div id="fieldDescriptionError" class="field-error hidden"></div>
+          </div>
+
+          <!-- Categoría -->
+          <div>
+            <label for="fieldCategory" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_category">Categoría *</label>
+            <select id="fieldCategory" required
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+              <option value="" data-i18n="incmgr.select_category">Seleccionar categoría</option>
+              <option value="lost_parcel">📦 <span data-i18n="incmgr.cat_lost_parcel">Paquete perdido</span></option>
+              <option value="delivery_failure">🚚 <span data-i18n="incmgr.cat_delivery_failure">Fallo de entrega</span></option>
+              <option value="inventory_discrepancy">📋 <span data-i18n="incmgr.cat_inventory_discrepancy">Discrepancia de inventario</span></option>
+              <option value="carrier_issue">🚛 <span data-i18n="incmgr.cat_carrier_issue">Problema con carrier</span></option>
+              <option value="returns_issue">🔄 <span data-i18n="incmgr.cat_returns_issue">Problema de devolución</span></option>
+              <option value="warehouse_incident">🏭 <span data-i18n="incmgr.cat_warehouse_incident">Incidencia en almacén</span></option>
+              <option value="system_failure">💻 <span data-i18n="incmgr.cat_system_failure">Falla de sistema</span></option>
+              <option value="client_complaint">📞 <span data-i18n="incmgr.cat_client_complaint">Queja de cliente</span></option>
+              <option value="other">❓ <span data-i18n="incmgr.cat_other">Otro</span></option>
+            </select>
+            <div id="fieldCategoryError" class="field-error hidden"></div>
+          </div>
+
+          <!-- Origen -->
+          <div>
+            <label for="fieldOrigin" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_origin">Origen *</label>
+            <select id="fieldOrigin" required onchange="onOriginChange()"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+              <option value="" data-i18n="incmgr.select_origin">Seleccionar origen</option>
+              <option value="customer">👤 <span data-i18n="incmgr.origin_customer">Cliente</span></option>
+              <option value="branch">🏢 <span data-i18n="incmgr.origin_branch">Sede</span></option>
+              <option value="internal">🔧 <span data-i18n="incmgr.origin_internal">Interno</span></option>
+            </select>
+            <div id="fieldOriginError" class="field-error hidden"></div>
+          </div>
+
+          <!-- Sede -->
+          <div>
+            <label for="fieldBranch" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="incmgr.field_branch">Sede *</label>
+            <select id="fieldBranch" required
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+              <option value="" data-i18n="incmgr.select_branch">Seleccionar sede</option>
+              <option value="central">🏢 <span data-i18n="incmgr.branch_central">Central (Madrid)</span></option>
+              <option value="la_warehouse">🏭 <span data-i18n="incmgr.branch_la_wh">Almacén Los Ángeles</span></option>
+              <option value="la_office">🏢 <span data-i18n="incmgr.branch_la_off">Oficina Los Ángeles</span></option>
+              <option value="zaragoza_warehouse">🏭 <span data-i18n="incmgr.branch_z_wh">Almacén Zaragoza</span></option>
+              <option value="zaragoza_office">🏢 <span data-i18n="incmgr.branch_z_off">Oficina Zaragoza</span></option>
+            </select>
+            <div id="fieldBranchError" class="field-error hidden"></div>
+          </div>
+
+          <!-- Botón enviar -->
+          <div class="pt-2">
+            <button type="submit" id="btnSubmit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              <span id="btnSubmitText" data-i18n="incmgr.btn_save">Guardar incidencia</span>
+              <span id="btnSubmitSpinner" class="hidden"><span class="spinner"></span></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- TAB 2: LISTADO -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="panel-list" class="tab-panel">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="incmgr.list_title">
+          <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+          Listado de incidencias
+        </h2>
+
+        <!-- Filtros -->
+        <div class="flex flex-wrap gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1" data-i18n="incmgr.filter_status">Estado</label>
+            <select id="listFilterStatus" onchange="loadList()"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="" data-i18n="incmgr.filter_all">Todos</option>
+              <option value="open" data-i18n="incmgr.status_open">Abierta</option>
+              <option value="in_progress" data-i18n="incmgr.status_in_progress">En progreso</option>
+              <option value="resolved" data-i18n="incmgr.status_resolved">Resuelta</option>
+              <option value="discarded" data-i18n="incmgr.status_discarded">Descartada</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1" data-i18n="incmgr.filter_origin">Origen</label>
+            <select id="listFilterOrigin" onchange="loadList()"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="" data-i18n="incmgr.filter_all">Todos</option>
+              <option value="customer" data-i18n="incmgr.origin_customer">Cliente</option>
+              <option value="branch" data-i18n="incmgr.origin_branch">Sede</option>
+              <option value="internal" data-i18n="incmgr.origin_internal">Interno</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1" data-i18n="incmgr.filter_branch">Sede</label>
+            <select id="listFilterBranch" onchange="loadList()"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+              <option value="" data-i18n="incmgr.filter_all_branches">Todas</option>
+              <option value="central" data-i18n="incmgr.branch_central">Central</option>
+              <option value="la_warehouse" data-i18n="incmgr.branch_la_wh">Almacén LA</option>
+              <option value="la_office" data-i18n="incmgr.branch_la_off">Oficina LA</option>
+              <option value="zaragoza_warehouse" data-i18n="incmgr.branch_z_wh">Almacén Zaragoza</option>
+              <option value="zaragoza_office" data-i18n="incmgr.branch_z_off">Oficina Zaragoza</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Estado: loading -->
+        <div id="listLoading" class="hidden flex items-center justify-center py-8">
+          <span class="spinner mr-2"></span>
+          <span class="text-gray-500 text-sm" data-i18n="incmgr.loading_list">Cargando incidencias...</span>
+        </div>
+
+        <!-- Estado: error -->
+        <div id="listError" class="msg-error hidden"></div>
+
+        <!-- Estado: vacío -->
+        <div id="listEmpty" class="empty-state hidden">
+          <p class="text-4xl mb-2">📭</p>
+          <p class="text-lg font-medium" data-i18n="incmgr.no_incidents">No hay incidencias</p>
+          <p class="text-sm mt-1" data-i18n="incmgr.no_incidents_desc">No se encontraron incidencias con los filtros seleccionados.</p>
+        </div>
+
+        <!-- Tabla -->
+        <div id="listTableWrapper">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-gray-200 text-left text-gray-500">
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_id">ID</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_title">Título</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_category">Categoría</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_status">Estado</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_origin">Origen</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_branch">Sede</th>
+                  <th class="pb-3 font-medium" data-i18n="incmgr.table_action">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="listBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════ -->
+    <!-- TAB 3: RESUMEN -->
+    <!-- ════════════════════════════════════════════ -->
+    <section id="panel-summary" class="tab-panel">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="incmgr.summary_title">
+          <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+          Resumen de métricas
+        </h2>
+
+        <!-- Estado: loading -->
+        <div id="summaryLoading" class="hidden flex items-center justify-center py-8">
+          <span class="spinner mr-2"></span>
+          <span class="text-gray-500 text-sm" data-i18n="incmgr.loading_summary">Cargando métricas...</span>
+        </div>
+
+        <!-- Estado: error -->
+        <div id="summaryError" class="msg-error hidden"></div>
+
+        <!-- Contenido -->
+        <div id="summaryContent" class="hidden space-y-6">
+          <!-- Total -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+              <p class="text-3xl font-bold text-blue-700" id="summaryTotal">0</p>
+              <p class="text-sm text-blue-600 mt-1" data-i18n="incmgr.summary_total">Total incidencias</p>
+            </div>
+          </div>
+
+          <!-- Por estado -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-2" data-i18n="incmgr.summary_by_status">Por estado</h3>
+            <div id="summaryByStatus" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+          </div>
+
+          <!-- Por categoría -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-2" data-i18n="incmgr.summary_by_category">Por categoría</h3>
+            <div id="summaryByCategory" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+          </div>
+
+          <!-- Por origen -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-2" data-i18n="incmgr.summary_by_origin">Por origen</h3>
+            <div id="summaryByOrigin" class="grid grid-cols-3 gap-3"></div>
+          </div>
+
+          <!-- Por sede -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700 mb-2" data-i18n="incmgr.summary_by_branch">Por sede</h3>
+            <div id="summaryByBranch" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script src="/js/incidents-manager.js"></script>
+</body>
+</html>

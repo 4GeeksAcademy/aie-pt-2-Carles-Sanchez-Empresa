@@ -1,155 +1,177 @@
-# TrackFlow API
+# TrackFlow API (FastAPI)
 
-Backend FastAPI unificado. Incluye:
-- **Analizador de incidencias** de envíos a partir de archivos CSV
-- **Directorio de proveedores** con CRUD completo y persistencia en TinyDB
+Backend unificado de TrackFlow. Este servicio expone APIs de negocio y también sirve las páginas del backoffice.
+
+Incluye:
+
+- Analizador de incidencias (`/api/incidents/*`)
+- Directorio de proveedores (`/suppliers/*`)
+- Autenticación y usuarios (`/auth/*`, `/users/*`, `/profiles/*`)
+- Frontend del backoffice (`/`, `/login`, `/register`, `/account/profile`, etc.)
 
 ---
 
 ## Requisitos
 
 - Python 3.10+
-- `uv` (gestor de proyectos Python)
+- `uv`
+- Node.js + npm (solo para compilar `uis/backoffice/js/app.js`)
 
 ```bash
-# Instalar uv si no lo tienes
 pip install uv
 ```
 
 ---
 
-## Puesta en marcha — paso a paso
+## Proceso de arranque completo
 
-### 1. Instalar dependencias
+### 1. Compilar el bundle del backoffice
 
 ```bash
-cd services/api
+cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
+npm install
+npm run build
+```
+
+### 2. Instalar dependencias de la API
+
+```bash
+cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/services/api
 uv sync
 ```
 
-Esto crea un entorno virtual (`.venv/`) e instala FastAPI, TinyDB, Uvicorn y demás dependencias.
-
-### 2. Sembrar la base de datos de proveedores
+### 3. Seed opcional (datos de ejemplo de proveedores)
 
 ```bash
 uv run seed
 ```
 
-Inserta 15 proveedores de ejemplo (9 de USA, 6 de España) en `suppliers_db.json`.
-Es **idempotente**: si ya hay datos, muestra un aviso y no duplica.
-
-### 3. Iniciar el servidor
+### 4. Iniciar el servidor
 
 ```bash
 uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 4. Abrir en el navegador
+### 5. Abrir y usar la aplicación
 
-[http://localhost:8000](http://localhost:8000)
+1. Abre `http://localhost:8000/register` para crear un usuario.
+2. Inicia sesión en `http://localhost:8000/login`.
+3. Entra al backoffice en `http://localhost:8000/`.
 
 ---
 
-## Endpoints
+## Rutas de navegador
 
-### Analizador de incidencias
+| Ruta | Uso | Acceso |
+|---|---|---|
+| `/register` | Crear cuenta de usuario | Público |
+| `/login` | Iniciar sesión y guardar sesión en navegador | Público |
+| `/` | Panel principal del backoffice | Protegido |
+| `/suppliers.html` | UI de proveedores | Protegido |
+| `/incidents.html` | UI de analizador de incidencias | Protegido |
+| `/incidents-manager.html` | UI de gestor centralizado de incidencias | Protegido |
+| `/account/profile` | UI de perfil del usuario actual | Protegido |
+
+Alias legacy también disponibles:
+
+- `/register.html`
+- `/login.html`
+- `/profile.html`
+
+---
+
+## Rutas de API
+
+### Públicas
 
 | Método | Ruta | Descripción |
 |---|---|---|
 | `GET` | `/api/health` | Health check |
-| `POST` | `/api/incidents/analyze` | Subir CSV con incidencias (multipart/form-data) |
-| `GET` | `/api/incidents/results/export` | Descargar último análisis como CSV |
+| `POST` | `/users` | Registro de usuario |
+| `POST` | `/auth/login` | Login (devuelve token JWT) |
+| `POST` | `/auth/forgot-password` | Solicitar enlace de restablecimiento de contraseña |
+| `POST` | `/auth/reset-password` | Restablecer contraseña con token |
 
-### Directorio de proveedores
-
-| Método | Ruta | Descripción | Códigos |
-|---|---|---|---|
-| `POST` | `/api/suppliers` | Crear un nuevo proveedor | `201` / `422` |
-| `GET` | `/api/suppliers` | Listar proveedores (filtros: `?country=USA&category=carrier_last_mile`) | `200` |
-| `GET` | `/api/suppliers/{id}` | Obtener un proveedor por ID (doc_id de TinyDB) | `200` / `404` |
-| `PATCH` | `/api/suppliers/{id}/rate` | Actualizar tarifa de un proveedor | `200` / `404` / `422` |
-| `PATCH` | `/api/suppliers/{id}/status` | Cambiar estado (active ↔ suspended) | `200` / `404` / `422` |
-| `DELETE` | `/api/suppliers/{id}` | Eliminar un proveedor | `200` / `404` |
-
-### Frontend
+### Protegidas (requieren token Bearer)
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `GET` | `/` | Página principal del backoffice |
-| `GET` | `/incidents.html` | Página de análisis de incidencias |
-| `GET` | `/suppliers.html` | Página del directorio de proveedores |
+| `GET` | `/auth/me` | Usuario autenticado actual |
+| `POST` | `/auth/change-password` | Cambiar contraseña (autenticado) |
+| `GET` | `/profiles/me` | Perfil del usuario autenticado |
+| `PUT` | `/profiles/me` | Actualizar perfil propio |
+| `GET` | `/users` | Listar usuarios (solo admin) |
+| `GET` | `/users/{id}` | Obtener usuario por id |
+| `PUT` | `/users/{id}` | Actualizar usuario |
+| `DELETE` | `/users/{id}` | Eliminar usuario (solo admin) |
+| `POST` | `/api/incidents/analyze` | Analizar CSV subido |
+| `GET` | `/api/incidents/results/export` | Exportar último análisis en CSV |
+| `POST` | `/api/incidents` | Crear nueva incidencia (gestor) |
+| `GET` | `/api/incidents` | Listar incidencias (`?status=&origin=&branch=`) |
+| `GET` | `/api/incidents/{id}` | Detalle de incidencia por ID |
+| `PATCH` | `/api/incidents/{id}/status` | Actualizar estado (con validación de transiciones) |
+| `GET` | `/api/incidents/summary` | Métricas agregadas (por estado, categoría, origen, sede) |
+| `POST` | `/suppliers` | Crear proveedor |
+| `PUT` | `/suppliers/{id}` | Actualizar todos los campos editables del proveedor |
+| `GET` | `/suppliers` | Listar proveedores (`?country=...&category=...`) |
+| `GET` | `/suppliers/{id}` | Obtener proveedor por ID |
+| `PATCH` | `/suppliers/{id}/rate` | Actualizar tarifa de proveedor |
+| `PATCH` | `/suppliers/{id}/status` | Actualizar estado de proveedor |
+| `DELETE` | `/suppliers/{id}` | Eliminar proveedor |
 
 ---
 
-## Probar la API con curl
+## Prueba rápida con curl
 
 ```bash
-# Health check
+# Health (público)
 curl -s http://localhost:8000/api/health | python3 -m json.tool
 
-# Listar proveedores
-curl -s http://localhost:8000/api/suppliers | python3 -m json.tool
-
-# Filtrar por país
-curl -s "http://localhost:8000/api/suppliers?country=Spain" | python3 -m json.tool
-
-# Filtrar por categoría
-curl -s "http://localhost:8000/api/suppliers?category=carrier_last_mile" | python3 -m json.tool
-
-# Crear un proveedor
-curl -s -X POST http://localhost:8000/api/suppliers \
+# Registro (público)
+curl -s -X POST http://localhost:8000/users \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Nuevo Carrier",
-    "country": "Spain",
-    "categories": ["carrier_last_mile"],
-    "rate_per_shipment": 5.50,
-    "currency": "EUR",
-    "service_zone": "Madrid",
-    "contact_email": "info@nuevocarrier.es"
-  }' | python3 -m json.tool
+  -d '{"email":"demo@trackflow.com","password":"secret123"}' | python3 -m json.tool
 
-# Análisis de incidencias
-curl -s -X POST http://localhost:8000/api/incidents/analyze \
-  -F "file=@tests/sample.csv" | python3 -m json.tool
+# Login (público)
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@trackflow.com","password":"secret123"}' \
+  | python3 -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
 
-# Exportar resultados de incidencias
-curl -s http://localhost:8000/api/incidents/results/export
+# Ejemplo protegido
+curl -s http://localhost:8000/suppliers \
+  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
 ```
 
 ---
 
-## Arquitectura
+## Codespaces
 
-Este servicio sigue los principios de **Arquitectura Hexagonal (Ports & Adapters)** documentados en [`docs/ARCHITECTURE_PROPOSAL.md`](../../docs/ARCHITECTURE_PROPOSAL.md).
+Usa la URL del puerto `8000`, por ejemplo:
 
-- **`analyzer/_core.py`** — Lógica de dominio pura (validación, métricas, generación CSV). No depende de FastAPI ni de HTTP.
-- **`database.py`** — Capa de persistencia con TinyDB.
-- **`models.py`** — Modelos Pydantic con validaciones cruzadas (país↔moneda, categorías, etc.).
-- **`routes/suppliers.py`** — Adaptador de entrada HTTP para el directorio de proveedores.
-- **`main.py`** — Adaptador de entrada HTTP principal (FastAPI). Monta todos los routers y sirve el frontend.
-- **`seed.py`** — Carga inicial de datos de ejemplo.
-- **`tests/`** — Datos de prueba para verificación manual con `curl`.
+- `https://<codespace-name>-8000.app.github.dev/login`
 
 ---
 
-## Reglas de validación (analizador de incidencias)
+## Solución de problemas
 
-1. **País faltante o inválido** — debe ser `US` o `ES`
-2. **Carrier faltante o inválido para el país** — según `CARRIERS_BY_COUNTRY`
-3. **Tracking number faltante o < 8 caracteres**
-4. **Categoría faltante o inválida** — debe ser una de `VALID_CATEGORIES`
-5. **Estado faltante o inválido** — debe ser `OPEN`, `CLOSED` o `DISCARDED`
-6. **Email faltante o con formato incorrecto**
-7. **Puntuación fuera de rango** — debe ser 1-5 si está presente
-8. **Descripción demasiado corta** — mínimo 10 caracteres
+### Puedes abrir páginas pero las llamadas API fallan con 401
 
----
+Inicia sesión de nuevo en `/login`. Los endpoints protegidos exigen JWT válido.
 
-## Reglas del directorio de proveedores
+### `GET /js/app.js` devuelve 404
 
-- **Categorías válidas**: `carrier_last_mile`, `carrier_international`, `warehouse_supplies`, `packaging_materials`, `reverse_logistics`, `fleet_maintenance`, `it_and_wms_software`, `cleaning_and_facilities`
-- **Países válidos**: `USA`, `Spain`
-- **Monedas**: USA → `USD`, Spain → `EUR`
-- **Estados**: `active`, `suspended`
-- **Validación cruzada**: el par país↔moneda debe coincidir
+El bundle del backoffice no se ha compilado. Ejecuta:
+
+```bash
+cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
+npm run build
+```
+
+### `uv: command not found`
+
+Instala `uv`:
+
+```bash
+pip install uv
+```

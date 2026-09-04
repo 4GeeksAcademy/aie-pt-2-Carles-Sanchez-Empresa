@@ -62,6 +62,14 @@
 | **python-dotenv** | ^1.2.2 | Carga de variables de entorno desde `.env` (SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES) |
 | **uv** | — | Gestor de proyectos Python (alternativa a pip/poetry) |
 
+### Paquete compartido Python — `packages/shared-py/`
+
+| Tecnología | Propósito |
+|---|---|
+| **Python 3.10+** | Lenguaje de ejecución |
+| **Pydantic v2** | Enums con `str, Enum` para estados, categorías, orígenes y sedes |
+| **trackflow-shared** | Paquete instalable vía `file://` path: centraliza enums, validación de transiciones y transformación CSV-legacy para evitar duplicación entre servicios |
+
 ### Estructura del Monorepo
 
 ```
@@ -118,11 +126,23 @@ destination: "https://playground.4geeks.com/tracker/api/v1/:path*",
 
 Todas las llamadas a la API externa se realizan a través de `/api/proxy/`, evitando problemas de CORS y manteniendo la URL base centralizada en `lib/constants.ts`.
 
+### 3.1 Proxy de autenticación para Next.js (same-origin)
+
+- El tracker incorpora un Route Handler interno en `app/api/auth-proxy/[...path]/route.ts`.
+- Este proxy enruta llamadas de autenticación/perfil a FastAPI (`/auth/*`, `/users`, `/profiles/me`) desde el mismo origen del frontend.
+- Objetivo: evitar errores de CORS en Codespaces cuando el navegador está en `-3000` y la API en `-8000`.
+
 ### 4. Estado local con hooks (sin librerías externas)
 
 - No se usan **Redux, Zustand, Jotai** ni ninguna otra biblioteca de gestión de estado.
 - El estado se gestiona exclusivamente con hooks de React (`useState`, `useEffect`, `useCallback`) a nivel de componente.
 - No hay _prop drilling_; cada componente consume sus propios datos mediante llamadas a la API.
+
+### 4.1 Guard de autenticación en cliente (Tracker)
+
+- La protección de rutas en `uis/talent-pipeline-tracker` se hace en cliente con `components/AuthGuard.tsx` aplicado desde `app/layout.tsx`.
+- El guard valida el token JWT en `localStorage` (`trackflow_token`) y redirige a `/login` si falta o está expirado.
+- `login` y `register` redirigen al listado si ya existe sesión válida.
 
 ### 5. Paleta de colores personalizada (sin Tailwind theme extend)
 
@@ -163,6 +183,19 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
 - El build del backoffice se realiza bundlando `../../src/ui/handlers.ts` con `esbuild`, evitando árboles duplicados de salida por módulo.
 - `src/tsconfig.json` usa `noEmit` para separar claramente validación TypeScript y salida de navegador.
 
+### 9.1 Internacionalización reactiva del backoffice Next.js
+
+- `uis/backoffice/lib/i18n/index.tsx` expone un único `LanguageProvider` para toda la aplicación.
+- El selector `EN | ES` actualiza todas las vistas sin recarga y persiste la selección en `localStorage` con la clave `lang`.
+- Los valores técnicos enviados a FastAPI se mantienen estables; solo sus etiquetas de presentación se traducen.
+
+### 10. Gestor de Incidencias — Paquete compartido Python (`packages/shared-py/`)
+
+- Los enums, validaciones y transformaciones CSV de incidencias se centralizan en `trackflow-shared`, un paquete Python instalable localmente.
+- Esto evita la duplicación de lógica entre el analyzer legacy, la API REST y futuros servicios.
+- El submódulo `trackflow_shared.legacy` contiene el código migrado del analyzer original (`_core.py`), que ahora importa desde allí sin duplicar constantes ni funciones.
+- La validación de transiciones de estado (`open → in_progress → resolved/discarded`) es estricta y se aplica tanto en Pydantic (tipos) como en `validate_incident_record()` (reglas de negocio).
+
 ---
 
 ## Restricciones Técnicas
@@ -202,16 +235,77 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
   - `DELETE /suppliers/{id}` — eliminar proveedor
 - **Endpoints — Frontend** (servido desde FastAPI):
   - `GET /` — sirve `index.html` del backoffice (panel de utilidades)
+  - `GET /login` — login del backoffice
+  - `GET /register` — registro del backoffice
+  - `GET /account/profile` — perfil de cuenta del usuario autenticado
   - `GET /incidents.html` — sirve la página de análisis de incidencias
   - `GET /suppliers.html` — sirve la página del directorio de proveedores
   - `GET /js/*` — sirve los archivos JavaScript del backoffice
+  - Alias legacy mantenidos: `/login.html`, `/register.html`, `/profile.html`
 - **Módulos**:
   - `analyzer/_core.py` — 8 reglas de validación, métricas y exportación CSV para incidencias
   - `routes/suppliers.py` — CRUD completo del directorio de proveedores
   - `models.py` — Modelos Pydantic con `SupplierCreate`, `SupplierResponse`, `SupplierUpdateRate`, `SupplierUpdateStatus`, validaciones cruzadas país↔moneda, categorías, estado (Enum)
   - `seed.py` — Poblado inicial con 15 proveedores (9 USA + 6 Spain), idempotente
 - **Base de datos**: TinyDB 4.8+ — persistencia en JSON (`suppliers_db.json`), tabla `suppliers`, consultas con `tinydb.Query`
-- **CORS**: configurado con `allow_origins=["*"]`, `allow_credentials=False`
+
+### Sistema de Inventario — Supabase + SQLModel
+
+- **Base de datos cloud**: PostgreSQL vía Supabase, conectada mediante `sqlmodel.create_engine(SUPABASE_URL)`
+- **Variable de entorno**: `SUPABASE_URL` en `.env` — si no está configurada, el backend lanza `RuntimeError` al arrancar
+- **ORM**: SQLModel 0.42+ (combina SQLAlchemy + Pydantic) — modelos con `table=True` para mapeo automático
+- **Sesión**: `get_db()` como dependencia FastAPI que produce `Session(engine)` por petición, cerrada automáticamente al finalizar
+- **Tablas** (creadas automáticamente por SQLModel):
+  - `skus` — productos con sku_code único e indexado
+  - `stock_entries` — recepciones, FK→skus con CASCADE
+  - `stock_exits` — despachos/pérdidas, FK→skus con CASCADE
+- **Modelos ORM** (`services/api/models.py`): `SKU`, `StockEntry`, `StockExit` — todos con `Optional[int] id` como PK y `created_at: str` en ISO 8601
+- **Schemas Pydantic** (`services/api/schemas.py`): separados de modelos ORM, con validaciones:
+  - Categorías: fashion, electronics, cosmetics
+  - Almacenes: LA (Los Ángeles), ZGZ (Zaragoza)
+  - Tipos de salida: dispatch (envío), loss (pérdida)
+  - tracking_number obligatorio si dispatch, nulo si loss
+
+### Endpoints de Inventario
+
+Router `/inventory` (protegido con JWT):
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/inventory/products` | Lista SKUs con stock calculado, filtros ?warehouse= & ?category= |
+| GET | `/inventory/products/{id}` | Detalle SKU + stock actual |
+| POST | `/inventory/products` | Crear SKU (201), verifica sku_code único |
+| POST | `/inventory/orders/inbound` | Recepción (201), valida warehouse coincidente |
+| POST | `/inventory/orders/outbound` | Despacho/pérdida (201), valida stock suficiente |
+| GET | `/inventory/orders` | Todos los movimientos con datos del SKU |
+
+### Arquitectura de Datos (Dual DB)
+
+| Propósito | Base de Datos | Tecnología |
+|-----------|---------------|------------|
+| Auth (usuarios, perfiles) | Local JSON | TinyDB 4.8 |
+| Proveedores | Local JSON | TinyDB 4.8 |
+| Incidencias | Local JSON | TinyDB 4.8 |
+| **Inventario (SKUs, movimientos)** | **Cloud PostgreSQL** | **SQLModel + Supabase** |
+
+### Seed
+
+```bash
+# Inventario (crea 6 SKUs + 6 entradas + 4 salidas, idempotente)
+cd services/api && python ../../scripts/seed_inventory.py
+
+# Incidencias (desde CSV, idempotente)
+cd services/api && python ../../scripts/seed_incidents.py
+
+# Proveedores (15 registros, idempotente)
+cd services/api && uv run seed
+```
+
+### Deuda Técnica
+
+- **N+1 en `list_orders`**: `GET /inventory/orders` ejecuta `db.get(SKU, ...)` por cada movimiento. Solución: cargar todos los SKU relacionados en una única consulta anticipada.
+
+**CORS**: configurado con `allow_origins=["*"]`, `allow_credentials=False`
 - **Ejecución**: `uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload` (o con `uvicorn` directamente)
 - **Instalación**: `uv sync` en `services/api/`
 - **Seed**: `uv run seed` (idempotente, no duplica si ya hay datos)
@@ -266,10 +360,15 @@ Tras un `POST`, `PUT`, `PATCH` o `DELETE`, la interfaz debe reflejar los cambios
 uis/talent-pipeline-tracker/
 ├── app/
 │   ├── layout.tsx          # Layout raíz (Header + Footer)
+│   ├── login/page.tsx      # Login
+│   ├── register/page.tsx   # Registro
+│   ├── account/profile/page.tsx # Gestión de perfil
+│   ├── api/auth-proxy/[...path]/route.ts # Proxy same-origin para auth/perfil
 │   ├── page.tsx            # Listado de candidaturas
 │   └── candidates/[id]/page.tsx  # Detalle de candidatura
 ├── components/             # Componentes reutilizables
 │   ├── Header.tsx
+│   ├── AuthGuard.tsx
 │   ├── StatusBadge.tsx
 │   ├── StageBadge.tsx
 │   ├── LoadingSpinner.tsx
@@ -279,7 +378,8 @@ uis/talent-pipeline-tracker/
 │   ├── constants.ts
 │   └── validation.ts
 ├── services/               # Capa de API
-│   └── api.ts
+│   ├── api.ts
+│   └── auth.ts
 └── types/                  # Tipos TypeScript
     └── index.ts
 ```
