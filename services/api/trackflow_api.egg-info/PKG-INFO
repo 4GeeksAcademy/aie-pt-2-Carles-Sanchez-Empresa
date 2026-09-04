@@ -7,3 +7,8 @@ Requires-Dist: fastapi>=0.104.0
 Requires-Dist: uvicorn[standard]>=0.24.0
 Requires-Dist: python-multipart>=0.0.6
 Requires-Dist: tinydb>=4.8.0
+Requires-Dist: python-jose[cryptography]>=3.5.0
+Requires-Dist: libpass[bcrypt]>=1.9.3
+Requires-Dist: python-dotenv>=1.2.2
+Requires-Dist: resend>=2.39.0
+Requires-Dist: trackflow-shared @ file:///workspaces/aie-pt-2-Carles-Sanchez-Empresa/packages/shared-py/

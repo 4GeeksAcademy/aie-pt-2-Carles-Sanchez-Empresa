@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: trackflow-shared
+Version: 0.1.0
+Summary: TrackFlow — Shared validation logic, enums and transforms for incidents
+Requires-Python: >=3.10

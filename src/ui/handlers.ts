@@ -3,12 +3,25 @@
  * Conecta los botones del HTML con las funciones de lógica TypeScript.
  */
 
-import { filterProductsByWarehouse, filterProductsByCategory, filterLowStockProducts, sortProductsByStock, sortCarriersByReliability } from '../utils/collections.js';
-import { findProductBySKU, findShipmentById, binarySearchProductByWeight } from '../utils/search.js';
-import { scoreCarrierForShipment, selectBestCarrier, countProductsByCategory, calculateTotalInventoryValue, calculateAverageShipmentDistance, groupShipmentsByStatus, findTopCarriers } from '../utils/transformations.js';
-import { validateProduct, validateShipment, validateCarrier } from '../utils/validations.js';
-import { sampleProducts, sampleShipments, sampleCarriers } from '../data/sampleData.js';
-import { Shipment } from '../types/models.js';
+import { filterProductsByWarehouse, filterProductsByCategory, filterLowStockProducts, sortProductsByStock, sortCarriersByReliability } from '../utils/collections';
+import { findProductBySKU, findShipmentById, binarySearchProductByWeight } from '../utils/search';
+import { scoreCarrierForShipment, selectBestCarrier, countProductsByCategory, calculateTotalInventoryValue, calculateAverageShipmentDistance, groupShipmentsByStatus, findTopCarriers } from '../utils/transformations';
+import { validateProduct, validateShipment, validateCarrier } from '../utils/validations';
+import { sampleProducts, sampleShipments, sampleCarriers } from '../data/sampleData';
+import { Shipment } from '../types/models';
+import {
+  login,
+  register,
+  logout,
+  getToken,
+  clearToken,
+  getAuthHeaders,
+  requireAuth,
+  handleAuthError,
+  getAuthMe,
+  getProfile,
+  updateProfile,
+} from '../services/auth';
 
 // ───────────────────────────────────────────────
 // State global mutable (el usuario puede modificarlo)
@@ -46,6 +59,10 @@ function applyDataChanges(): void {
     const newProducts = JSON.parse((document.getElementById('sampleProducts') as HTMLTextAreaElement).value);
     const newShipments = JSON.parse((document.getElementById('sampleShipments') as HTMLTextAreaElement).value);
     const newCarriers = JSON.parse((document.getElementById('sampleCarriers') as HTMLTextAreaElement).value);
+
+    if (!Array.isArray(newProducts) || !Array.isArray(newShipments) || !Array.isArray(newCarriers)) {
+      throw new Error('Uno o más datos no son arrays válidos');
+    }
 
     state.products.length = 0;
     state.shipments.length = 0;
@@ -175,6 +192,22 @@ function applyDataChanges(): void {
 };
 
 (window as unknown as Record<string, unknown>).applyDataChanges = applyDataChanges;
+
+// ════════════════════════════════════════════════
+//  AUTH — Expuestas al ámbito global para HTML
+// ════════════════════════════════════════════════
+
+(window as unknown as Record<string, unknown>).login = login;
+(window as unknown as Record<string, unknown>).register = register;
+(window as unknown as Record<string, unknown>).logout = logout;
+(window as unknown as Record<string, unknown>).getToken = getToken;
+(window as unknown as Record<string, unknown>).clearToken = clearToken;
+(window as unknown as Record<string, unknown>).getAuthHeaders = getAuthHeaders;
+(window as unknown as Record<string, unknown>).requireAuth = requireAuth;
+(window as unknown as Record<string, unknown>).handleAuthError = handleAuthError;
+(window as unknown as Record<string, unknown>).getAuthMe = getAuthMe;
+(window as unknown as Record<string, unknown>).getProfile = getProfile;
+(window as unknown as Record<string, unknown>).updateProfile = updateProfile;
 
 // ───────────────────────────────────────────────
 // Helper: getTopCarriers (usa findTopCarriers internamente)

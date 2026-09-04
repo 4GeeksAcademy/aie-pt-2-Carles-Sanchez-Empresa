@@ -1,5 +1,6 @@
 import type { StatusValue } from "@/types";
-import { STATUS_LABELS } from "@/lib/constants";
+import { STATUS_KEYS } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n";
 
 const BADGE_CLASSES: Record<StatusValue, string> = {
   received: "bg-blue-100 text-blue-800 border-blue-300",
@@ -9,11 +10,12 @@ const BADGE_CLASSES: Record<StatusValue, string> = {
 };
 
 export function StatusBadge({ status }: { status: StatusValue }) {
+  const { t } = useTranslation();
   return (
     <span
       className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${BADGE_CLASSES[status]}`}
     >
-      {STATUS_LABELS[status]}
+      {t(STATUS_KEYS[status])}
     </span>
   );
 }
