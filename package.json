@@ -1,0 +1,11 @@
+{
+  "name": "trackflow",
+  "private": true,
+  "workspaces": [
+    "src",
+    "packages/shared",
+    "uis/website",
+    "uis/backoffice",
+    "uis/talent-pipeline-tracker"
+  ]
+}

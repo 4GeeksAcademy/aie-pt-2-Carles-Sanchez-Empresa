@@ -10,10 +10,13 @@ Proporciona:
 Configuración vía variables de entorno (.env):
   - SECRET_KEY: clave de firma del JWT
   - ACCESS_TOKEN_EXPIRE_MINUTES: minutos hasta expiración del token
+  - RESET_TOKEN_EXPIRE_MINUTES: minutos hasta expiración del token de restablecimiento (default 60)
 """
 
+import hashlib
 import os
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -22,14 +25,17 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.hash import bcrypt
 
-from database import users_table
+from database import users_table, used_tokens_table, TokenQuery
 
 # ───────────────────── Cargar configuración ─────────────────────
 
-load_dotenv()
+# Carga el .env desde la raíz del proyecto
+dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(dotenv_path)
 
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback-insecure-key")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+RESET_TOKEN_EXPIRE_MINUTES = int(os.getenv("RESET_TOKEN_EXPIRE_MINUTES", "60"))
 
 ALGORITHM = "HS256"
 
@@ -127,3 +133,91 @@ async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
             detail="Se requieren permisos de administrador para acceder a este recurso",
         )
     return current_user
+
+
+# ───────────────────── Reset token helpers ─────────────────────
+
+def _hash_token(token: str) -> str:
+    """Hashea un token para almacenamiento seguro en la tabla used_tokens."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def create_reset_token(user_id: int) -> str:
+    """
+    Crea un JWT de corta duración para restablecimiento de contraseña.
+
+    Args:
+        user_id: ID del usuario que solicita el restablecimiento.
+
+    Returns:
+        Token JWT como string.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
+    payload = {
+        "sub": str(user_id),
+        "exp": expire,
+        "type": "reset",
+        # jti único para poder invalidar individualmente
+        "jti": hashlib.sha256(os.urandom(32)).hexdigest()[:16],
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def verify_reset_token(token: str) -> int:
+    """
+    Verifica un token de restablecimiento.
+
+    Comprueba:
+      1. Firma JWT válida
+      2. Token no expirado
+      3. Tipo 'reset'
+      4. Token no ha sido usado ya (no está en used_tokens)
+
+    Args:
+        token: El token JWT a verificar.
+
+    Returns:
+        user_id (int) si el token es válido.
+
+    Raises:
+        HTTPException(400) si el token es inválido, expirado o ya usado.
+    """
+    invalid_error = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="El enlace de restablecimiento no es válido o ha expirado. Solicita uno nuevo.",
+    )
+
+    used_error = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Este enlace de restablecimiento ya ha sido utilizado. Solicita uno nuevo.",
+    )
+
+    # 1. Verificar firma y expiración
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise invalid_error
+
+    # 2. Verificar tipo
+    if payload.get("type") != "reset":
+        raise invalid_error
+
+    # 3. Verificar que no esté usado
+    token_hash = _hash_token(token)
+    if used_tokens_table.contains(TokenQuery.token_hash == token_hash):
+        raise used_error
+
+    return int(payload["sub"])
+
+
+def invalidate_reset_token(token: str) -> None:
+    """
+    Invalida un token de restablecimiento guardándolo (hasheado) en used_tokens.
+
+    Esto evita que un token pueda reutilizarse aunque no haya expirado.
+    """
+    token_hash = _hash_token(token)
+    used_tokens_table.insert({
+        "token_hash": token_hash,
+        "invalidated_at": datetime.now(timezone.utc).isoformat(),
+    })
