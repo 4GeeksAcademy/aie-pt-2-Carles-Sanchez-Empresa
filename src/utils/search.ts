@@ -1,6 +1,6 @@
 //Operaciones de Búsqueda
 
-import { Product, Shipment } from '../types/models.js';
+import { Product, Shipment } from '../types/models';
 
 //Funciones:
 

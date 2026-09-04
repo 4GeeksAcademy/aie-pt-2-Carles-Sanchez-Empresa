@@ -209,6 +209,14 @@
 
 ### 🗂️ Backoffice Operacional — `uis/backoffice/` (nuevas páginas)
 
+**Fase 12 — Internacionalización completa y estabilización de la migración Next.js**
+- [x] Selector segmentado `EN | ES` con idioma activo visible y persistencia durante la navegación.
+- [x] Estado i18n centralizado con `LanguageProvider`; cambio inmediato sin recargar la página.
+- [x] Traducción completa de dashboard, proveedores, analizador CSV, gestor de incidencias, autenticación y perfil.
+- [x] Logo TrackFlow restaurado desde el asset compartido por las demás UIs.
+- [x] Contrato de categorías de proveedores alineado como lista y endpoint `PUT /suppliers/{id}` añadido.
+- [x] Todas las rutas verificadas con HTTP 200; proxies protegidos alcanzan FastAPI y responden 401 sin token.
+
 **Fase 5 — Analizador de Incidencias (página dedicada)**
 - [x] Nueva página `incidents.html` con:
   - Cabecera TrackFlow (gradiente azul-verde) y navegación a otras páginas
@@ -264,3 +272,82 @@
   - Rutas protegidas con token válido → 200
   - Login con credenciales incorrectas → 401
   - `GET /auth/me` → 200 con email, role y perfil vinculado
+
+### 🔐 Frontend Auth Unificado — Backoffice + Talent Pipeline
+
+**Fase 9 — Backoffice auth UX hardening**
+- [x] Protección temprana en páginas protegidas (`index.html`, `incidents.html`, `suppliers.html`, `profile.html`) antes de pintar contenido.
+- [x] Validación de expiración JWT (`exp`) además de presencia de token.
+- [x] Prevención de flash de contenido en rutas protegidas.
+- [x] Corrección de error JS `(intermediate value) is not a function` en guards de cabecera.
+- [x] Rutas limpias de auth/perfil habilitadas en FastAPI: `/login`, `/register`, `/account/profile`.
+- [x] Alias legacy mantenidos para compatibilidad: `/login.html`, `/register.html`, `/profile.html`.
+
+**Fase 10 — Talent Pipeline Tracker auth integration**
+- [x] Login y registro en Next.js (`/login`, `/register`) usando los mismos endpoints de FastAPI (`/auth/login`, `/users`).
+- [x] Gestión de perfil en `/account/profile` con `GET /auth/me` y `PUT /profiles/me`.
+- [x] Guard de autenticación en cliente (`AuthGuard`) aplicado desde `app/layout.tsx`.
+- [x] Ciclo de token implementado: guardar token, adjuntar `Authorization: Bearer`, logout, limpieza en 401 y redirección a login.
+- [x] Navegación actualizada con acceso a perfil y cierre de sesión.
+
+**Fase 11 — Resolución de CORS en Codespaces (tracker)**
+- [x] Implementado proxy de autenticación same-origin en Next.js: `app/api/auth-proxy/[...path]/route.ts`.
+- [x] `services/auth.ts` del tracker migra llamadas de auth/perfil a `/api/auth-proxy/*`.
+- [x] Eliminación de dependencia de llamadas cross-origin directas desde `-3000` a `-8000` para login/registro/perfil.
+
+---
+
+### 🚀 Gestor Centralizado de Incidencias — Backend + Frontend
+
+**shared-py Package (`packages/shared-py/`)**
+- [x] `trackflow_shared/__init__.py` — API pública que re-exporta todos los submódulos
+- [x] `trackflow_shared/incident_enums.py` — 4 enums: `IncidentStatus` (open/in_progress/resolved/discarded), `IncidentOrigin` (customer/branch/internal), `IncidentCategory` (9 categorías), `IncidentBranch` (5 sedes) + dicts de etiquetas UI
+- [x] `trackflow_shared/incident_validation.py` — `VALID_TRANSITIONS` (open→in_progress/discarded, in_progress→resolved/discarded, resolved/discarded terminales) y `validate_incident_record()` (devuelve lista de field+error)
+- [x] `trackflow_shared/incident_transforms.py` — `STATUS_MAP`, `CATEGORY_MAP`, `BRANCH_MAP` para CSV legacy → modelo, `transform_csv_row()` (description→title 120 chars, date→ISO, origin→"customer", incluye csv_incident_id)
+- [x] `trackflow_shared/legacy/` — submódulo migrado desde `analyzer/_core.py`: constantes (`VALID_COUNTRIES`, `CARRIERS_BY_COUNTRY`, `VALID_CATEGORIES`, `EMAIL_RE`, `RULE_LABELS`) y funciones (`validate_record()`, `compute_metrics()`)
+- [x] Verificación: importable desde API (`uv run python -c "from trackflow_shared import ..."`) con enums y transiciones correctas
+
+**API Backend (`services/api/`) — Nuevos endpoints del Gestor**
+- [x] `models.py` — 3 nuevos modelos Pydantic:
+  - `IncidentCreate`: title (min_length=1), description (min_length=5), category, status (default="open"), origin, branch — todos con `field_validator` contra enums de `trackflow_shared`
+  - `IncidentResponse`: id, title, description, category, status, origin, branch, created_at, updated_at
+  - `IncidentStatusUpdate`: status con validación contra `IncidentStatus`
+  - Helper `doc_to_response(doc, doc_id)` para convertir TinyDB dict → response dict
+- [x] `database.py` — nuevas tablas: `incidents_table = db.table("incidents")`, `IncidentQuery = Query()`
+- [x] `routes/incidents.py` — 5 endpoints (orden correcto: /summary antes de /{id}):
+  1. `POST /api/incidents` → 201, valida con Pydantic + `validate_incident_record()`
+  2. `GET /api/incidents` → listado con filtros opcionales (?status=&origin=&branch=&category=)
+  3. `GET /api/incidents/summary` → métricas agregadas (total, by_status, by_category, by_origin, by_branch), siempre 200 incluso vacío
+  4. `GET /api/incidents/{id}` → detalle por ID, 404 si no existe
+  5. `PATCH /api/incidents/{id}/status` → valida transición contra `VALID_TRANSITIONS`, 400 con field+error
+- [x] `routes/__init__.py` — exporta `incidents_router`
+- [x] `main.py` — router incluido con `Depends(get_current_user)`, frontend route `GET /incidents-manager.html`, global error handler (captura Exception→500 JSON sin stack trace)
+- [x] `pyproject.toml` — dependencia `trackflow-shared` añadida como ruta local
+- [x] `analyzer/_core.py` — refactorizado: ya NO duplica constantes ni validate_record()/compute_metrics(), importa todo desde `trackflow_shared.legacy`
+
+**Seed Script (`scripts/seed_incidents.py`)**
+- [x] Lee `incidents-trackflow.csv` (100 registros), transforma con `transform_csv_row()` y valida con `validate_record()`
+- [x] **Idempotente**: comprueba `csv_incident_id` antes de insertar
+- [x] Resultado verificado: 1ª ejecución → 95 insertadas, 5 inválidas (TRF-000003 tracking_invalid, TRF-000025 carrier_invalid, TRF-000042 category_invalid, TRF-000068 email_invalid, TRF-000097 closed_no_score); 2ª ejecución → 0 insertadas, 95 omitidas como duplicadas
+
+**UI Backoffice (`uis/backoffice/`) — Gestor de Incidencias**
+- [x] `incidents-manager.html` — 3 tabs (Formulario, Listado, Resumen) con auth guard JWT (mismo patrón que suppliers.html), Tailwind CSS CDN
+- [x] `js/incidents-manager.js` — lógica completa:
+  - Formulario: estados loading (botón deshabilitado + spinner), success (limpia + mensaje verde 4s), error (mensajes por campo + error general)
+  - Resaltado de sede cuando origen="branch" (clase CSS `origin-branch-highlight`)
+  - Listado: filtros por estado/origen/sede, tabla con todos los estados (loading, empty, error), cambio de estado inline con rollback en error
+  - Resumen: tarjetas de métricas por estado/categoría/origen/sede, estados loading/error/empty aislados
+- [x] `index.html` — nav link "🚨 Gestor incidencias" añadido
+- [x] `README.es.md` — ruta `/incidents-manager.html` documentada
+- [x] `services/api/README.md` — actualizado con los 5 nuevos endpoints protegidos
+
+**Verificación completa con curl**
+- [x] App FastAPI arranca sin errores
+- [x] `GET /api/incidents/summary` → 96 total, métricas correctas (52 resolved, 29 open, 14 discarded, 1 in_progress)
+- [x] `GET /api/incidents?status=open` → 29 resultados
+- [x] `GET /api/incidents/1` → detalle completo con id, title, category, status, origin, branch, timestamps
+- [x] `PATCH /api/incidents/1/status {"status":"in_progress"}` → 200, updated_at actualizado
+- [x] `PATCH /api/incidents/1/status {"status":"open"}` → **400** "No se puede pasar de 'in_progress' a 'open'. Transiciones permitidas: discarded, resolved"
+- [x] `GET /api/incidents/9999` → **404** "No se encontró la incidencia con id 9999"
+- [x] `POST /api/incidents` con datos válidos → **201** creada
+- [x] `POST /api/incidents` con datos inválidos (title vacío, desc corta, categoría inválida) → **422** con errores por campo

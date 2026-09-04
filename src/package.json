@@ -1,4 +1,6 @@
 {
+  "name": "@trackflow/core",
+  "private": true,
   "scripts": {
     "build": "npx tsc -p tsconfig.json --noEmit",
     "typecheck": "npx tsc -p tsconfig.json --noEmit"

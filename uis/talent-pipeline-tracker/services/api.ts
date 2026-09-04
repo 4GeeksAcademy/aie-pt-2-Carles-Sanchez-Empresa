@@ -1,4 +1,5 @@
 import { API_BASE } from "@/lib/constants";
+import { clearToken, getToken } from "@/services/auth";
 import type {
   RecordOut,
   RecordCreate,
@@ -18,10 +19,24 @@ async function request<T>(
   options?: RequestInit,
 ): Promise<T> {
   console.log(`🌐 ${options?.method || "GET"} ${url}`);
+  const token = typeof window !== "undefined" ? getToken() : null;
+
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   });
+
+  if (res.status === 401) {
+    clearToken();
+    if (typeof window !== "undefined") {
+      const loginUrl = new URL("/login?reason=session_expired", window.location.origin);
+      window.location.href = loginUrl.toString();
+    }
+    throw new Error("Sesión expirada");
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
