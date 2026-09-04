@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="i18n-title" content="profile.title">
+  <title>TrackFlow — Mi perfil</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body.auth-pending {
+      visibility: hidden;
+    }
+
+    .auth-ok body.auth-pending {
+      visibility: visible;
+    }
+  </style>
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#10B981',
+          }
+        }
+      }
+    };
+
+    // ── Protección inmediata: validar JWT antes de pintar el body ──
+    (function () {
+      try {
+      function decodeBase64Url(base64Url) {
+        var normalized = String(base64Url || '').replace(/-/g, '+').replace(/_/g, '/');
+        while (normalized.length % 4 !== 0) normalized += '=';
+        return atob(normalized);
+      }
+
+      function isExpiredJwt(token) {
+        if (!token || typeof token !== 'string') return true;
+        var parts = token.split('.');
+        if (parts.length !== 3) return true;
+        try {
+          var payload = JSON.parse(decodeBase64Url(parts[1]));
+          if (typeof payload.exp !== 'number') return true;
+          var now = Math.floor(Date.now() / 1000);
+          return payload.exp <= now;
+        } catch (e) {
+          return true;
+        }
+      }
+
+      var loginUrl = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      var token = null;
+      try { token = localStorage.getItem('trackflow_token'); } catch (e) {}
+      if (!token || isExpiredJwt(token)) {
+        try { localStorage.removeItem('trackflow_token'); } catch (e) {}
+        window.location.replace(loginUrl);
+        return;
+      }
+
+      document.documentElement.classList.add('auth-ok');
+      } catch (e) {
+        document.documentElement.classList.add('auth-ok');
+        window.location.replace('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      }
+    })();
+  </script>
+</head>
+<body class="auth-pending bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
+
+  <header class="bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6 shadow-lg">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
+        <p class="text-blue-100 mt-1" data-i18n="profile.header_subtitle">Mi perfil</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/"
+           class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+          🏠 <span data-i18n="profile.back_home">Volver al inicio</span>
+        </a>
+        <button onclick="window.__toggleLang()" id="langToggle"
+                class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
+          ES | EN
+        </button>
+        <span class="w-px h-6 bg-white/20 mx-1"></span>
+        <button onclick="window.logout()"
+                class="bg-red-400/20 hover:bg-red-400/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+          🚪 <span data-i18n="profile.logout">Salir</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-3xl mx-auto p-6 w-full">
+    <!-- Loading -->
+    <div id="loadingState" class="text-center py-12 text-gray-400">
+      <p class="text-lg" data-i18n="profile.loading">⏳ Cargando perfil...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm"></div>
+
+    <!-- Profile content -->
+    <div id="profileContent" class="hidden space-y-6">
+
+      <!-- Tarjeta de información de usuario -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="profile.account_info">
+          <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+          Información de la cuenta
+        </h2>
+        <div class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-gray-500 text-sm font-medium w-24" data-i18n="profile.email_label">Email:</span>
+            <span id="userEmail" class="text-gray-800 font-mono text-sm"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-gray-500 text-sm font-medium w-24" data-i18n="profile.role_label">Rol:</span>
+            <span id="userRole" class="text-gray-800 text-sm"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta de perfil (editable) -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="profile.contact_data">
+          <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+          Datos de contacto
+        </h2>
+
+        <form id="profileForm" class="space-y-4" novalidate>
+          <div>
+            <label for="profileName" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="profile.name_label">Nombre</label>
+            <input
+              id="profileName"
+              type="text"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+              placeholder="Tu nombre"
+              data-i18n-placeholder="profile.name_placeholder"
+            />
+          </div>
+          <div>
+            <label for="profilePhone" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="profile.phone_label">Teléfono</label>
+            <input
+              id="profilePhone"
+              type="tel"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+              placeholder="+34 600 000 000"
+              data-i18n-placeholder="profile.phone_placeholder"
+            />
+          </div>
+          <div>
+            <label for="profileAddress" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="profile.address_label">Dirección</label>
+            <input
+              id="profileAddress"
+              type="text"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+              placeholder="Calle, ciudad, código postal"
+              data-i18n-placeholder="profile.address_placeholder"
+            />
+          </div>
+
+          <div id="profileFeedback" class="hidden text-sm"></div>
+
+          <button
+            type="submit"
+            id="saveProfileBtn"
+            class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2"
+          >
+            💾 <span data-i18n="profile.save">Guardar cambios</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Tarjeta de cambio de contraseña -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2" data-i18n="profile.change_password">
+          <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+          Cambiar contraseña
+        </h2>
+
+        <form id="changePasswordForm" class="space-y-4" novalidate>
+          <div>
+            <label for="cpCurrentPassword" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="profile.current_password_label">Contraseña actual</label>
+            <input
+              id="cpCurrentPassword"
+              type="password"
+              autocomplete="current-password"
+              required
+              placeholder="••••••••"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+            />
+          </div>
+          <div>
+            <label for="cpNewPassword" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="profile.new_password_label">Nueva contraseña</label>
+            <input
+              id="cpNewPassword"
+              type="password"
+              autocomplete="new-password"
+              required
+              minlength="6"
+              placeholder="Mínimo 6 caracteres"
+              data-i18n-placeholder="profile.cp_new_placeholder"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+            />
+          </div>
+          <div>
+            <label for="cpConfirmPassword" class="block text-sm font-medium text-gray-700 mb-1" data-i18n="profile.confirm_password_label">Confirmar nueva contraseña</label>
+            <input
+              id="cpConfirmPassword"
+              type="password"
+              autocomplete="new-password"
+              required
+              minlength="6"
+              placeholder="Repite la nueva contraseña"
+              data-i18n-placeholder="profile.cp_confirm_placeholder"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+            />
+          </div>
+
+          <div id="cpFeedback" class="hidden text-sm"></div>
+
+          <button
+            type="submit"
+            id="cpBtn"
+            class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2"
+          >
+            🔑 <span data-i18n="profile.change_password_btn">Cambiar contraseña</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center text-gray-400 text-xs py-6 border-t border-gray-200" data-i18n="app.footer">
+    TrackFlow — Panel de administración
+  </footer>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    // ── Proteger página ──
+    window.requireAuth();
+
+    // ── Referencias DOM ──
+    const loadingState = document.getElementById('loadingState');
+    const errorState = document.getElementById('errorState');
+    const profileContent = document.getElementById('profileContent');
+    const userEmail = document.getElementById('userEmail');
+    const userRole = document.getElementById('userRole');
+    const profileName = document.getElementById('profileName');
+    const profilePhone = document.getElementById('profilePhone');
+    const profileAddress = document.getElementById('profileAddress');
+    const profileForm = document.getElementById('profileForm');
+    const profileFeedback = document.getElementById('profileFeedback');
+    const saveProfileBtn = document.getElementById('saveProfileBtn');
+
+    let currentProfile = null;
+
+    // ── Cargar datos ──
+    async function loadProfile() {
+      try {
+        const authMe = await window.getAuthMe();
+        userEmail.textContent = authMe.email;
+        userRole.textContent = authMe.role === 'admin' ? window.__('profile.role_admin') : authMe.role === 'manager' ? window.__('profile.role_manager') : window.__('profile.role_user');
+
+        if (authMe.profile) {
+          currentProfile = authMe.profile;
+          profileName.value = authMe.profile.name || '';
+          profilePhone.value = authMe.profile.phone || '';
+          profileAddress.value = authMe.profile.address || '';
+        }
+
+        loadingState.classList.add('hidden');
+        profileContent.classList.remove('hidden');
+      } catch (err) {
+        loadingState.classList.add('hidden');
+        errorState.classList.remove('hidden');
+        errorState.textContent = '❌ ' + window.__('profile.load_error') + ' ' + (err instanceof Error ? err.message : String(err));
+      }
+    }
+
+    // ── Guardar perfil ──
+    profileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      profileFeedback.classList.add('hidden');
+
+      const data = {
+        name: profileName.value.trim() || '',
+        phone: profilePhone.value.trim() || '',
+        address: profileAddress.value.trim() || '',
+      };
+
+      saveProfileBtn.disabled = true;
+      saveProfileBtn.innerHTML = '⏳ ' + window.__('profile.saving');
+
+      try {
+        const updated = await window.updateProfile(data);
+        currentProfile = updated;
+        profileFeedback.className = 'text-sm text-emerald-600';
+        profileFeedback.textContent = '✅ ' + window.__('profile.updated_success');
+        profileFeedback.classList.remove('hidden');
+      } catch (err) {
+        profileFeedback.className = 'text-sm text-red-500';
+        profileFeedback.textContent = '❌ ' + (err instanceof Error ? err.message : 'Error al guardar');
+        profileFeedback.classList.remove('hidden');
+      } finally {
+        saveProfileBtn.disabled = false;
+        saveProfileBtn.innerHTML = '💾 ' + window.__('profile.save');
+      }
+    });
+
+    // ── Inicializar ──
+    loadProfile();
+
+    // ── Cambiar contraseña ──
+    const cpForm = document.getElementById('changePasswordForm');
+    const cpCurrentPassword = document.getElementById('cpCurrentPassword');
+    const cpNewPassword = document.getElementById('cpNewPassword');
+    const cpConfirmPassword = document.getElementById('cpConfirmPassword');
+    const cpBtn = document.getElementById('cpBtn');
+    const cpFeedback = document.getElementById('cpFeedback');
+
+    cpForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      cpFeedback.classList.add('hidden');
+
+      const currentPassword = cpCurrentPassword.value;
+      const newPassword = cpNewPassword.value;
+      const confirmPassword = cpConfirmPassword.value;
+
+      // Validaciones client-side
+      if (!currentPassword) {
+        showCpError(window.__('profile.cp_required'));
+        return;
+      }
+      if (!newPassword || newPassword.length < 6) {
+        showCpError(window.__('profile.cp_min_length'));
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        showCpError(window.__('profile.cp_mismatch'));
+        return;
+      }
+
+      // Estado loading
+      cpBtn.disabled = true;
+      cpBtn.innerHTML = '⏳ ' + window.__('profile.cp_changing');
+
+      try {
+        const res = await fetch('/auth/change-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...window.getAuthHeaders(),
+          },
+          body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword,
+          }),
+        });
+
+        if (res.ok) {
+          cpFeedback.className = 'text-sm text-emerald-600';
+          cpFeedback.textContent = '✅ ' + window.__('profile.cp_success');
+          cpFeedback.classList.remove('hidden');
+          cpForm.reset();
+        } else {
+          const data = await res.json();
+          showCpError(data.detail || window.__('profile.cp_error'));
+        }
+      } catch (err) {
+        showCpError(window.__('profile.cp_connection_error'));
+      } finally {
+        cpBtn.disabled = false;
+        cpBtn.innerHTML = '🔑 ' + window.__('profile.change_password_btn');
+      }
+    });
+
+    function showCpError(msg) {
+      cpFeedback.className = 'text-sm text-red-500';
+      cpFeedback.textContent = '❌ ' + msg;
+      cpFeedback.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
