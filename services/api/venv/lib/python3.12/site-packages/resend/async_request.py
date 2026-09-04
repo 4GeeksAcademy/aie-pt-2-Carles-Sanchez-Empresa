@@ -1,0 +1,179 @@
+import json
+from typing import Any, Dict, Generic, List, Optional, Union, cast
+
+from typing_extensions import Literal, TypeVar
+
+import resend
+from resend.exceptions import (NoContentError, ResendError,
+                               raise_for_code_and_type)
+from resend.http_client_async import AsyncHTTPClient
+from resend.response import ResponseDict
+from resend.version import get_version
+
+RequestVerb = Literal["get", "post", "put", "patch", "delete"]
+T = TypeVar("T")
+
+ParamsType = Union[Dict[str, Any], List[Dict[str, Any]]]
+HeadersType = Dict[str, str]
+
+
+class AsyncRequest(Generic[T]):
+    def __init__(
+        self,
+        path: str,
+        params: ParamsType,
+        verb: RequestVerb,
+        options: Optional[Dict[str, Any]] = None,
+        files: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, str]] = None,
+    ):
+        self.path = path
+        self.params = params
+        self.verb = verb
+        self.options = options
+        self.files = files
+        self.data = data
+        self._response_headers: Dict[str, str] = {}
+        self._response_status_code: Optional[int] = None
+
+    async def perform(self) -> Union[T, None]:
+        data = await self.make_request(url=f"{resend.api_url}{self.path}")
+
+        body_status_code = data.get("statusCode") if isinstance(data, dict) else None
+        error_code = (
+            self._response_status_code
+            if self._response_status_code is not None
+            and self._response_status_code >= 400
+            else body_status_code
+        )
+
+        if error_code not in (None, 200):
+            raise_for_code_and_type(
+                code=error_code or 500,
+                message=(
+                    data.get("message", "Unknown error")
+                    if isinstance(data, dict)
+                    else "Unknown error"
+                ),
+                error_type=(
+                    data.get("name", "InternalServerError")
+                    if isinstance(data, dict)
+                    else "InternalServerError"
+                ),
+                headers=self._response_headers,
+            )
+
+        if isinstance(data, dict):
+            data = ResponseDict(data)
+        return cast(T, data)
+
+    async def perform_with_content(self) -> T:
+        resp = await self.perform()
+        if resp is None:
+            raise NoContentError()
+        return resp
+
+    def __get_headers(self) -> HeadersType:
+        headers: HeadersType = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {resend.api_key}",
+            "User-Agent": f"resend-python:{get_version()}",
+        }
+
+        if self.verb == "post" and self.options and "idempotency_key" in self.options:
+            headers["Idempotency-Key"] = str(self.options["idempotency_key"])
+
+        if self.verb == "post" and self.options and "batch_validation" in self.options:
+            headers["x-batch-validation"] = str(self.options["batch_validation"])
+
+        return headers
+
+    async def make_request(self, url: str) -> Union[Dict[str, Any], List[Any]]:
+        headers = self.__get_headers()
+
+        if isinstance(self.params, dict):
+            json_params: Optional[Union[Dict[str, Any], List[Any]]] = {
+                str(k): v for k, v in self.params.items()
+            }
+        elif isinstance(self.params, list):
+            json_params = [dict(item) for item in self.params]
+        else:
+            json_params = None
+
+        try:
+            # Priority 1: dedicated async client (auto-detected or explicitly set)
+            async_client = resend.default_async_http_client
+
+            # Priority 2: user set an AsyncHTTPClient on default_http_client (legacy, still supported)
+            if async_client is None and isinstance(
+                resend.default_http_client, AsyncHTTPClient
+            ):
+                async_client = resend.default_http_client
+
+            if async_client is None:
+                raise ResendError(
+                    code=500,
+                    message="No async HTTP client configured. Install httpx with: pip install resend[async]",
+                    error_type="AsyncClientNotConfigured",
+                    suggested_action="Run: pip install resend[async]",
+                )
+
+            kwargs: Dict[str, Any] = {
+                "method": self.verb,
+                "url": url,
+                "headers": headers,
+                "json": json_params,
+            }
+            if self.files is not None:
+                kwargs["files"] = self.files
+            if self.data is not None:
+                kwargs["data"] = self.data
+
+            content, status_code, resp_headers = await async_client.request(**kwargs)
+
+        # Safety net around the HTTP Client
+        except ResendError:
+            raise
+        except Exception as e:
+            raise ResendError(
+                code=500,
+                message=str(e),
+                error_type="HttpClientError",
+                suggested_action="Request failed, please try again.",
+            )
+
+        # Store response headers for later access
+        self._response_headers = dict(resp_headers)
+        self._response_status_code = status_code
+
+        # When the body is not usable JSON (CDN HTML, empty 5xx, proxies), the
+        # HTTP status is the only trustworthy signal. Keep it for 4xx/5xx;
+        # fall back to 500 if the status looks successful but the body is not.
+        error_code = status_code if status_code >= 400 else 500
+
+        content_type = {k.lower(): v for k, v in resp_headers.items()}.get(
+            "content-type", ""
+        )
+
+        if "application/json" not in content_type:
+            raise_for_code_and_type(
+                code=error_code,
+                message=f"Expected JSON response but got: {content_type}",
+                error_type="application_error",
+                headers=self._response_headers,
+            )
+
+        try:
+            parsed_data = cast(Union[Dict[str, Any], List[Any]], json.loads(content))
+            # Inject headers into dict responses
+            if isinstance(parsed_data, dict):
+                parsed_data["http_headers"] = dict(self._response_headers)
+            # For list responses, return as-is (lists can't have headers key)
+            return parsed_data
+        except json.JSONDecodeError:
+            raise_for_code_and_type(
+                code=error_code,
+                message="Failed to decode JSON response",
+                error_type="application_error",
+                headers=self._response_headers,
+            )

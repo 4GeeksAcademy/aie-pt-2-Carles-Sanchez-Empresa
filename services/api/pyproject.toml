@@ -11,10 +11,15 @@ dependencies = [
     "python-jose[cryptography]>=3.5.0",
     "libpass[bcrypt]>=1.9.3",
     "python-dotenv>=1.2.2",
+    "resend>=2.39.0",
+    "trackflow-shared @ file:///workspaces/aie-pt-2-Carles-Sanchez-Empresa/packages/shared-py/",
+    "sqlmodel>=0.0.42",
+    "psycopg2-binary>=2.9.12",
 ]
 
 [tool.setuptools]
-py-modules = ["seed"]
+py-modules = ["seed", "seed_inventory"]
 
 [project.scripts]
 seed = "seed:seed"
+seed-inventory = "seed_inventory:seed"
