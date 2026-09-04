@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const API_HOST = process.env.NEXT_PUBLIC_API_HOST || "api";
+const API_HOST = process.env.NEXT_PUBLIC_API_HOST || "localhost";
 const API_PORT = process.env.NEXT_PUBLIC_API_PORT || "8000";
 
 const nextConfig: NextConfig = {
