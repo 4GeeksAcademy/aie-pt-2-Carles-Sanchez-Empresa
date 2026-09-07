@@ -1087,4 +1087,52 @@ Ambos headers lo importarían, eliminando la duplicación y garantizando consist
 
 ---
 
+## 8. Plan de Correcciones
+
+A continuación se documentan las correcciones aplicadas secuencialmente, siguiendo el orden definido en el plan de trabajo.
+
+---
+
+### C1 — Añadir `<title>` y meta description al layout del Backoffice
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+El layout raíz del backoffice (`uis/backoffice/app/layout.tsx`) era un **Client Component** (con `"use client"`), lo que impedía exportar `metadata` de Next.js, ya que esta función solo está disponible en **Server Components**. Como resultado, ninguna página del backoffice tenía:
+
+- Un elemento `<title>` en el `<head>` → penalización severa en SEO y en tests de Lighthouse.
+- Una `<meta name="description">` → los motores de búsqueda mostraban fragmentos arbitrarios.
+
+Este fallo afectaba al **100% de las páginas del backoffice** (Dashboard, Inventario, Incidencias, Login, Register, etc.).
+
+#### Solución aplicada
+
+Se separó el layout en tres archivos siguiendo el patrón recomendado por Next.js para layouts que necesitan datos de cliente + metadatos de servidor:
+
+| Archivo | Rol |
+|---|---|
+| `uis/backoffice/app/layout.tsx` | **Server Component** — exporta `metadata`, `<html>`, `<body>`, importa el layout cliente |
+| `uis/backoffice/app/BackofficeClientLayout.tsx` | **Client Component** — contiene `LanguageProvider`, `AuthGuard`, `Header`, `Sidebar`, Footer |
+| `uis/backoffice/app/layout.server.tsx` | Módulo separado con el objeto `metadata` exportado |
+
+**`layout.server.tsx`:**
+```typescript
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "TrackFlow Backoffice",
+  description: "Panel de administración de TrackFlow - Gestión de inventario, incidencias y proveedores",
+};
+```
+
+#### Resultado esperado
+
+- ✅ El `<head>` ahora incluye `<title>TrackFlow Backoffice</title>` y meta description.
+- ✅ Todas las páginas del backoffice heredan estos metadatos.
+- ✅ Se mantiene toda la funcionalidad del lado cliente (auth, i18n, sidebar).
+- ✅ Lighthouse SEO dejará de señalar "El documento no tiene un elemento `<title>`".
+
+---
+
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*
