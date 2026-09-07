@@ -24,7 +24,7 @@ export default function HomePage() {
     {
       titleKey: "home.service.3.title",
       points: [t("home.service.3.point.1"), t("home.service.3.point.2"), t("home.service.3.point.3")],
-      image: { src: "/media/Logistica.jpg", alt: t("home.service.3.img_alt") },
+      image: { src: "/media/Logistica.webp", alt: t("home.service.3.img_alt") },
     },
   ];
 

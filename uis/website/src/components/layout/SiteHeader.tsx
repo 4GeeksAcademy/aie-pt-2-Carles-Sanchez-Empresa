@@ -30,8 +30,10 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
           <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3">
             <Link href="/" aria-label="TrackFlow" className="inline-flex items-center bg-transparent">
               <img
-                src="/media/Logo TrackFlow.png"
+                src="/media/Logo TrackFlow.webp"
                 alt="Logo TrackFlow"
+                width={112}
+                height={56}
                 className="h-14 w-auto bg-transparent md:h-16"
               />
             </Link>
@@ -78,9 +80,11 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3">
           <a href="#inicio" aria-label="TrackFlow" className="inline-flex items-center bg-transparent">
             <img
-              src="/media/Logo TrackFlow.png"
-              alt="Logo TrackFlow"
-              className="h-14 w-auto bg-transparent md:h-16"
+                src="/media/Logo TrackFlow.webp"
+                alt="Logo TrackFlow"
+                width={112}
+                height={56}
+                className="h-14 w-auto bg-transparent md:h-16"
             />
           </a>
 

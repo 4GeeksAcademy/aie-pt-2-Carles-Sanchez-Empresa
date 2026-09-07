@@ -1265,4 +1265,105 @@ Total: **10 correcciones** en 3 archivos, conectando cada etiqueta con su campo 
 
 ---
 
+### C4 — Minificar JavaScript y CSS en el pipeline de build
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+El pipeline de build actual usaba `next dev` (servidor de desarrollo) tanto en Docker como en producción:
+
+- **JavaScript no minificado**: Lighthouse reportaba un ahorro potencial de ~196–218 KiB en cada página del backoffice y ~216 KiB en el gestor de incidencias.
+- **CSS no minificado**: Ahorro potencial de ~2 KiB por página.
+- **JavaScript no utilizado**: ~310–335 KiB de código muerto transportado a cada página.
+
+Esto ocurría porque `next dev` transpila los módulos sobre la marcha sin aplicar Terser (minificación JS) ni cssnano (minificación CSS), y no elimina código muerto (tree-shaking de producción).
+
+#### Solución aplicada
+
+Se reestructuró el Dockerfile de las interfaces en **multi-stage** para separar la fase de build de la fase de ejecución:
+
+**`uis/Dockerfile` — 3 stages:**
+
+| Stage | Rol |
+|---|---|
+| `deps` | Instala dependencias (incluyendo dev) |
+| `builder` | Compila ambos frontends con `next build` (activa Terser + cssnano) |
+| `runner` | Copia solo los assets compilados y los sirve con `next start` |
+
+**`uis/start.sh` — Cambio clave:**
+```sh
+# Antes:
+npx next dev --port 3000   # Sin minificación
+
+# Después:
+npx next start --port 3000  # Sirve assets ya compilados
+```
+
+**`docker-compose.yml` — Actualizado:**
+- `target: deps` y `command` inline con `next dev` para desarrollo (bind mounts, hot reload).
+- En producción, se omite `target` y se builda hasta `runner` para obtener assets minificados.
+
+#### Resultado esperado
+
+- ✅ `next build` activa **Terser** (minificación JS) y **cssnano** (minificación CSS) automáticamente.
+- ✅ Tree-shaking elimina código muerto de las páginas (~300 KiB de ahorro potencial).
+- ✅ Next.js aplica **code splitting** por ruta, cargando solo el JS necesario.
+- ✅ Las dependencias de desarrollo (`next dev`) no se incluyen en la imagen final.
+- ✅ El comando `next start` sirve los assets estáticos pre-compilados, reduciendo CPU en runtime.
+- ✅ En desarrollo, docker-compose sigue usando `next dev` con recarga en caliente.
+
+---
+
+### C5 — Optimizar imágenes y añadir dimensiones explícitas
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Las imágenes del website y backoffice tenían dos problemas:
+
+**1. Formato ineficiente:** Logos en PNG (~108 KiB cada uno) y una foto en JPEG (~86 KiB) que Lighthouse señalaba como mejorables con un ahorro estimado de 338–339 KiB.
+
+**2. Sin dimensiones explícitas:** Lighthouse reportaba "Culpables de desplazamiento de diseño (Layout Shift)" en el website porque las imágenes de servicios (InfoCard) y el logo usaban `<img>` sin `width`/`height`, provocando saltos visuales durante la carga.
+
+#### Solución aplicada
+
+**Conversión a WebP:**
+
+| Archivo | Formato anterior | Tamaño anterior | WebP | Tamaño nuevo | Ahorro |
+|---|---|---|---|---|---|
+| `Logo TrackFlow.png` (website) | PNG | 108 KiB | WebP | 25 KiB | **77%** |
+| `Logo TrackFlow.png` (backoffice) | PNG | 108 KiB | WebP | 25 KiB | **77%** |
+| `Logistica.jpg` (website) | JPEG | 86 KiB | WebP | 55 KiB | **36%** |
+| `Almacen.webp` | — | — | — | 99 KiB | Ya optimizado |
+| `Furgoneta.webp` | — | — | — | 67 KiB | Ya optimizado |
+
+**Ahorro total estimado:** **~207 KiB** (108+108+86 → 25+25+55 = 105 KiB, ahorro de 207 KiB).
+
+**Dimensiones explícitas añadidas:**
+
+| Componente | Antes | Después |
+|---|---|---|
+| `InfoCard.tsx` | `<img>` sin `width`/`height` | `<Image>` de Next.js con `width={1000}`/`height={667}` |
+| `SiteHeader.tsx` (×2 instancias) | `<img>` sin `width`/`height` | `<img>` con `width={112}`/`height={56}` |
+| `Header.tsx` (backoffice) | `<Image>` con .png | Apunta a `.webp` (misma width/height) |
+| `page.tsx` (website) | `Logistica.jpg` | `Logistica.webp` |
+
+**Archivos modificados:**
+
+- `uis/website/src/components/home/InfoCard.tsx` — Migrado a `<Image>` con dimensiones
+- `uis/website/src/components/layout/SiteHeader.tsx` — 2 instancias con width/height
+- `uis/backoffice/components/Header.tsx` — Ruta a `.webp`
+- `uis/website/src/app/page.tsx` — Ruta a `Logistica.webp`
+
+#### Resultado esperado
+
+- ✅ Reducción de ~207 KiB en transferencia de imágenes.
+- ✅ Las imágenes en WebP son más ligeras y con calidad comparable.
+- ✅ Las dimensiones explícitas previenen Layout Shift durante la carga.
+- ✅ Lighthouse Performance dejará de señalar "Mejora en la entrega de imágenes" y "Culpables de desplazamiento de diseño".
+
+---
+
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*

@@ -42,7 +42,7 @@ export function Header({ onToggleSidebar }: Props) {
           )}
           <Link href="/" className="inline-flex items-center bg-transparent">
             <Image
-              src="/Logo TrackFlow.png"
+              src="/Logo TrackFlow.webp"
               alt="TrackFlow"
               width={112}
               height={56}

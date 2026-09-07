@@ -1,5 +1,5 @@
 import "./globals.css";
-import { BackofficeClientLayout } from "./BackofficeClientLayout";
+import BackofficeClientLayout from "./BackofficeClientLayout";
 
 export const dynamic = "force-dynamic";
 
