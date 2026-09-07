@@ -88,7 +88,7 @@ export function IncidentList({ incidents, loading, error, updatingId, onLoad, on
                   <td className="px-4 py-3 text-xs">{t(`incident.branch.${incident.branch}`)}</td>
                   <td className="px-4 py-3">
                     {STATUS_TRANSITIONS[incident.status].length === 0 ? (
-                      <span className="text-xs text-gray-500">{t("incidents.mgr.final_status")}</span>
+                      <span className="text-xs text-gray-500">{t(`incident.status.${incident.status}`)}</span>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {STATUS_TRANSITIONS[incident.status].map((status) => (
