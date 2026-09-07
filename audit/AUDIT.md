@@ -1198,4 +1198,71 @@ Se añadió un middleware `@app.middleware("http")` que inyecta las cabeceras de
 
 ---
 
+### C3 — Añadir etiquetas `<label>` a formularios del Dashboard
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+El Dashboard del backoffice contenía múltiples formularios con problemas de accesibilidad:
+
+| Componente | Problema |
+|---|---|
+| `CollectionsPanel.tsx` | 4 `<label>` sin `htmlFor`, 4 `<select>` sin `id` |
+| `SearchPanel.tsx` | 3 `<label>` sin `htmlFor`, 3 `<input>` sin `id` |
+| `ValidationsPanel.tsx` | 3 textos (`<p>`) en vez de `<label>`, 3 `<input>` sin etiqueta asociada |
+
+Esto impedía que los lectores de pantalla asociaran las descripciones con los campos, y Lighthouse lo señalaba como "Los elementos de formulario no tienen etiquetas asociadas".
+
+#### Solución aplicada
+
+Se corrigieron los tres componentes del Dashboard:
+
+**CollectionsPanel.tsx — 4 cambios:**
+```tsx
+// Antes:
+<label className="mb-2 block ...">{t("...")}</label>
+<select value={...} onChange={...}> ... </select>
+
+// Después:
+<label htmlFor="warehouseSelect" className="mb-2 block ...">{t("...")}</label>
+<select id="warehouseSelect" value={...} onChange={...}> ... </select>
+```
+Mismo patrón para `categorySelect`, `stockOrderSelect` y `reliabilityOrderSelect`.
+
+**SearchPanel.tsx — 3 cambios:**
+```tsx
+// Antes:
+<label className="mb-2 block ...">{t("dashboard.search.sku")}</label>
+<input type="text" ... />
+
+// Después:
+<label htmlFor="skuInput" className="mb-2 block ...">{t("dashboard.search.sku")}</label>
+<input id="skuInput" type="text" ... />
+```
+Mismo patrón para `shipmentIdInput` y `searchWeightInput`.
+
+**ValidationsPanel.tsx — 3 cambios:**
+```tsx
+// Antes:
+<p className="mb-2 text-sm font-medium ...">{t("dashboard.validation.product")}</p>
+<input type="number" ... />
+
+// Después:
+<label htmlFor="prodIdxInput" className="mb-2 text-sm font-medium ...">{t("dashboard.validation.product")}</label>
+<input id="prodIdxInput" type="number" ... />
+```
+Mismo patrón para `shipIdxInput` y `carrierIdxInput`.
+
+Total: **10 correcciones** en 3 archivos, conectando cada etiqueta con su campo mediante `htmlFor`/`id`.
+
+#### Resultado esperado
+
+- ✅ Los `<label>` están correctamente asociados a sus campos mediante `htmlFor`/`id`.
+- ✅ Los lectores de pantalla pueden identificar cada campo por su descripción.
+- ✅ Lighthouse Accesibilidad dejará de señalar "Los elementos de formulario no tienen etiquetas asociadas".
+- ✅ No se alteró la apariencia visual: mismas clases y estructura.
+
+---
+
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*

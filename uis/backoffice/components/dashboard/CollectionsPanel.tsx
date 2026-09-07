@@ -32,9 +32,9 @@ export function CollectionsPanel({ onFilterByWarehouse, onFilterByCategory, onLo
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
-          <label className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.collections.warehouse")}</label>
+          <label htmlFor="warehouseSelect" className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.collections.warehouse")}</label>
           <div className="flex gap-2">
-            <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)} className="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]">
+            <select id="warehouseSelect" value={warehouse} onChange={(e) => setWarehouse(e.target.value)} className="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]">
               <option value="Los Angeles">Los Angeles</option>
               <option value="Zaragoza">Zaragoza</option>
             </select>
@@ -44,9 +44,9 @@ export function CollectionsPanel({ onFilterByWarehouse, onFilterByCategory, onLo
         </div>
 
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
-          <label className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.collections.category")}</label>
+          <label htmlFor="categorySelect" className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.collections.category")}</label>
           <div className="flex gap-2">
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]">
+            <select id="categorySelect" value={category} onChange={(e) => setCategory(e.target.value)} className="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]">
               <option value="Fashion">{t("dashboard.category.fashion")}</option>
               <option value="Electronics">{t("dashboard.category.electronics")}</option>
               <option value="Cosmetics">{t("dashboard.category.cosmetics")}</option>
@@ -65,9 +65,9 @@ export function CollectionsPanel({ onFilterByWarehouse, onFilterByCategory, onLo
         </div>
 
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
-          <label className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.collections.sort_stock")}</label>
+          <label htmlFor="stockOrderSelect" className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.collections.sort_stock")}</label>
           <div className="flex gap-2">
-            <select value={stockOrder} onChange={(e) => setStockOrder(e.target.value as "asc" | "desc")} className="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]">
+            <select id="stockOrderSelect" value={stockOrder} onChange={(e) => setStockOrder(e.target.value as "asc" | "desc")} className="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]">
               <option value="asc">{t("dashboard.collections.asc")}</option>
               <option value="desc">{t("dashboard.collections.desc")}</option>
             </select>
@@ -77,9 +77,9 @@ export function CollectionsPanel({ onFilterByWarehouse, onFilterByCategory, onLo
         </div>
 
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4 md:col-span-2">
-          <label className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.collections.sort_carriers")}</label>
+          <label htmlFor="reliabilityOrderSelect" className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.collections.sort_carriers")}</label>
           <div className="flex gap-2">
-            <select value={reliabilityOrder} onChange={(e) => setReliabilityOrder(e.target.value as "asc" | "desc")} className="max-w-xs flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]">
+            <select id="reliabilityOrderSelect" value={reliabilityOrder} onChange={(e) => setReliabilityOrder(e.target.value as "asc" | "desc")} className="max-w-xs flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm text-[#14263a]">
               <option value="desc">{t("dashboard.collections.most_reliable")}</option>
               <option value="asc">{t("dashboard.collections.least_reliable")}</option>
             </select>
