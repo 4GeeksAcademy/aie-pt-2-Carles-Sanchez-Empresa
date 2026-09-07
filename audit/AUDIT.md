@@ -24,6 +24,10 @@
    - 5.1 [Desktop](#51-desktop)
    - 5.2 [Mobile](#52-mobile)
 6. [Conclusiones y Recomendaciones Generales](#6-conclusiones-y-recomendaciones-generales)
+7. [Análisis de Refactorización — Duplicación en el Codebase](#7-análisis-de-refactorización--duplicación-en-el-codebase)
+   - 7.1 [Sistema i18n duplicado](#71-sistema-de-internacionalización-i18n-duplicado)
+   - 7.2 [Footer duplicado](#72-componente-footer-duplicado)
+   - 7.3 [LanguageSwitcher duplicado](#73-selector-de-idioma-languageswitcher-duplicado)
 
 ---
 
@@ -896,14 +900,190 @@ Idéntico a desktop.
 
 | Fase | Acciones | Plazo estimado |
 |------|----------|----------------|
-| **Fase 1: Quick Wins** | Añadir `<title>`, meta description, CSP, HSTS, COOP, XFO | 1–2 días |
-| **Fase 2: Build Pipeline** | Minificación, eliminación de código muerto, source maps | 3–5 días |
-| **Fase 3: Assets** | Optimización de imágenes, dimensiones explícitas | 2–3 días |
-| **Fase 4: Accesibilidad** | Etiquetas de formulario, contraste de color, revisión manual | 3–5 días |
-| **Fase 5: Móvil** | Reducción de tareas largas, animaciones, bfcache | 3–5 días |
-| **Fase 6: SEO** | Indexación, robots.txt, datos estructurados | 1–2 días |
+| **Fase 1: Quick Wins** | Añadir `<title>`, meta description, CSP, HSTS, COOP, XFO 
+| **Fase 2: Build Pipeline** | Minificación, eliminación de código muerto, source maps 
+| **Fase 3: Assets** | Optimización de imágenes, dimensiones explícitas 
+| **Fase 4: Accesibilidad** | Etiquetas de formulario, contraste de color, revisión manual 
+| **Fase 5: Móvil** | Reducción de tareas largas, animaciones, bfcache 
+| **Fase 6: SEO** | Indexación, robots.txt, datos estructurados 
 
-> **Total estimado:** 13–22 días hábiles para abordar todos los hallazgos.
+
+
+---
+
+## 7. Análisis de Refactorización — Duplicación en el Codebase
+
+Se ha realizado una revisión del código fuente de ambos frontends (Backoffice y Web Corporativa) para identificar componentes o bloques de lógica duplicados que puedan extraerse en unidades reutilizables. A continuación se documentan los casos detectados.
+
+---
+
+### 7.1 Sistema de Internacionalización (i18n) duplicado
+
+#### Localización
+
+| Archivo | Proyecto |
+|---|---|
+| `uis/backoffice/lib/i18n/index.tsx` | Backoffice (Next.js) |
+| `uis/website/src/lib/i18n/index.tsx` | Web Corporativa (Next.js) |
+| `uis/backoffice/lib/i18n/es.ts` | Backoffice — mensajes ES |
+| `uis/backoffice/lib/i18n/en.ts` | Backoffice — mensajes EN |
+| `uis/website/src/lib/i18n/es.ts` | Web Corporativa — mensajes ES |
+| `uis/website/src/lib/i18n/en.ts` | Web Corporativa — mensajes EN |
+
+#### ¿Qué se repite?
+
+Ambos archivos `index.tsx` implementan **el mismo patrón** con una diferencia inferior al 10%:
+
+- **`LanguageProvider`**: Componente React que envuelve la app con un Context. Lee el idioma desde `localStorage`, del atributo `<html lang="...">` o por defecto "es". Ambos tienen la misma lógica de `useEffect` + `useCallback` + `useState`.
+- **`useTranslation`**: Hook que consume el Context y expone `t()`, `lang` y `setLang`. El código de `t()` es idéntico: busca en `messages[lang]`, fallback a `messages["es"]`, fallback a la key, y aplica `formatMessage` para interpolación de variables.
+- **`formatMessage`**: Función helper que reemplaza `{variable}` con valores. Específicamente idéntica en ambos archivos.
+- **`getBrowserLanguage`**: Lee `localStorage`, luego `<html lang>`, default "es". Idéntica.
+- **Idiomas**: Ambos proyectos tienen ES y EN. Los mensajes son específicos de cada frontend (las claves y traducciones varían), pero la estructura y el sistema de carga son iguales.
+
+Las únicas diferencias son:
+- El nombre del contexto (`I18nContext` en backoffice vs `LanguageContext` en website).
+- El backoffice envuelve el `value` del provider con `useMemo` (optimización trivial).
+
+#### Por qué es candidato a refactorización
+
+Mantener dos implementaciones separadas duplica el esfuerzo de mantenimiento. Cualquier mejora en el sistema i18n (soporte para más idiomas, detección de idioma por geolocalización, caché de traducciones, carga diferida de mensajes) tendría que aplicarse dos veces. Además, existe un tercer frontend (`uis/talent-pipeline-tracker/`) que también tiene un sistema i18n (`uis/talent-pipeline-tracker/lib/i18n/`), aunque su estructura difiere ligeramente al usar archivos independientes.
+
+#### Abstracción propuesta
+
+Extraer el sistema a un módulo compartido en `packages/shared/` o en `src/lib/i18n.tsx` dentro del paquete `@trackflow/core`:
+
+```typescript
+// src/lib/i18n.tsx — Sistema i18n compartido
+// Reemplazaría la implementación duplicada en ambos frontends
+export { LanguageProvider, useTranslation, type TranslationFn } from "@trackflow/core/i18n";
+```
+
+Cada frontend mantendría sus propios archivos de mensajes (`es.ts`, `en.ts`) con las claves específicas de su dominio, pero el `Provider`, el hook y las funciones auxiliares serían únicos.
+
+---
+
+### 7.2 Componente Footer duplicado
+
+#### Localización
+
+| Archivo | Proyecto |
+|---|---|
+| `uis/backoffice/app/layout.tsx` (inline, líneas 18-24) | Backoffice |
+| `uis/website/src/components/layout/SiteFooter.tsx` | Web Corporativa |
+| `uis/talent-pipeline-tracker/app/Footer.tsx` | Talent Pipeline Tracker |
+
+#### ¿Qué se repite?
+
+Los tres frontends renderizan un footer con la misma estructura y estilos:
+
+```tsx
+<footer className="border-t border-[#c89d66] bg-[#f3ddba]">
+  <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-sm text-[#2f4a62] md:flex-row md:items-center md:justify-between">
+    <p>{t("app.footer.copyright")}</p>
+    <a href="https://linkedin.com/company/trackflow" ...>
+      {t("app.footer.linkedin")}
+    </a>
+  </div>
+</footer>
+```
+
+- **Mismos colores**: `border-[#c89d66]`, `bg-[#f3ddba]`, `text-[#2f4a62]`.
+- **Misma estructura**: copyright + enlace a LinkedIn.
+- **Mismas claves i18n**: `app.footer.copyright` y `app.footer.linkedin`.
+- **Mismo enlace**: `https://linkedin.com/company/trackflow`.
+
+La única diferencia es que el backoffice lo tiene inline en `layout.tsx`, mientras que el website y el talent-pipeline-tracker tienen componentes separados (`SiteFooter.tsx` y `Footer.tsx` respectivamente).
+
+#### Por qué es candidato a refactorización
+
+Es el mismo componente tres veces. Cualquier cambio de diseño (nuevo enlace, copyright dinámico, cambio de colores) requiere modificar tres archivos. Además, el backoffice al tenerlo inline dificulta su reutilización.
+
+#### Abstracción propuesta
+
+Extraer a un componente `TrackFlowFooter` en un paquete compartido:
+
+```typescript
+// packages/shared/components/TrackFlowFooter.tsx
+"use client";
+export function TrackFlowFooter() {
+  // Lógica única del footer corporativo
+}
+```
+
+Cada frontend lo importaría donde corresponda, manteniendo el footer consistente en toda la presencia digital de TrackFlow.
+
+---
+
+### 7.3 Selector de idioma (LanguageSwitcher) duplicado
+
+#### Localización
+
+| Archivo | Proyecto |
+|---|---|
+| `uis/backoffice/components/Header.tsx` (componente inline `LanguageSelector`) | Backoffice |
+| `uis/website/src/components/layout/SiteHeader.tsx` (inline en el JSX) | Web Corporativa |
+
+#### ¿Qué se repite?
+
+Ambos frontends implementan un selector de idioma EN/ES con el mismo patrón visual:
+
+**Backoffice** (componente `LanguageSelector` dentro de `Header.tsx`):
+```tsx
+function LanguageSelector({ lang, setLang }) {
+  return (
+    <div className="inline-flex ..." aria-label="Language selector">
+      {(["en", "es"] as const).map((option, index) => (
+        <span key={option}>
+          {index > 0 && <span className="px-1 text-[#c89d66]">|</span>}
+          <button onClick={() => setLang(option)}
+            className={`rounded px-2 py-1 transition ${
+              lang === option ? "bg-[#14263a] text-white" : "text-[#2f4a62] hover:bg-[#e5be83]"
+            }`}
+            aria-pressed={lang === option}>
+            {option.toUpperCase()}
+          </button>
+        </span>
+      ))}
+    </div>
+  );
+}
+```
+
+**Website** (inline en `SiteHeader.tsx`):
+```tsx
+<button onClick={toggleLang} aria-label={...}>
+  <span className={`px-2 py-1.5 transition ${
+    lang === "en" ? "bg-[#14263a] text-[#f8fbff]" : ...
+  }`}>EN</span>
+  <span className={`px-2 py-1.5 transition ${
+    lang === "es" ? "bg-[#14263a] text-[#f8fbff]" : ...
+  }`}>ES</span>
+</button>
+```
+
+Ambos comparten:
+- Misma combinación de colores activo/inactivo (`bg-[#14263a]` activo, `bg-[#f8fbff]` inactivo).
+- Mismo propósito: alternar entre ES y EN.
+- Mismo mecanismo: llamar a `setLang()`.
+
+#### Por qué es candidato a refactorización
+
+El selector de idioma aparece en cada página de ambos frontends (header del backoffice, header del website). Tenerlo duplicado significa que cualquier ajuste de estilo o comportamiento (ej. añadir un tercer idioma) requiere cambios en dos lugares.
+
+#### Abstracción propuesta
+
+Extraer a un componente `LanguageSwitcher` compartido que acepte `lang` y `setLang` como props:
+
+```typescript
+// packages/shared/components/LanguageSwitcher.tsx
+interface Props {
+  lang: string;
+  setLang: (lang: string) => void;
+}
+export function LanguageSwitcher({ lang, setLang }: Props) { ... }
+```
+
+Ambos headers lo importarían, eliminando la duplicación y garantizando consistencia visual en toda la aplicación.
 
 ---
 
