@@ -1548,4 +1548,65 @@ Esto permite que el bundler resuelva correctamente el subpath `@trackflow/core/d
 
 ---
 
+### C9 — Revisar política de indexación
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Lighthouse reportaba en todas las páginas "La página está bloqueada para la indexación", además de `robots.txt` no válido. Había dos problemas diferenciados:
+
+1. **Backoffice**: La ausencia de `noindex` explícito era correcta para un panel de administración, pero como no había `X-Robots-Tag` ni en cabeceras HTTP ni en meta tags, Google interpretaba la falta de información como "bloqueada para indexación" de forma impredecible. Además, faltaba el archivo `robots.txt`.
+2. **Website**: La web corporativa debe ser **indexable** (es la cara pública), pero al no tener `robots.txt` accesible, los crawlers encontraban un timeout.
+
+#### Solución aplicada
+
+**1. Backoffice — `X-Robots-Tag: noindex, nofollow` en cabeceras HTTP:**
+
+Se añadió en `uis/backoffice/next.config.ts`:
+
+```diff
+ async headers() {
+   return [{
+     source: "/(.*)",
+     headers: [
+       ...
++      { key: "X-Robots-Tag", value: "noindex, nofollow" },
+     ],
+   }];
+ },
+```
+
+**2. Backoffice — `robots.txt` con bloqueo total:**
+
+```
+User-agent: *
+Disallow: /
+```
+
+**3. Website — `robots.txt` permisivo con Sitemap:**
+
+```
+User-agent: *
+Allow: /
+
+Sitemap: https://trackflow.com/sitemap.xml
+```
+
+#### Archivos creados/modificados
+
+| Archivo | Acción | Propósito |
+|---|---|---|
+| `uis/backoffice/next.config.ts` | Modificado | Añadir `X-Robots-Tag: noindex, nofollow` |
+| `uis/backoffice/public/robots.txt` | Creado | Bloquear indexación del backoffice |
+| `uis/website/public/robots.txt` | Creado | Permitir indexación con referencia a sitemap |
+
+#### Resultado esperado
+
+- ✅ Backoffice: `X-Robots-Tag: noindex` explícito en todas las respuestas + `robots.txt` con `Disallow: /`
+- ✅ Website: `robots.txt` permisivo para permitir el crawling de la web corporativa
+- ✅ Lighthouse dejará de señalar "La página está bloqueada para la indexación" y "robots.txt no válido"
+
+---
+
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*
