@@ -1,12 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useSuppliers } from "@/hooks/useSuppliers";
-import { SupplierFilters } from "@/components/suppliers/SupplierFilters";
-import { NewSupplierForm } from "@/components/suppliers/NewSupplierForm";
-import { SupplierTable } from "@/components/suppliers/SupplierTable";
 import type { Supplier } from "@/services/api";
 import { useTranslation } from "@/lib/i18n";
+
+const SupplierFilters = dynamic(() => import("@/components/suppliers/SupplierFilters"), { ssr: false });
+const NewSupplierForm = dynamic(() => import("@/components/suppliers/NewSupplierForm"), { ssr: false });
+const SupplierTable = dynamic(() => import("@/components/suppliers/SupplierTable"), { ssr: false });
 
 export default function SuppliersPage() {
   const { t } = useTranslation();

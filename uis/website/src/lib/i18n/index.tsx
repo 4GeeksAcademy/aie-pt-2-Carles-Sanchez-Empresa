@@ -11,14 +11,9 @@
 
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
-
-import es from "./es";
-import en from "./en";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 type Messages = Record<string, string>;
-
-const messages: Record<string, Messages> = { es, en };
 
 function getBrowserLanguage(): string {
   if (typeof window === "undefined") return "es";
@@ -47,8 +42,25 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
+/** Cache de módulos de traducción ya cargados */
+const loadedModules: Record<string, Messages | undefined> = {};
+
+async function loadMessages(lang: string): Promise<Messages> {
+  if (loadedModules[lang]) return loadedModules[lang]!;
+  const mod = await import(`./${lang}`);
+  loadedModules[lang] = mod.default as Messages;
+  return loadedModules[lang]!;
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<string>("es");
+  const [lang, setLangState] = useState<string>(getBrowserLanguage);
+  const [messages, setMessages] = useState<Messages | null>(null);
+  const langRef = useRef(lang);
+  langRef.current = lang;
+
+  useEffect(() => {
+    loadMessages(lang).then(setMessages);
+  }, [lang]);
 
   const setLang = useCallback((newLang: string) => {
     if (newLang !== "es" && newLang !== "en") return;
@@ -57,16 +69,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setLangState(newLang);
   }, []);
 
-  useEffect(() => {
-    setLangState(getBrowserLanguage());
-  }, []);
-
   const t: TranslationFn = useCallback(
     (key: string, vars?: Record<string, string | number>): string => {
-      const msg = messages[lang]?.[key] ?? messages["es"]?.[key] ?? key;
+      const msgs = messages ?? loadedModules["es"] ?? {};
+      const msg = msgs[key] ?? (loadedModules["es"]?.[key]) ?? key;
       return formatMessage(msg, vars);
     },
-    [lang],
+    [messages],
   );
 
   return (

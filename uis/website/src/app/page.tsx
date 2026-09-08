@@ -1,11 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { InfoCard } from "@/components/home/InfoCard";
 import { SectionContainer } from "@/components/home/SectionContainer";
-import { StructuredData } from "@/components/home/StructuredData";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { useTranslation } from "@/lib/i18n";
+
+const InfoCard = dynamic(() => import("@/components/home/InfoCard"), { ssr: false });
+const StructuredData = dynamic(() => import("@/components/home/StructuredData"), { ssr: false });
 
 export default function HomePage() {
   const { t } = useTranslation();

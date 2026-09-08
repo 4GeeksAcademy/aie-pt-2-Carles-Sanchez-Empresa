@@ -1,11 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import { IncidentForm } from "@/components/incidents-manager/IncidentForm";
-import { IncidentList } from "@/components/incidents-manager/IncidentList";
-import { IncidentSummary } from "@/components/incidents-manager/IncidentSummary";
 import { useIncidentManager } from "@/hooks/useIncidentManager";
 import { useTranslation } from "@/lib/i18n";
+
+const IncidentForm = dynamic(() => import("@/components/incidents-manager/IncidentForm"), { ssr: false });
+const IncidentList = dynamic(() => import("@/components/incidents-manager/IncidentList"), { ssr: false });
+const IncidentSummary = dynamic(() => import("@/components/incidents-manager/IncidentSummary"), { ssr: false });
 
 type Tab = "form" | "list" | "summary";
 

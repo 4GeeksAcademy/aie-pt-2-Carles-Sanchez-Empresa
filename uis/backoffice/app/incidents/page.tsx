@@ -1,11 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { useIncidentAnalyzer } from "@/hooks/useIncidentAnalyzer";
-import { FileUpload } from "@/components/incidents/FileUpload";
-import { SummaryCards } from "@/components/incidents/SummaryCards";
-import { MetricsTables } from "@/components/incidents/MetricsTables";
 import { useTranslation } from "@/lib/i18n";
+
+const FileUpload = dynamic(() => import("@/components/incidents/FileUpload"), { ssr: false });
+const SummaryCards = dynamic(() => import("@/components/incidents/SummaryCards"), { ssr: false });
+const MetricsTables = dynamic(() => import("@/components/incidents/MetricsTables"), { ssr: false });
 
 export default function IncidentsPage() {
   const { t } = useTranslation();

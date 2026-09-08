@@ -1,12 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
 import { useInventory } from "@/hooks/useInventory";
-import { StockTable } from "@/components/inventory/StockTable";
-import { InboundForm } from "@/components/inventory/InboundForm";
-import { OutboundForm } from "@/components/inventory/OutboundForm";
-import { MovementHistory } from "@/components/inventory/MovementHistory";
 import { useTranslation } from "@/lib/i18n";
+
+const StockTable = dynamic(() => import("@/components/inventory/StockTable"), { ssr: false });
+const InboundForm = dynamic(() => import("@/components/inventory/InboundForm"), { ssr: false });
+const OutboundForm = dynamic(() => import("@/components/inventory/OutboundForm"), { ssr: false });
+const MovementHistory = dynamic(() => import("@/components/inventory/MovementHistory"), { ssr: false });
 
 type Tab = "stock" | "inbound" | "outbound" | "orders";
 

@@ -1366,4 +1366,65 @@ Las imágenes del website y backoffice tenían dos problemas:
 
 ---
 
+### C6 — Eliminar JavaScript no utilizado
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Lighthouse reportaba **310–335 KiB de JavaScript no utilizado** por página tanto en el backoffice como en el website. Las causas principales eran:
+
+1. **Componentes de tabs importados estáticamente** — Aunque solo se renderiza una pestaña a la vez, todos los componentes asociados (IncidentForm, IncidentList, IncidentSummary, StockTable, InboundForm, OutboundForm, MovementHistory, SupplierFilters, NewSupplierForm, SupplierTable, etc.) se incluían en el bundle inicial.
+
+2. **Ambos idiomas (es + en) bundleados siempre** — Los archivos de traducciones (~400 líneas cada uno en backoffice, ~154 en website) se importaban estáticamente en el proveedor i18n, haciendo que el bundle contuviera ambos conjuntos de mensajes incluso cuando solo un idioma estaba activo.
+
+3. **Componentes del website siempre bundleados** — StructuredData (JSON-LD), InfoCard, FileUpload, SummaryCards y MetricsTables se cargaban en el bundle inicial aunque solo se usaran condicionalmente.
+
+#### Solución aplicada
+
+**1. Dynamic imports (`next/dynamic`) en páginas con tabs:**
+
+| Página | Componentes afectados | Antes | Después |
+|---|---|---|---|
+| `incidents-manager/page.tsx` | IncidentForm, IncidentList, IncidentSummary | Import estático | `dynamic(..., { ssr: false })` |
+| `inventory/page.tsx` | StockTable, InboundForm, OutboundForm, MovementHistory | Import estático | `dynamic(..., { ssr: false })` |
+| `incidents/page.tsx` | FileUpload, SummaryCards, MetricsTables | Import estático | `dynamic(..., { ssr: false })` |
+| `suppliers/page.tsx` | SupplierFilters, NewSupplierForm, SupplierTable | Import estático | `dynamic(..., { ssr: false })` |
+
+**2. Dynamic imports en website:**
+
+| Página | Componentes afectados | Antes | Después |
+|---|---|---|---|
+| `website/src/app/page.tsx` | InfoCard, StructuredData | Import estático | `dynamic(..., { ssr: false })` |
+
+**3. Carga perezosa de traducciones (solo idioma activo):**
+
+| Archivo | Antes | Después |
+|---|---|---|
+| `backoffice/lib/i18n/index.tsx` | `import es from "./es"` + `import en from "./en"` (ambos en bundle) | `await import(`./${lang}`)` solo del idioma activo |
+| `website/src/lib/i18n/index.tsx` | `import es from "./es"` + `import en from "./en"` (ambos en bundle) | `await import(`./${lang}`)` solo del idioma activo |
+
+Se implementó un **caching en memoria** (`loadedModules`) que evita recargar las traducciones al cambiar de idioma dentro de la misma sesión.
+
+#### Ahorro estimado
+
+| Concepto | Ahorro |
+|---|---|
+| Componentes de tabs no activos | ~100–150 KiB por página |
+| Traducciones del idioma inactivo | ~60–70 KiB (backoffice) / ~30 KiB (website) |
+| StructuredData + InfoCard (website) | ~20–40 KiB en carga inicial |
+| **Total por página** | **~200–250 KiB de JS no utilizado eliminado** |
+
+#### Archivos modificados
+
+- `uis/backoffice/app/incidents-manager/page.tsx`
+- `uis/backoffice/app/inventory/page.tsx`
+- `uis/backoffice/app/incidents/page.tsx`
+- `uis/backoffice/app/suppliers/page.tsx`
+- `uis/backoffice/lib/i18n/index.tsx`
+- `uis/website/src/app/page.tsx`
+- `uis/website/src/lib/i18n/index.tsx`
+
+---
+
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*
