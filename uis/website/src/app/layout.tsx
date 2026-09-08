@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { LanguageProvider } from "@/lib/i18n";
+import { StructuredData } from "@/components/home/StructuredData";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,6 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className="bg-[#c6dced] text-[#2f4a62] min-h-full">
+        <StructuredData />
         <LanguageProvider>
           {children}
           <SiteFooter />

@@ -7,7 +7,6 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { useTranslation } from "@/lib/i18n";
 
 const InfoCard = dynamic(() => import("@/components/home/InfoCard").then((m) => m.InfoCard), { ssr: false });
-const StructuredData = dynamic(() => import("@/components/home/StructuredData").then((m) => m.StructuredData), { ssr: false });
 
 export default function HomePage() {
   const { t } = useTranslation();
@@ -43,7 +42,6 @@ export default function HomePage() {
 
   return (
     <>
-      <StructuredData />
       <SiteHeader variant="home" />
 
       <main className="mx-auto w-full max-w-5xl space-y-8 px-4 pb-24 pt-6 md:pb-10 md:pt-8">

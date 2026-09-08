@@ -1725,4 +1725,61 @@ Además, se actualizó el Dockerfile para pasar el flag `--webpack` al comando `
 
 ---
 
+### C12 — Validar y enriquecer datos estructurados (JSON-LD)
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Lighthouse marcaba en todas las páginas de la web corporativa (desktop y mobile) la advertencia **"Additional Items to Manually Check — Datos estructurados válidos"**. Aunque existía un componente `StructuredData` con schema `Organization`, adolecía de tres problemas:
+
+1. **Se cargaba mediante `dynamic(() => import(...), { ssr: false })`** desde un `"use client"` page. Los crawlers que no ejecutan JavaScript **nunca veían el JSON-LD**, anulando su propósito SEO.
+2. **Faltaban campos clave** del schema `Organization`: `logo`, `image`, `postalCode`, `streetAddress`. Los nombres de país usaban cadenas traducidas (`"Estados Unidos"`, `"Spain"`) en lugar de códigos ISO (`"US"`, `"ES"`).
+3. **No había schema `WebSite`** con `SearchAction`, que permite a Google mostrar enlaces de búsqueda en el sitio directamente desde los resultados de búsqueda (Sitelinks Search Box).
+
+#### Solución aplicada
+
+**1. Mover `StructuredData` al layout como componente servidor:**
+
+Se importó `StructuredData` directamente en `uis/website/src/app/layout.tsx` (server component), eliminando la importación dinámica desde `page.tsx`. Ahora el JSON-LD se inyecta en el `<head>` durante el SSR, visible para cualquier crawler.
+
+**2. Enriquecer schema `Organization`:**
+
+```diff
+- description: "Gestión de almacenes y entregas de última milla para e-commerce"
++ description: "Cross-border logistics between the United States and Spain — warehouse management and last-mile delivery for e-commerce"
+- sameAs: ["https://linkedin.com/company/trackflow"]
++ sameAs: [
++   "https://linkedin.com/company/trackflow",
++   "https://twitter.com/trackflow",
++   "https://facebook.com/trackflow",
++ ]
++ logo: "https://trackflow.com/media/Logo%20TrackFlow.webp"
++ image: "https://trackflow.com/media/Logistica.webp"
++ postalCode, streetAddress en cada dirección
+- "Estados Unidos" / "Spain" → "US" / "ES" (códigos ISO)
+```
+
+**3. Añadir schema `WebSite` con `SearchAction`:**
+
+Se añadió un segundo bloque JSON-LD de tipo `WebSite` con `potentialAction: SearchAction`, que habilita el Sitelinks Search Box en Google.
+
+#### Archivos modificados
+
+| Archivo | Acción | Propósito |
+|---|---|---|
+| `uis/website/src/components/home/StructuredData.tsx` | Modificado | Enriquecer schema + añadir WebSite con SearchAction |
+| `uis/website/src/app/layout.tsx` | Modificado | Importar StructuredData como server component (SSR) |
+| `uis/website/src/app/page.tsx` | Modificado | Eliminar import dinámico de StructuredData |
+
+#### Resultado esperado
+
+- ✅ JSON-LD renderizado en SSR, visible para todos los crawlers (Google, Bing, etc.)
+- ✅ Schema `Organization` completo con `logo`, `image`, direcciones detalladas, múltiples `sameAs`
+- ✅ Schema `WebSite` con `SearchAction` para Sitelinks Search Box en Google
+- ✅ Lighthouse dejará de marcar "Additional Items to Manually Check — Datos estructurados válidos"
+- ✅ Mejora en la presencia del sitio en rich snippets de Google
+
+---
+
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*
