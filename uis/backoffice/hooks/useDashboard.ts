@@ -7,9 +7,13 @@ import {
   filterLowStockProducts,
   sortProductsByStock,
   sortCarriersByReliability,
+} from "@trackflow/core/utils/collections";
+import {
   findProductBySKU,
   findShipmentById,
   binarySearchProductByWeight,
+} from "@trackflow/core/utils/search";
+import {
   scoreCarrierForShipment,
   selectBestCarrier,
   countProductsByCategory,
@@ -17,10 +21,12 @@ import {
   calculateAverageShipmentDistance,
   groupShipmentsByStatus,
   findTopCarriers,
+} from "@trackflow/core/utils/transformations";
+import {
   validateProduct,
   validateShipment,
   validateCarrier,
-} from "@trackflow/core";
+} from "@trackflow/core/utils/validations";
 
 async function loadSampleData(): Promise<{
   sampleProducts: any[];

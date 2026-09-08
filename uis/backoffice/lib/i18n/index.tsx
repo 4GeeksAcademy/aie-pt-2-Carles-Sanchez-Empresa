@@ -14,6 +14,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import esMessages from "./es";
 
 type Messages = Record<string, string>;
 
@@ -45,7 +46,7 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 /** Cache de módulos de traducción ya cargados */
-const loadedModules: Record<string, Messages | undefined> = {};
+const loadedModules: Record<string, Messages | undefined> = { es: esMessages };
 
 async function loadMessages(lang: string): Promise<Messages> {
   if (loadedModules[lang]) return loadedModules[lang]!;
@@ -56,11 +57,12 @@ async function loadMessages(lang: string): Promise<Messages> {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<string>(getBrowserLanguage);
-  const [messages, setMessages] = useState<Messages | null>(null);
+  const [messages, setMessages] = useState<Messages>(esMessages);
   const langRef = useRef(lang);
   langRef.current = lang;
 
   useEffect(() => {
+    if (lang === "es") return;
     loadMessages(lang).then(setMessages);
   }, [lang]);
 
@@ -73,8 +75,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const t: TranslationFn = useCallback(
     (key: string, vars?: Record<string, string | number>): string => {
-      const msgs = messages ?? loadedModules["es"] ?? {};
-      const msg = msgs[key] ?? (loadedModules["es"]?.[key]) ?? key;
+      const msg = messages[key] ?? key;
       return formatMessage(msg, vars);
     },
     [messages],

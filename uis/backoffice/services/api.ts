@@ -1,5 +1,5 @@
 // API service for backoffice — uses fetch with auth token from @trackflow/core
-import { getToken, clearToken } from "@trackflow/core";
+import { getToken, clearToken } from "@trackflow/core/services/auth";
 import { API_BASE } from "@/lib/constants";
 
 function formatErrorDetail(detail: unknown, fallback: string): string {

@@ -7,6 +7,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "TrackFlow",
   description: "Cross-border logistics between the United States and Spain",
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

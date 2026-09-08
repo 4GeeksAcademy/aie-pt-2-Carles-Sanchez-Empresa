@@ -5,11 +5,10 @@ const API_PORT = process.env.NEXT_PUBLIC_API_PORT || "8000";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@trackflow/core"],
-  webpack(config, { dev }) {
-    if (!dev) {
-      config.devtool = "hidden-source-map";
-    }
-    return config;
+  compress: true,
+  // Optimización de imágenes
+  images: {
+    formats: ["image/avif", "image/webp"],
   },
   async rewrites() {
     const apiTarget = `http://${API_HOST}:${API_PORT}`;
@@ -36,7 +35,6 @@ const nextConfig: NextConfig = {
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
     ];

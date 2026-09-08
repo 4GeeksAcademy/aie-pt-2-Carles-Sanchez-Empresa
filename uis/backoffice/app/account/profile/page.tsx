@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getToken, clearToken } from "@trackflow/core";
+import { getToken, clearToken } from "@trackflow/core/services/auth";
 import { API_BASE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n";
 

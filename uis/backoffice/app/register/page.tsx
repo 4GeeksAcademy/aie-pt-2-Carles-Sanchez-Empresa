@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { register, getToken } from "@trackflow/core";
+import { register, getToken } from "@trackflow/core/services/auth";
 import { useTranslation } from "@/lib/i18n";
 
 export default function RegisterPage() {

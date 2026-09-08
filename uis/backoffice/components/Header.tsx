@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { getToken } from "@trackflow/core";
+import { getToken } from "@trackflow/core/services/auth";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 

@@ -11,9 +11,9 @@ interface SearchPanelProps {
 
 export function SearchPanel({ onFindBySKU, onFindShipmentById, onBinarySearch }: SearchPanelProps) {
   const { t } = useTranslation();
-  const [sku, setSku] = useState("SHOE-BLK-42");
-  const [shipmentId, setShipmentId] = useState("SH-2024-8821");
-  const [searchWeight, setSearchWeight] = useState("0.8");
+  const [sku, setSku] = useState("");
+  const [shipmentId, setShipmentId] = useState("");
+  const [searchWeight, setSearchWeight] = useState("95");
   const [results, setResults] = useState<Record<string, string>>({});
 
   const showResult = (key: string, data: unknown) => {

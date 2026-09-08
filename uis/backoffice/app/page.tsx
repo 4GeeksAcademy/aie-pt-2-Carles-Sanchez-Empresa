@@ -1,12 +1,27 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useDashboard } from "@/hooks/useDashboard";
 import { DataEditor } from "@/components/dashboard/DataEditor";
-import { CollectionsPanel } from "@/components/dashboard/CollectionsPanel";
-import { SearchPanel } from "@/components/dashboard/SearchPanel";
-import { TransformationsPanel } from "@/components/dashboard/TransformationsPanel";
-import { ValidationsPanel } from "@/components/dashboard/ValidationsPanel";
 import { useTranslation } from "@/lib/i18n";
+
+// Componentes pesados cargados dinámicamente para mejorar LCP y reducir JS inicial
+const CollectionsPanel = dynamic(() => import("@/components/dashboard/CollectionsPanel").then(m => m.CollectionsPanel), {
+  ssr: false,
+  loading: () => <div className="h-48 rounded-xl border border-[#c89d66] bg-[#f3ddba]/50 p-6 animate-pulse" />,
+});
+const SearchPanel = dynamic(() => import("@/components/dashboard/SearchPanel").then(m => m.SearchPanel), {
+  ssr: false,
+  loading: () => <div className="h-48 rounded-xl border border-[#c89d66] bg-[#f3ddba]/50 p-6 animate-pulse" />,
+});
+const TransformationsPanel = dynamic(() => import("@/components/dashboard/TransformationsPanel").then(m => m.TransformationsPanel), {
+  ssr: false,
+  loading: () => <div className="h-64 rounded-xl border border-[#c89d66] bg-[#f3ddba]/50 p-6 animate-pulse" />,
+});
+const ValidationsPanel = dynamic(() => import("@/components/dashboard/ValidationsPanel").then(m => m.ValidationsPanel), {
+  ssr: false,
+  loading: () => <div className="h-48 rounded-xl border border-[#c89d66] bg-[#f3ddba]/50 p-6 animate-pulse" />,
+});
 
 export default function DashboardPage() {
   const { t } = useTranslation();

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
-import { logout } from "@trackflow/core";
+import { logout } from "@trackflow/core/services/auth";
 
 interface SidebarItem {
   href: string;

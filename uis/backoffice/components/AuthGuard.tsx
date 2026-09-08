@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getToken } from "@trackflow/core";
+import { getToken } from "@trackflow/core/services/auth";
 import { useTranslation } from "@/lib/i18n";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {

@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { login, getToken } from "@trackflow/core";
+import { login, getToken } from "@trackflow/core/services/auth";
 import { useTranslation } from "@/lib/i18n";
 
 function LoginForm() {
