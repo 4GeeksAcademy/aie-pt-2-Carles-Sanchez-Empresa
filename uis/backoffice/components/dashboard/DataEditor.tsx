@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
 
 interface DataEditorProps {
@@ -18,6 +18,24 @@ export function DataEditor({ products, shipments, carriers, onUpdateProducts, on
   const [shipmentsRaw, setShipmentsRaw] = useState(() => JSON.stringify(shipments, null, 2));
   const [carriersRaw, setCarriersRaw] = useState(() => JSON.stringify(carriers, null, 2));
   const [updated, setUpdated] = useState(false);
+
+  useEffect(() => {
+    if (products && products.length > 0) {
+      setProductsRaw(JSON.stringify(products, null, 2));
+    }
+  }, [products]);
+
+  useEffect(() => {
+    if (shipments && shipments.length > 0) {
+      setShipmentsRaw(JSON.stringify(shipments, null, 2));
+    }
+  }, [shipments]);
+
+  useEffect(() => {
+    if (carriers && carriers.length > 0) {
+      setCarriersRaw(JSON.stringify(carriers, null, 2));
+    }
+  }, [carriers]);
 
   const applyAll = () => {
     onUpdateProducts(productsRaw);
