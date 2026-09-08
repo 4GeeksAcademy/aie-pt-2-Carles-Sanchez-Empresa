@@ -5,9 +5,9 @@ import { useState } from "react";
 import { useIncidentManager } from "@/hooks/useIncidentManager";
 import { useTranslation } from "@/lib/i18n";
 
-const IncidentForm = dynamic(() => import("@/components/incidents-manager/IncidentForm"), { ssr: false });
-const IncidentList = dynamic(() => import("@/components/incidents-manager/IncidentList"), { ssr: false });
-const IncidentSummary = dynamic(() => import("@/components/incidents-manager/IncidentSummary"), { ssr: false });
+const IncidentForm = dynamic(() => import("@/components/incidents-manager/IncidentForm").then((m) => m.IncidentForm), { ssr: false });
+const IncidentList = dynamic(() => import("@/components/incidents-manager/IncidentList").then((m) => m.IncidentList), { ssr: false });
+const IncidentSummary = dynamic(() => import("@/components/incidents-manager/IncidentSummary").then((m) => m.IncidentSummary), { ssr: false });
 
 type Tab = "form" | "list" | "summary";
 

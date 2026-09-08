@@ -5,10 +5,10 @@ import { useState, useEffect } from "react";
 import { useInventory } from "@/hooks/useInventory";
 import { useTranslation } from "@/lib/i18n";
 
-const StockTable = dynamic(() => import("@/components/inventory/StockTable"), { ssr: false });
-const InboundForm = dynamic(() => import("@/components/inventory/InboundForm"), { ssr: false });
-const OutboundForm = dynamic(() => import("@/components/inventory/OutboundForm"), { ssr: false });
-const MovementHistory = dynamic(() => import("@/components/inventory/MovementHistory"), { ssr: false });
+const StockTable = dynamic(() => import("@/components/inventory/StockTable").then((m) => m.StockTable), { ssr: false });
+const InboundForm = dynamic(() => import("@/components/inventory/InboundForm").then((m) => m.InboundForm), { ssr: false });
+const OutboundForm = dynamic(() => import("@/components/inventory/OutboundForm").then((m) => m.OutboundForm), { ssr: false });
+const MovementHistory = dynamic(() => import("@/components/inventory/MovementHistory").then((m) => m.MovementHistory), { ssr: false });
 
 type Tab = "stock" | "inbound" | "outbound" | "orders";
 

@@ -6,9 +6,9 @@ import { useSuppliers } from "@/hooks/useSuppliers";
 import type { Supplier } from "@/services/api";
 import { useTranslation } from "@/lib/i18n";
 
-const SupplierFilters = dynamic(() => import("@/components/suppliers/SupplierFilters"), { ssr: false });
-const NewSupplierForm = dynamic(() => import("@/components/suppliers/NewSupplierForm"), { ssr: false });
-const SupplierTable = dynamic(() => import("@/components/suppliers/SupplierTable"), { ssr: false });
+const SupplierFilters = dynamic(() => import("@/components/suppliers/SupplierFilters").then((m) => m.SupplierFilters), { ssr: false });
+const NewSupplierForm = dynamic(() => import("@/components/suppliers/NewSupplierForm").then((m) => m.NewSupplierForm), { ssr: false });
+const SupplierTable = dynamic(() => import("@/components/suppliers/SupplierTable").then((m) => m.SupplierTable), { ssr: false });
 
 export default function SuppliersPage() {
   const { t } = useTranslation();

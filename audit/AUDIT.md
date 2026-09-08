@@ -1473,4 +1473,79 @@ Se eliminaron ambas líneas del layout raíz:
 
 ---
 
+### C8 — Optimizar para móvil
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Lighthouse reportaba en todas las páginas móviles tareas largas en el hilo principal:
+
+| Página | Tareas largas | Tiempo ejecución JS | Trabajo hilo principal |
+|---|---|---|---|
+| Dashboard (móvil) | 6 tareas | 0.6 s | 1.4 s |
+| Inventario (móvil) | 5 tareas | 0.7 s | 1.2 s |
+| Gestor Incidencias (móvil) | 4 tareas | 0.6 s | 1.0 s |
+| Web Corporativa (móvil) | 3 tareas | 0.6 s | 1.0 s |
+
+La causa raíz era que el barrel export de `@trackflow/core` incluía `sampleData.ts` (con arrays de ejemplo), que se bundleaba en **todas las páginas** aunque solo el Dashboard lo consumiera. Esto añadía payload innecesario que aumentaba el tiempo de parseo/ejecución en el hilo principal, especialmente en dispositivos móviles con CPU limitada.
+
+#### Solución aplicada
+
+**1. Eliminar sampleData del barrel export:**
+
+```diff
+ // src/index.ts — barrel exports
+ export * from './utils/collections';
+ export * from './utils/search';
+ export * from './utils/transformations';
+ export * from './utils/validations';
+ export * from './services/auth';
+ export * from './types/models';
+-export * from './data/sampleData';
+```
+
+**2. Carga diferida de sampleData solo en useDashboard:**
+
+En `uis/backoffice/hooks/useDashboard.ts`:
+- Se eliminó la importación estática de `sampleProducts`, `sampleShipments`, `sampleCarriers`
+- Se implementó `await import("@trackflow/core/data/sampleData")` dentro de un `useEffect`
+- Los datos de ejemplo solo se cargan cuando el hook `useDashboard()` se monta (es decir, solo en la página Dashboard)
+
+**3. Subpath export en package.json:**
+
+```json
+{
+  "exports": {
+    ".": "./index.ts",
+    "./data/sampleData": "./data/sampleData.ts"
+  }
+}
+```
+
+Esto permite que el bundler resuelva correctamente el subpath `@trackflow/core/data/sampleData` aunque no esté en el barrel principal.
+
+#### Ahorro estimado
+
+| Concepto | Ahorro |
+|---|---|
+| sampleData eliminado del bundle global | ~22 líneas de datos de ejemplo no bundleadas en páginas que no son Dashboard |
+| Reducción de parseo JS en móvil | ~5-10% menos trabajo en hilo principal en páginas sin Dashboard |
+| Tareas largas restantes esperadas | ~3-5 (por la propia naturaleza de React hydration, no eliminables completamente) |
+
+#### Archivos modificados
+
+- `src/index.ts` — Barrel export sin sampleData
+- `src/package.json` — Subpath exports para import diferido
+- `uis/backoffice/hooks/useDashboard.ts` — Lazy import de sampleData
+
+#### Resultado esperado
+
+- ✅ Las páginas que no son Dashboard (Inventario, Incidencias, Gestor de Incidencias, Web) no incluyen datos de ejemplo en su bundle.
+- ✅ El Dashboard carga los datos de ejemplo de forma asíncrona, sin bloquear el render inicial.
+- ✅ Se reduce el trabajo en el hilo principal en dispositivos móviles.
+- ✅ Lighthouse mostrará menos tareas largas o ninguna en páginas que no son Dashboard.
+
+---
+
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*

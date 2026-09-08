@@ -6,8 +6,8 @@ import { SectionContainer } from "@/components/home/SectionContainer";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { useTranslation } from "@/lib/i18n";
 
-const InfoCard = dynamic(() => import("@/components/home/InfoCard"), { ssr: false });
-const StructuredData = dynamic(() => import("@/components/home/StructuredData"), { ssr: false });
+const InfoCard = dynamic(() => import("@/components/home/InfoCard").then((m) => m.InfoCard), { ssr: false });
+const StructuredData = dynamic(() => import("@/components/home/StructuredData").then((m) => m.StructuredData), { ssr: false });
 
 export default function HomePage() {
   const { t } = useTranslation();

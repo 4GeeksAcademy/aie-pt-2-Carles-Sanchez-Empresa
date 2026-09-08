@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   filterProductsByWarehouse,
   filterProductsByCategory,
@@ -20,15 +20,34 @@ import {
   validateProduct,
   validateShipment,
   validateCarrier,
-  sampleProducts,
-  sampleShipments,
-  sampleCarriers,
 } from "@trackflow/core";
 
+async function loadSampleData(): Promise<{
+  sampleProducts: any[];
+  sampleShipments: any[];
+  sampleCarriers: any[];
+}> {
+  const mod = await import("@trackflow/core/data/sampleData");
+  return {
+    sampleProducts: mod.sampleProducts,
+    sampleShipments: mod.sampleShipments,
+    sampleCarriers: mod.sampleCarriers,
+  };
+}
+
 export function useDashboard() {
-  const [products, setProducts] = useState(sampleProducts);
-  const [shipments, setShipments] = useState(() => JSON.parse(JSON.stringify(sampleShipments)));
-  const [carriers, setCarriers] = useState(sampleCarriers);
+  const [products, setProducts] = useState<any[]>([]);
+  const [shipments, setShipments] = useState<any[]>([]);
+  const [carriers, setCarriers] = useState<any[]>([]);
+
+  // Carga diferida de datos de ejemplo, solo cuando el hook se usa (Dashboard)
+  useEffect(() => {
+    loadSampleData().then((data) => {
+      setProducts(data.sampleProducts as any[]);
+      setShipments(JSON.parse(JSON.stringify(data.sampleShipments)));
+      setCarriers(data.sampleCarriers as any[]);
+    });
+  }, []);
 
   // ── Data editor ──
   const updateProducts = useCallback((raw: string) => {

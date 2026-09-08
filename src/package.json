@@ -1,6 +1,10 @@
 {
   "name": "@trackflow/core",
   "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./data/sampleData": "./data/sampleData.ts"
+  },
   "scripts": {
     "build": "npx tsc -p tsconfig.json --noEmit",
     "typecheck": "npx tsc -p tsconfig.json --noEmit"
