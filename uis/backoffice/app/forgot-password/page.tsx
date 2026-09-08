@@ -49,7 +49,7 @@ function ForgotPasswordForm() {
             </p>
             <Link
               href="/login"
-              className="mt-6 inline-block rounded-lg bg-[#14263a] px-6 py-2.5 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a]"
+              className="mt-6 inline-block rounded-lg bg-[#14263a] px-6 py-2.5 text-sm font-semibold text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]"
             >
               {t("auth.forgot.back_to_login")}
             </Link>
@@ -81,7 +81,7 @@ function ForgotPasswordForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
                 placeholder={t("auth.forgot.email_placeholder")}
               />
             </div>
@@ -93,7 +93,7 @@ function ForgotPasswordForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2.5 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2.5 text-sm font-semibold text-[#f8fbff] transition-colors hover:bg-[#1d4f7a] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? t("auth.forgot.submitting") : t("auth.forgot.submit")}
             </button>

@@ -121,7 +121,7 @@ export function OutboundForm({ products, onSubmit }: Props) {
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:opacity-50"
+        className="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a] disabled:opacity-50"
       >
         {submitting ? t("inventory.outbound.submitting") : t("inventory.outbound.submit")}
       </button>

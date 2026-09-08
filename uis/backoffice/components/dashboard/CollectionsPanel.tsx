@@ -38,7 +38,7 @@ export function CollectionsPanel({ onFilterByWarehouse, onFilterByCategory, onLo
               <option value="Los Angeles">Los Angeles</option>
               <option value="Zaragoza">Zaragoza</option>
             </select>
-            <button onClick={() => showResult("warehouse", onFilterByWarehouse(warehouse))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
+            <button onClick={() => showResult("warehouse", onFilterByWarehouse(warehouse))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
           </div>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.warehouse}</pre>
         </div>
@@ -53,14 +53,14 @@ export function CollectionsPanel({ onFilterByWarehouse, onFilterByCategory, onLo
               <option value="Home">{t("dashboard.category.home")}</option>
               <option value="Other">{t("dashboard.category.other")}</option>
             </select>
-            <button onClick={() => showResult("category", onFilterByCategory(category))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
+            <button onClick={() => showResult("category", onFilterByCategory(category))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
           </div>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.category}</pre>
         </div>
 
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
           <p className="mb-2 text-sm font-medium text-[#14263a]">{t("dashboard.collections.low_stock")}</p>
-          <button onClick={() => showResult("lowStock", onLowStock())} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
+          <button onClick={() => showResult("lowStock", onLowStock())} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.lowStock}</pre>
         </div>
 
@@ -71,7 +71,7 @@ export function CollectionsPanel({ onFilterByWarehouse, onFilterByCategory, onLo
               <option value="asc">{t("dashboard.collections.asc")}</option>
               <option value="desc">{t("dashboard.collections.desc")}</option>
             </select>
-            <button onClick={() => showResult("sortStock", onSortByStock(stockOrder))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
+            <button onClick={() => showResult("sortStock", onSortByStock(stockOrder))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
           </div>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.sortStock}</pre>
         </div>
@@ -83,7 +83,7 @@ export function CollectionsPanel({ onFilterByWarehouse, onFilterByCategory, onLo
               <option value="desc">{t("dashboard.collections.most_reliable")}</option>
               <option value="asc">{t("dashboard.collections.least_reliable")}</option>
             </select>
-            <button onClick={() => showResult("sortCarriers", onSortCarriers(reliabilityOrder))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
+            <button onClick={() => showResult("sortCarriers", onSortCarriers(reliabilityOrder))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.run")}</button>
           </div>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.sortCarriers}</pre>
         </div>

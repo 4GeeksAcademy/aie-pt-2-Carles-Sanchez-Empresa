@@ -14,7 +14,7 @@ import { useTranslation } from "@/lib/i18n";
 import { FormField } from "./FormField";
 
 const baseInputClass =
-  "w-full rounded-xl border border-[#c89d66] bg-[#f3ddba] px-4 py-3 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20";
+  "w-full rounded-xl border border-[#c89d66] bg-[#f3ddba] px-4 py-3 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20";
 const invalidInputClass = "border-red-600 bg-[#fee2e2] ring-2 ring-red-500/40";
 
 const initialFormData: ApplicationFormData = {
@@ -319,7 +319,7 @@ export function ApplicationForm() {
               rows={5}
               value={formData.comentarios}
               onChange={handleTextChange}
-              className={`w-full rounded-2xl border border-[#c89d66] bg-white px-4 py-3 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20 ${
+              className={`w-full rounded-2xl border border-[#c89d66] bg-white px-4 py-3 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20 ${
                 errors.comentarios ? invalidInputClass : ""
               }`.trim()}
               placeholder={t("form.placeholder.comentarios")}
@@ -375,7 +375,7 @@ export function ApplicationForm() {
         <button
           type="button"
           onClick={() => setSubmitError(null)}
-          className="rounded-lg border border-red-400 bg-white px-3 py-1 text-xs font-medium text-red-700 transition hover:bg-red-100"
+          className="rounded-lg border border-red-400 bg-white px-3 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
         >
           {t("form.error.dismiss")}
         </button>
@@ -387,14 +387,14 @@ export function ApplicationForm() {
           <button
             type="button"
             onClick={clearForm}
-            className="inline-flex items-center justify-center rounded-xl border border-[#14263a] bg-transparent px-5 py-3 text-sm font-semibold text-[#14263a] transition hover:bg-[#f3ddba]"
+            className="inline-flex items-center justify-center rounded-xl border border-[#14263a] bg-transparent px-5 py-3 text-sm font-semibold text-[#14263a] transition-colors hover:bg-[#f3ddba]"
           >
             {t("form.clear_btn")}
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center justify-center rounded-xl bg-[#14263a] px-5 py-3 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-xl bg-[#14263a] px-5 py-3 text-sm font-semibold text-[#f8fbff] transition-colors hover:bg-[#1d4f7a] disabled:cursor-not-allowed disabled:opacity-60"
           >
 {submitting ? (
               <span className="flex items-center gap-2">

@@ -69,7 +69,7 @@ export function ValidationsPanel({ products, shipments, carriers, onValidateProd
           <label htmlFor="prodIdxInput" className="mb-2 text-sm font-medium text-[#14263a]">{t("dashboard.validation.product")}</label>
           <div className="mb-2 flex gap-2">
             <input id="prodIdxInput" type="number" min="0" max={products.length - 1} value={prodIdx} onChange={(e) => setProdIdx(e.target.value)} className="w-14 rounded border border-[#c89d66] bg-[#f3ddba] px-2 py-1 text-xs" />
-            <button onClick={() => showResult("prod", onValidateProduct(clamp(prodIdx, products.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.validation.action")}</button>
+            <button onClick={() => showResult("prod", onValidateProduct(clamp(prodIdx, products.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.validation.action")}</button>
           </div>
           <pre className="min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{formatResult(results.prod)}</pre>
         </div>
@@ -78,7 +78,7 @@ export function ValidationsPanel({ products, shipments, carriers, onValidateProd
           <label htmlFor="shipIdxInput" className="mb-2 text-sm font-medium text-[#14263a]">{t("dashboard.validation.shipment")}</label>
           <div className="mb-2 flex gap-2">
             <input id="shipIdxInput" type="number" min="0" max={shipments.length - 1} value={shipIdx} onChange={(e) => setShipIdx(e.target.value)} className="w-14 rounded border border-[#c89d66] bg-[#f3ddba] px-2 py-1 text-xs" />
-            <button onClick={() => showResult("ship", onValidateShipment(clamp(shipIdx, shipments.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.validation.action")}</button>
+            <button onClick={() => showResult("ship", onValidateShipment(clamp(shipIdx, shipments.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.validation.action")}</button>
           </div>
           <pre className="min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{formatResult(results.ship)}</pre>
         </div>
@@ -87,7 +87,7 @@ export function ValidationsPanel({ products, shipments, carriers, onValidateProd
           <label htmlFor="carrierIdxInput" className="mb-2 text-sm font-medium text-[#14263a]">{t("dashboard.validation.carrier")}</label>
           <div className="mb-2 flex gap-2">
             <input id="carrierIdxInput" type="number" min="0" max={carriers.length - 1} value={carrierIdx} onChange={(e) => setCarrierIdx(e.target.value)} className="w-14 rounded border border-[#c89d66] bg-[#f3ddba] px-2 py-1 text-xs" />
-            <button onClick={() => showResult("carrier", onValidateCarrier(clamp(carrierIdx, carriers.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.validation.action")}</button>
+            <button onClick={() => showResult("carrier", onValidateCarrier(clamp(carrierIdx, carriers.length)))} className="rounded-lg bg-[#14263a] px-4 py-1 text-xs font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.validation.action")}</button>
           </div>
           <pre className="min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{formatResult(results.carrier)}</pre>
         </div>

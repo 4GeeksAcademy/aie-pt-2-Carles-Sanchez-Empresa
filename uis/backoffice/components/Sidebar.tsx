@@ -50,8 +50,7 @@ export function Sidebar({ open, onClose }: Props) {
           <span className="text-lg font-bold tracking-wide text-[#c89d66]">TrackFlow</span>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-[#8fa8be] hover:bg-[#c89d66] hover:text-[#14263a] transition"
-            aria-label="Close sidebar"
+            className="rounded-lg p-1 text-[#8fa8be] hover:bg-[#c89d66] hover:text-[#14263a] transition-colors" aria-label="Close sidebar"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -69,7 +68,7 @@ export function Sidebar({ open, onClose }: Props) {
                   <Link
                     href={item.href}
                     onClick={onClose}
-                    className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+                    className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-[#c89d66] text-[#14263a]"
                         : "text-[#c6dced] hover:bg-[#c89d66] hover:text-[#14263a]"
@@ -88,7 +87,7 @@ export function Sidebar({ open, onClose }: Props) {
         <div className="border-t border-[#c89d66] px-3 py-4">
           <button
             onClick={() => logout()}
-            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-[#f87171] transition hover:bg-[#c89d66] hover:text-[#14263a]"
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-[#f87171] transition-colors hover:bg-[#c89d66] hover:text-[#14263a]"
           >
             <span className="text-lg">🚪</span>
             <span>{t("nav.logout")}</span>

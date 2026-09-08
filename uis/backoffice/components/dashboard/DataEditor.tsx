@@ -33,7 +33,7 @@ export function DataEditor({ products, shipments, carriers, onUpdateProducts, on
         {t("dashboard.data.title")}
       </h2>
       <div className="mb-3 flex items-center gap-2">
-        <button onClick={applyAll} className="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">
+        <button onClick={applyAll} className="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">
           {t("dashboard.data.apply")}
         </button>
         <span className="text-xs text-[#2f4a62] italic">{t(updated ? "dashboard.data.updated" : "dashboard.data.loaded")}</span>

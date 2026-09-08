@@ -1607,6 +1607,75 @@ Sitemap: https://trackflow.com/sitemap.xml
 - ✅ Website: `robots.txt` permisivo para permitir el crawling de la web corporativa
 - ✅ Lighthouse dejará de señalar "La página está bloqueada para la indexación" y "robots.txt no válido"
 
+### C10 — Corregir animaciones no compuestas (transition → transition-colors)
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Lighthouse detectaba en **Web Corporativa (Mobile)** 4 elementos con animaciones no compuestas y en **Backoffice (Inventario)** 1 elemento. El motivo era el uso de la clase genérica `transition` de Tailwind, que anima **todas las propiedades animables** del elemento, incluyendo aquellas que requieren layout/paint (como `background-color`).
+
+Cuando el navegador anima propiedades que requieren layout/paint, no puede delegar la animación a la GPU, provocando:
+- Recalculos de layout innecesarios
+- Paint en cada frame de la animación
+- Mayor consumo de CPU/GPU
+- FPS reducidos en dispositivos móviles
+
+#### Solución aplicada
+
+Se reemplazó la clase genérica `transition` por `transition-colors` en todos los elementos donde los únicos cambios en hover/focus afectan a propiedades de color (background, text, border).
+
+`transition-colors` es una utilidad de Tailwind que se limita a animar únicamente `background-color`, `border-color`, `color`, y `text-decoration-color` — todas ellas propiedades compositables que pueden ser manejadas por la GPU sin triggering de layout.
+
+**Caso especial — Sidebar.tsx:** En el botón de cierre de la barra lateral, el hover cambia tanto `background-color` como `color`. `transition-colors` cubre ambas propiedades, por lo que también se aplicó correctamente.
+
+**Caso especial — form inputs:** Los inputs con `transition focus:border-[...]` también se cambiaron a `transition-colors` ya que solo cambian `border-color` y `outline` (ring) en focus.
+
+**Cambios realizados mediante scripts de sed y corrección manual:**
+
+- `sed` para reemplazar `transition hover:bg-` → `transition-colors hover:bg-`
+- `sed` para reemplazar ` transition ` (espaciado) → ` transition-colors `
+- Corrección manual de bordes de comillas y espacios perdidos en los seds anteriores
+- Revisión manual de casos con `transition hover:border-`, `transition focus:border-`, `transition hover:text-` y `transition hover:bg-orange-600`
+
+#### Archivos modificados (~25 archivos, ~75 instancias de `transition` → `transition-colors`)
+
+| Archivo | Cambios | Propósito |
+|---|---|---|
+| `uis/backoffice/app/account/profile/page.tsx` | 7 × `transition` → `transition-colors` | Inputs focus:border + botón hover:bg |
+| `uis/backoffice/app/forgot-password/page.tsx` | 2 × `transition` → `transition-colors` | Input focus:border + botón hover:bg |
+| `uis/backoffice/app/incidents-manager/page.tsx` | 1 × `transition` → `transition-colors` | Tab buttons hover:bg |
+| `uis/backoffice/app/inventory/page.tsx` | 1 × `transition` → `transition-colors` | Tab buttons hover:bg |
+| `uis/backoffice/app/login/page.tsx` | 2 × `transition` → `transition-colors` | Inputs focus:border |
+| `uis/backoffice/app/register/page.tsx` | 4 × `transition` → `transition-colors` | Inputs focus:border |
+| `uis/backoffice/app/reset-password/page.tsx` | 3 × `transition` → `transition-colors` | Inputs focus:border + botón |
+| `uis/backoffice/app/suppliers/page.tsx` | 1 × `transition` → `transition-colors` | Botón hover:bg |
+| `uis/backoffice/components/Header.tsx` | 2 × `transition` → `transition-colors` | Botón sidebar + language selector |
+| `uis/backoffice/components/Sidebar.tsx` | 2 × `transition` → `transition-colors` | Botón cerrar + nav links |
+| `uis/backoffice/components/dashboard/*.tsx` | 11 × `transition` → `transition-colors` | Botones de acción hover:bg |
+| `uis/backoffice/components/incidents/FileUpload.tsx` | 1 × `transition` → `transition-colors` | Dropzone hover:border |
+| `uis/backoffice/components/incidents-manager/IncidentList.tsx` | 1 × `transition` → `transition-colors` | Table row hover:bg |
+| `uis/backoffice/components/inventory/InboundForm.tsx` | 1 × `transition` → `transition-colors` | Botón submit |
+| `uis/backoffice/components/inventory/OutboundForm.tsx` | 1 × `transition` → `transition-colors` | Botón submit |
+| `uis/backoffice/components/inventory/StockTable.tsx` | 2 × `transition` → `transition-colors` | Botón refresh + table row |
+| `uis/backoffice/components/suppliers/NewSupplierForm.tsx` | 1 × `transition` → `transition-colors` | Botón submit |
+| `uis/backoffice/components/suppliers/SupplierTable.tsx` | 2 × `transition` → `transition-colors` | Botón edit + table row |
+| `uis/website/src/app/page.tsx` | 1 × `transition` → `transition-colors` | CTA button hover:bg |
+| `uis/website/src/components/application/ApplicationForm.tsx` | 4 × `transition` → `transition-colors` | Inputs + botón hover |
+| `uis/website/src/components/layout/SiteHeader.tsx` | 7 × `transition` → `transition-colors` | Language selector + mobile nav |
+
+#### Resultado esperado
+
+- ✅ Todas las animaciones de hover/focus usan `transition-colors`, limitándose a propiedades compositables por GPU
+- ✅ Las transiciones de `background-color`, `border-color` y `color` siguen funcionando visualmente
+- ✅ Lighthouse dejará de marcar "Animaciones no compuestas" en Web Corporativa e Inventario
+- ✅ Sin cambios visuales perceptibles para el usuario
+
+#### Nota: Elementos excluidos
+
+- El spinner de carga (`animate-spin`) ya usa transformaciones CSS (rotate) que son compositables por GPU — no requiere cambio
+- Los enlaces del menú de navegación en `SiteHeader.tsx` (versión home) usan `hover:bg-[#e5be83]` sin `transition` — no tienen animación, no requieren cambio
+
 ---
 
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*

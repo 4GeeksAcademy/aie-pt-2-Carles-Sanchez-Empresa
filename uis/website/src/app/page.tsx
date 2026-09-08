@@ -60,7 +60,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/application"
-            className="mt-5 inline-flex items-center rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]"
+            className="mt-5 inline-flex items-center rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]"
           >
             {t("home.hero.cta")}
           </Link>

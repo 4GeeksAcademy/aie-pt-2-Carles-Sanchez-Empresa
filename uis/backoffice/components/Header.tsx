@@ -32,8 +32,7 @@ export function Header({ onToggleSidebar }: Props) {
           {showAuth && (
             <button
               onClick={onToggleSidebar}
-              className="rounded-lg p-2 text-[#2f4a62] hover:bg-[#e5be83] transition"
-              aria-label="Toggle sidebar"
+              className="rounded-lg p-2 text-[#2f4a62] hover:bg-[#e5be83] transition-colors" aria-label="Toggle sidebar"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -67,7 +66,7 @@ function LanguageSelector({ lang, setLang }: { lang: string; setLang: (lang: str
           <button
             type="button"
             onClick={() => setLang(option)}
-            className={`rounded px-2 py-1 transition ${lang === option ? "bg-[#14263a] text-white" : "text-[#2f4a62] hover:bg-[#e5be83]"}`}
+            className={`rounded px-2 py-1 transition-colors ${lang === option ? "bg-[#14263a] text-white" : "text-[#2f4a62] hover:bg-[#e5be83]"}`}
             aria-pressed={lang === option}
           >
             {option.toUpperCase()}

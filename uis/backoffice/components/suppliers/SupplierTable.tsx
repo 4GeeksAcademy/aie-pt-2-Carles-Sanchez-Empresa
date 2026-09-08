@@ -41,7 +41,7 @@ export function SupplierTable({ suppliers, onEdit, onDelete }: SupplierTableProp
         </thead>
         <tbody className="divide-y divide-[#c89d66] bg-[#f3ddba]">
           {suppliers.map((s) => (
-            <tr key={s.id} className="transition hover:bg-[#f8fbff]">
+            <tr key={s.id} className="transition-colors hover:bg-[#f8fbff]">
               <td className="px-4 py-3 font-medium text-[#14263a]">{s.name}</td>
               <td className="px-4 py-3 text-[#2f4a62]">{s.country}</td>
               <td className="px-4 py-3 text-[#2f4a62]">{s.rate_per_shipment} {s.currency}</td>
@@ -54,8 +54,8 @@ export function SupplierTable({ suppliers, onEdit, onDelete }: SupplierTableProp
               <td className="px-4 py-3 text-[#2f4a62]">{s.contact_email ?? "—"}</td>
               <td className="px-4 py-3 text-xs text-[#2f4a62]">{new Date(s.updated_at).toLocaleDateString(lang)}</td>
               <td className="px-4 py-3 text-right">
-                <button onClick={() => onEdit(s)} className="mr-2 rounded bg-[#14263a] px-3 py-1 text-xs font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("suppliers.edit")}</button>
-                <button onClick={() => onDelete(s.id)} className="rounded bg-red-700 px-3 py-1 text-xs font-medium text-white transition hover:bg-red-800">{t("suppliers.delete")}</button>
+                <button onClick={() => onEdit(s)} className="mr-2 rounded bg-[#14263a] px-3 py-1 text-xs font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("suppliers.edit")}</button>
+                <button onClick={() => onDelete(s.id)} className="rounded bg-red-700 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-red-800">{t("suppliers.delete")}</button>
               </td>
             </tr>
           ))}

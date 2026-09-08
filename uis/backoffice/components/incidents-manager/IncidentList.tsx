@@ -76,7 +76,7 @@ export function IncidentList({ incidents, loading, error, updatingId, onLoad, on
             </thead>
             <tbody className="divide-y divide-[#c89d66] bg-[#f3ddba]">
               {incidents.map((incident) => (
-                <tr key={incident.id} className="align-top transition hover:bg-[#f8fbff]">
+                <tr key={incident.id} className="align-top transition-colors hover:bg-[#f8fbff]">
                   <td className="px-4 py-3 font-mono text-xs text-[#2f4a62]">#{incident.id}</td>
                   <td className="max-w-72 px-4 py-3">
                     <p className="font-semibold text-[#14263a]">{incident.title}</p>

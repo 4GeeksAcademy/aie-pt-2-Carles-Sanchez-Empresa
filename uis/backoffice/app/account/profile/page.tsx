@@ -165,7 +165,7 @@ export default function ProfilePage() {
               type="text"
               value={profile.name}
               onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-              className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+              className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
               placeholder={t("profile.name_placeholder")}
             />
           </div>
@@ -176,7 +176,7 @@ export default function ProfilePage() {
               type="tel"
               value={profile.phone}
               onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
-              className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+              className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
               placeholder={t("profile.phone_placeholder")}
             />
           </div>
@@ -187,14 +187,14 @@ export default function ProfilePage() {
               type="text"
               value={profile.address}
               onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
-              className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+              className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
               placeholder={t("profile.address_placeholder")}
             />
           </div>
 
           {feedback && <p className="text-sm text-emerald-600">{feedback}</p>}
 
-          <button type="submit" disabled={saving} className="rounded-lg bg-[#14263a] px-6 py-2.5 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:opacity-50 flex items-center gap-2">
+          <button type="submit" disabled={saving} className="rounded-lg bg-[#14263a] px-6 py-2.5 text-sm font-semibold text-[#f8fbff] transition-colors hover:bg-[#1d4f7a] disabled:opacity-50 flex items-center gap-2">
             {saving ? t("profile.saving") : t("profile.save")}
           </button>
         </form>
@@ -282,7 +282,7 @@ function ChangePasswordCard() {
             required
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+            className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
             placeholder="••••••••"
           />
         </div>
@@ -296,7 +296,7 @@ function ChangePasswordCard() {
             minLength={6}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+            className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
             placeholder={t("profile.password.new_placeholder")}
           />
         </div>
@@ -310,7 +310,7 @@ function ChangePasswordCard() {
             minLength={6}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+            className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
             placeholder={t("profile.password.confirm_placeholder")}
           />
         </div>
@@ -321,7 +321,7 @@ function ChangePasswordCard() {
         <button
           type="submit"
           disabled={cpSaving}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm flex items-center gap-2 disabled:opacity-50"
+          className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50"
         >
           {cpSaving ? t("profile.password.saving") : t("profile.password.submit")}
         </button>

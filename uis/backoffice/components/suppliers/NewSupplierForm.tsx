@@ -128,11 +128,11 @@ export function NewSupplierForm({ onSubmit, initial, isEditing, onCancel }: NewS
       {localError && <p className="text-sm text-red-600">{localError}</p>}
 
       <div className="flex gap-3">
-        <button type="submit" disabled={submitting} className="rounded-lg bg-[#14263a] px-6 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:opacity-50">
+        <button type="submit" disabled={submitting} className="rounded-lg bg-[#14263a] px-6 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a] disabled:opacity-50">
           {submitting ? t("suppliers.form.saving") : t(isEditing ? "suppliers.form.update" : "suppliers.form.create")}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} className="rounded-lg border border-[#c89d66] bg-[#f8fbff] px-6 py-2 text-sm font-medium text-[#14263a] transition hover:bg-[#f3ddba]">
+          <button type="button" onClick={onCancel} className="rounded-lg border border-[#c89d66] bg-[#f8fbff] px-6 py-2 text-sm font-medium text-[#14263a] transition-colors hover:bg-[#f3ddba]">
             {t("suppliers.cancel")}
           </button>
         )}

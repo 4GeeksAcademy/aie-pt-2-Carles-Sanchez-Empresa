@@ -46,11 +46,11 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
             <button
               type="button"
               onClick={toggleLang}
-              className="flex items-center gap-0 overflow-hidden rounded-md border border-[#c89d66] text-xs font-medium transition"
+              className="flex items-center gap-0 overflow-hidden rounded-md border border-[#c89d66] text-xs font-medium transition-colors"
               aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
             >
               <span
-                className={`px-2 py-1.5 transition ${
+                className={`px-2 py-1.5 transition-colors ${
                   lang === "en"
                     ? "bg-[#14263a] text-[#f8fbff]"
                     : "bg-[#f8fbff] text-[#2f4a62] hover:bg-[#e5be83]"
@@ -59,7 +59,7 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
                 EN
               </span>
               <span
-                className={`px-2 py-1.5 transition ${
+                className={`px-2 py-1.5 transition-colors ${
                   lang === "es"
                     ? "bg-[#14263a] text-[#f8fbff]"
                     : "bg-[#f8fbff] text-[#2f4a62] hover:bg-[#e5be83]"
@@ -108,11 +108,11 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
             <button
               type="button"
               onClick={toggleLang}
-              className="flex items-center gap-0 overflow-hidden rounded-md border border-[#c89d66] text-xs font-medium transition"
+              className="flex items-center gap-0 overflow-hidden rounded-md border border-[#c89d66] text-xs font-medium transition-colors"
               aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
             >
               <span
-                className={`px-2 py-1.5 transition ${
+                className={`px-2 py-1.5 transition-colors ${
                   lang === "en"
                     ? "bg-[#14263a] text-[#f8fbff]"
                     : "bg-[#f8fbff] text-[#2f4a62] hover:bg-[#e5be83]"
@@ -121,7 +121,7 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
                 EN
               </span>
               <span
-                className={`px-2 py-1.5 transition ${
+                className={`px-2 py-1.5 transition-colors ${
                   lang === "es"
                     ? "bg-[#14263a] text-[#f8fbff]"
                     : "bg-[#f8fbff] text-[#2f4a62] hover:bg-[#e5be83]"
@@ -157,7 +157,7 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
               aria-label={lang === "es" ? "Switch to English" : "Cambiar a español"}
             >
               <span
-                className={`flex-1 px-2 py-2 transition ${
+                className={`flex-1 px-2 py-2 transition-colors ${
                   lang === "en"
                     ? "bg-[#14263a] text-[#f8fbff]"
                     : "bg-transparent text-[#2f4a62] hover:bg-[#e5be83]"
@@ -166,7 +166,7 @@ export function SiteHeader({ variant }: SiteHeaderProps) {
                 EN
               </span>
               <span
-                className={`flex-1 px-2 py-2 transition ${
+                className={`flex-1 px-2 py-2 transition-colors ${
                   lang === "es"
                     ? "bg-[#14263a] text-[#f8fbff]"
                     : "bg-transparent text-[#2f4a62] hover:bg-[#e5be83]"

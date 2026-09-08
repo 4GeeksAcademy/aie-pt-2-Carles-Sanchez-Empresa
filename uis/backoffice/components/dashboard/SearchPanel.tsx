@@ -32,7 +32,7 @@ export function SearchPanel({ onFindBySKU, onFindShipmentById, onBinarySearch }:
           <label htmlFor="skuInput" className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.search.sku")}</label>
           <div className="flex gap-2">
             <input id="skuInput" type="text" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="SKU-..." className="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm" />
-            <button onClick={() => showResult("sku", onFindBySKU(sku))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.search_action")}</button>
+            <button onClick={() => showResult("sku", onFindBySKU(sku))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.search_action")}</button>
           </div>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.sku}</pre>
         </div>
@@ -41,7 +41,7 @@ export function SearchPanel({ onFindBySKU, onFindShipmentById, onBinarySearch }:
           <label htmlFor="shipmentIdInput" className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.search.shipment")}</label>
           <div className="flex gap-2">
             <input id="shipmentIdInput" type="text" value={shipmentId} onChange={(e) => setShipmentId(e.target.value)} placeholder="SHP-..." className="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm" />
-            <button onClick={() => showResult("shipment", onFindShipmentById(shipmentId))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.search_action")}</button>
+            <button onClick={() => showResult("shipment", onFindShipmentById(shipmentId))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.search_action")}</button>
           </div>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.shipment}</pre>
         </div>
@@ -50,7 +50,7 @@ export function SearchPanel({ onFindBySKU, onFindShipmentById, onBinarySearch }:
           <label htmlFor="searchWeightInput" className="mb-2 block text-sm font-medium text-[#14263a]">{t("dashboard.search.weight")}</label>
           <div className="flex gap-2">
             <input id="searchWeightInput" type="number" step="0.1" value={searchWeight} onChange={(e) => setSearchWeight(e.target.value)} className="flex-1 rounded-lg border border-[#c89d66] bg-[#f3ddba] px-3 py-2 text-sm" />
-            <button onClick={() => showResult("binary", onBinarySearch(parseFloat(searchWeight) || 0))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">{t("dashboard.search_action")}</button>
+            <button onClick={() => showResult("binary", onBinarySearch(parseFloat(searchWeight) || 0))} className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("dashboard.search_action")}</button>
           </div>
           <pre className="mt-2 min-h-[40px] overflow-auto rounded bg-[#f3ddba] p-2 text-xs">{results.binary}</pre>
         </div>

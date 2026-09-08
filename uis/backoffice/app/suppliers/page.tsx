@@ -56,7 +56,7 @@ export default function SuppliersPage() {
           <h1 className="text-2xl font-bold text-[#14263a]">{t("suppliers.title")}</h1>
           <p className="text-sm text-[#2f4a62]">{t("suppliers.subtitle")}</p>
         </div>
-        <button onClick={() => { setEditingSupplier(null); setShowForm(!showForm); }} className="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]">
+        <button onClick={() => { setEditingSupplier(null); setShowForm(!showForm); }} className="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">
           {showForm ? t("suppliers.cancel") : t("suppliers.add")}
         </button>
       </div>

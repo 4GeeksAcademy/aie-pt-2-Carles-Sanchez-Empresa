@@ -45,7 +45,7 @@ export default function IncidentManagerPage() {
               role="tab"
               aria-selected={activeTab === tab.value}
               onClick={() => selectTab(tab.value)}
-              className={`min-h-11 rounded-lg px-2 py-2 text-sm font-semibold transition ${activeTab === tab.value ? "bg-[#f8fbff] text-[#14263a] shadow-sm" : "text-[#2f4a62] hover:bg-[#edf5fb]"}`}
+              className={`min-h-11 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${activeTab === tab.value ? "bg-[#f8fbff] text-[#14263a] shadow-sm" : "text-[#2f4a62] hover:bg-[#edf5fb]"}`}
             >
               {t(tab.labelKey)}
             </button>
