@@ -1,10 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /inventory
-Disallow: /suppliers
-Disallow: /incidents
-Disallow: /incidents-manager
-Disallow: /account/
-Disallow: /reset-password
 
-Sitemap: https://backoffice.trackflow.com/sitemap.xml
+Sitemap: https://trackflow.com/sitemap.xml

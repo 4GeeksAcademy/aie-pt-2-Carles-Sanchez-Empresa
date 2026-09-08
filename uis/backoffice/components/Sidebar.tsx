@@ -59,7 +59,7 @@ export function Sidebar({ open, onClose }: Props) {
         </div>
 
         {/* Navigation items */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Navegación principal">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="space-y-1">
             {SIDEBAR_ITEMS.map((item) => {
               const isActive = pathname === item.href;

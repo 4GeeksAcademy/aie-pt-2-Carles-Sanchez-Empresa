@@ -16,48 +16,36 @@ export function Header({ onToggleSidebar }: Props) {
   const pathname = usePathname();
   const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/forgot-password" || pathname === "/reset-password";
   const [mounted, setMounted] = useState(false);
-
-  // Leer token SÍNCRONAMENTE para que showAuth sea correcto desde el
-  // primer render y el botón hamburguesa no aparezca después causando CLS.
-  const [token] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return getToken();
-  });
+  const [token, setTokenState] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    setTokenState(getToken());
+  }, [pathname]);
 
   const showAuth = mounted && !!token;
-  // El botón siempre está en el DOM; cuando no corresponde es invisible
-  // pero ocupa su espacio (40px) para evitar layout shift.
-  const hamburgerClasses = `rounded-lg p-2 transition-colors ${
-    showAuth
-      ? 'text-[#2f4a62] hover:bg-[#e5be83]'
-      : 'invisible pointer-events-none'
-  }`;
 
   return (
-    <header className="border-b border-[#c89d66] bg-[#f3ddba]" aria-label="Encabezado del panel">
+    <header className="border-b border-[#c89d66] bg-[#f3ddba]">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-4">
-          <button
-            onClick={onToggleSidebar}
-            className={hamburgerClasses}
-            aria-label="Toggle sidebar"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          {showAuth && (
+            <button
+              onClick={onToggleSidebar}
+              className="rounded-lg p-2 text-[#2f4a62] hover:bg-[#e5be83] transition-colors" aria-label="Toggle sidebar"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
           <Link href="/" className="inline-flex items-center bg-transparent">
             <Image
               src="/Logo TrackFlow.webp"
               alt="TrackFlow"
               width={112}
               height={56}
-              // Sin w-auto: las dimensiones intrínsecas (112x56) evitan CLS
-              className="h-14 md:h-16 bg-transparent"
+              className="h-14 w-auto md:h-16 bg-transparent"
               priority
             />
           </Link>
@@ -80,7 +68,6 @@ function LanguageSelector({ lang, setLang }: { lang: string; setLang: (lang: str
             onClick={() => setLang(option)}
             className={`rounded px-2 py-1 transition-colors ${lang === option ? "bg-[#14263a] text-white" : "text-[#2f4a62] hover:bg-[#e5be83]"}`}
             aria-pressed={lang === option}
-            aria-label={option === "es" ? "Cambiar idioma a español" : "Cambiar idioma a inglés"}
           >
             {option.toUpperCase()}
           </button>
