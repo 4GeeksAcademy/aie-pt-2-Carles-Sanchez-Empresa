@@ -19,6 +19,7 @@ export function MetricsTables({ stats }: MetricsTablesProps) {
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
           <h3 className="mb-2 text-sm font-semibold text-[#14263a]">{t("incidents.metrics.by_type")}</h3>
           <table className="w-full text-sm">
+            <caption className="sr-only">{t("incidents.metrics.by_type")}</caption>
             <thead>
               <tr className="border-b border-[#c89d66] text-left text-xs text-[#2f4a62]">
                 <th className="pb-1">{t("incidents.metrics.type")}</th>
@@ -38,6 +39,7 @@ export function MetricsTables({ stats }: MetricsTablesProps) {
         <div className="rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4">
           <h3 className="mb-2 text-sm font-semibold text-[#14263a]">{t("incidents.metrics.by_priority")}</h3>
           <table className="w-full text-sm">
+            <caption className="sr-only">{t("incidents.metrics.by_priority")}</caption>
             <thead>
               <tr className="border-b border-[#c89d66] text-left text-xs text-[#2f4a62]">
                 <th className="pb-1">{t("incidents.metrics.priority")}</th>

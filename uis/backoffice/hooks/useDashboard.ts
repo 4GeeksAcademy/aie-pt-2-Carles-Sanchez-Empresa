@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   filterProductsByWarehouse,
   filterProductsByCategory,
@@ -46,9 +46,18 @@ export function useDashboard() {
   const [shipments, setShipments] = useState<any[]>([]);
   const [carriers, setCarriers] = useState<any[]>([]);
 
-  // Carga diferida de datos de ejemplo, solo cuando el hook se usa (Dashboard)
+  // Refs para evitar recreación de callbacks en cada cambio de estado
+  const productsRef = useRef(products);
+  const shipmentsRef = useRef(shipments);
+  const carriersRef = useRef(carriers);
+  productsRef.current = products;
+  shipmentsRef.current = shipments;
+  carriersRef.current = carriers;
+
+  // Carga diferida de datos de ejemplo — una sola vez
   useEffect(() => {
     loadSampleData().then((data) => {
+      // Asignamos todo en un solo tick para minimizar re-renders
       setProducts(data.sampleProducts as any[]);
       setShipments(JSON.parse(JSON.stringify(data.sampleShipments)));
       setCarriers(data.sampleCarriers as any[]);
@@ -68,86 +77,87 @@ export function useDashboard() {
     try { setCarriers(JSON.parse(raw)); } catch { /* ignore */ }
   }, []);
 
-  // ── Collections ──
+  // ── Collections (usando refs para evitar dependencias) ──
   const runFilterByWarehouse = useCallback((warehouse: string) => {
-    return filterProductsByWarehouse(products, warehouse as any);
-  }, [products]);
+    return filterProductsByWarehouse(productsRef.current, warehouse as any);
+  }, []);
 
   const runFilterByCategory = useCallback((category: string) => {
-    return filterProductsByCategory(products, category as any);
-  }, [products]);
+    return filterProductsByCategory(productsRef.current, category as any);
+  }, []);
 
   const runLowStock = useCallback(() => {
-    return filterLowStockProducts(products);
-  }, [products]);
+    return filterLowStockProducts(productsRef.current);
+  }, []);
 
   const runSortByStock = useCallback((order: "asc" | "desc") => {
-    return sortProductsByStock(products, order);
-  }, [products]);
+    return sortProductsByStock(productsRef.current, order);
+  }, []);
 
   const runSortCarriers = useCallback((order: "asc" | "desc") => {
-    return sortCarriersByReliability(carriers, order);
-  }, [carriers]);
+    return sortCarriersByReliability(carriersRef.current, order);
+  }, []);
 
   // ── Search ──
   const runFindBySKU = useCallback((sku: string) => {
-    return findProductBySKU(products, sku);
-  }, [products]);
+    return findProductBySKU(productsRef.current, sku);
+  }, []);
 
   const runFindShipmentById = useCallback((id: string) => {
-    return findShipmentById(shipments, id);
-  }, [shipments]);
+    return findShipmentById(shipmentsRef.current, id);
+  }, []);
 
   const runBinarySearch = useCallback((weight: number) => {
-    const sorted = [...products].sort((a, b) => a.weightKg - b.weightKg);
+    const sorted = [...productsRef.current].sort((a, b) => a.weightKg - b.weightKg);
     const idx = binarySearchProductByWeight(sorted, weight);
     if (idx === -1) return null;
     return sorted[idx];
-  }, [products]);
+  }, []);
 
   // ── Transformations ──
   const runScoreCarrier = useCallback((carrierIdx: number, shipmentIdx: number, productIdx: number) => {
-    return scoreCarrierForShipment(carriers[carrierIdx], shipments[shipmentIdx], products[productIdx]);
-  }, [products, shipments, carriers]);
+    return scoreCarrierForShipment(carriersRef.current[carrierIdx], shipmentsRef.current[shipmentIdx], productsRef.current[productIdx]);
+  }, []);
 
   const runSelectBest = useCallback((shipmentIdx: number, productIdx: number) => {
-    return selectBestCarrier(carriers, shipments[shipmentIdx], products[productIdx]);
-  }, [products, shipments, carriers]);
+    return selectBestCarrier(carriersRef.current, shipmentsRef.current[shipmentIdx], productsRef.current[productIdx]);
+  }, []);
 
   const runCountByCategory = useCallback(() => {
-    return countProductsByCategory(products);
-  }, [products]);
+    return countProductsByCategory(productsRef.current);
+  }, []);
 
   const runInventoryValue = useCallback(() => {
-    return calculateTotalInventoryValue(products);
-  }, [products]);
+    return calculateTotalInventoryValue(productsRef.current);
+  }, []);
 
   const runAvgDistance = useCallback(() => {
-    return calculateAverageShipmentDistance(shipments);
-  }, [shipments]);
+    return calculateAverageShipmentDistance(shipmentsRef.current);
+  }, []);
 
   const runGroupByStatus = useCallback(() => {
-    return groupShipmentsByStatus(shipments);
-  }, [shipments]);
+    return groupShipmentsByStatus(shipmentsRef.current);
+  }, []);
 
   const runTopCarriers = useCallback((n: number) => {
-    return findTopCarriers(shipments, n);
-  }, [shipments]);
+    return findTopCarriers(shipmentsRef.current, n);
+  }, []);
 
   // ── Validations ──
   const runValidateProduct = useCallback((productIdx: number) => {
-    return validateProduct(products[productIdx]);
-  }, [products]);
+    return validateProduct(productsRef.current[productIdx]);
+  }, []);
 
   const runValidateShipment = useCallback((shipmentIdx: number) => {
-    return validateShipment(shipments[shipmentIdx]);
-  }, [shipments]);
+    return validateShipment(shipmentsRef.current[shipmentIdx]);
+  }, []);
 
   const runValidateCarrier = useCallback((carrierIdx: number) => {
-    return validateCarrier(carriers[carrierIdx]);
-  }, [carriers]);
+    return validateCarrier(carriersRef.current[carrierIdx]);
+  }, []);
 
-  return {
+  // Memorizar el objeto de retorno para estabilidad de referencias
+  return useMemo(() => ({
     products,
     shipments,
     carriers,
@@ -172,5 +182,12 @@ export function useDashboard() {
     runValidateProduct,
     runValidateShipment,
     runValidateCarrier,
-  };
+  }), [
+    products,
+    shipments,
+    carriers,
+    updateProducts,
+    updateShipments,
+    updateCarriers,
+  ]);
 }

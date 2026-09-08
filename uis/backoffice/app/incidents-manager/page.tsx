@@ -43,6 +43,8 @@ export default function IncidentManagerPage() {
               key={tab.value}
               type="button"
               role="tab"
+              id={`im-tab-${tab.value}`}
+              aria-controls={`im-panel-${tab.value}`}
               aria-selected={activeTab === tab.value}
               onClick={() => selectTab(tab.value)}
               className={`min-h-11 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${activeTab === tab.value ? "bg-[#f8fbff] text-[#14263a] shadow-sm" : "text-[#2f4a62] hover:bg-[#edf5fb]"}`}
@@ -53,9 +55,9 @@ export default function IncidentManagerPage() {
         </div>
       </div>
 
-      {activeTab === "form" && <IncidentForm loading={manager.formLoading} error={manager.formError} onSubmit={manager.addIncident} />}
-      {activeTab === "list" && <IncidentList incidents={manager.incidents} loading={manager.listLoading} error={manager.listError} updatingId={manager.updatingId} onLoad={manager.loadIncidents} onStatusChange={manager.changeStatus} />}
-      {activeTab === "summary" && <IncidentSummary summary={manager.summary} loading={manager.summaryLoading} error={manager.summaryError} />}
+      {activeTab === "form" && <div role="tabpanel" id="im-panel-form" aria-labelledby="im-tab-form"><IncidentForm loading={manager.formLoading} error={manager.formError} onSubmit={manager.addIncident} /></div>}
+      {activeTab === "list" && <div role="tabpanel" id="im-panel-list" aria-labelledby="im-tab-list"><IncidentList incidents={manager.incidents} loading={manager.listLoading} error={manager.listError} updatingId={manager.updatingId} onLoad={manager.loadIncidents} onStatusChange={manager.changeStatus} /></div>}
+      {activeTab === "summary" && <div role="tabpanel" id="im-panel-summary" aria-labelledby="im-tab-summary"><IncidentSummary summary={manager.summary} loading={manager.summaryLoading} error={manager.summaryError} /></div>}
     </div>
   );
 }

@@ -63,6 +63,7 @@ export function IncidentList({ incidents, loading, error, updatingId, onLoad, on
       {!loading && incidents.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-[#c89d66] shadow-sm">
           <table className="w-full min-w-[980px] text-left text-sm">
+            <caption className="sr-only">{t("incidents.mgr.title")}</caption>
             <thead className="bg-[#14263a] text-[#f8fbff]">
               <tr>
                 <th className="px-4 py-3">ID</th>

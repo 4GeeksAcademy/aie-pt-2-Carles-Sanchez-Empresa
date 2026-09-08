@@ -44,7 +44,9 @@ export function StockTable({
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm">
+        <label htmlFor="stock-category" className="sr-only">{t("inventory.stock.filter_category")}</label>
         <select
+          id="stock-category"
           value={categoryFilter}
           onChange={(e) => onCategoryChange(e.target.value)}
           className="rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62]"
@@ -54,7 +56,9 @@ export function StockTable({
           <option value="electronics">Electrónica</option>
           <option value="cosmetics">Cosmética</option>
         </select>
+        <label htmlFor="stock-warehouse" className="sr-only">{t("inventory.stock.filter_warehouse")}</label>
         <select
+          id="stock-warehouse"
           value={warehouseFilter}
           onChange={(e) => onWarehouseChange(e.target.value)}
           className="rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62]"
@@ -92,6 +96,7 @@ export function StockTable({
       {!loading && filtered.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-[#c89d66] bg-[#f8fbff] shadow-sm">
           <table className="w-full text-left text-sm">
+            <caption className="sr-only">{t("inventory.tab.stock")}</caption>
             <thead className="bg-[#14263a] text-[#f8fbff]">
               <tr>
                 <th className="px-4 py-3">{t("inventory.product.id")}</th>

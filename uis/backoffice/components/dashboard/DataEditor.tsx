@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { memo, useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
 
 interface DataEditorProps {
@@ -12,16 +12,19 @@ interface DataEditorProps {
   onUpdateCarriers: (raw: string) => void;
 }
 
-export function DataEditor({ products, shipments, carriers, onUpdateProducts, onUpdateShipments, onUpdateCarriers }: DataEditorProps) {
+function DataEditorInner({ products, shipments, carriers, onUpdateProducts, onUpdateShipments, onUpdateCarriers }: DataEditorProps) {
   const { t } = useTranslation();
+  // Solo serializar una vez cuando los datos llegan, evitar re-serialización en cada render
   const [productsRaw, setProductsRaw] = useState(() => JSON.stringify(products, null, 2));
   const [shipmentsRaw, setShipmentsRaw] = useState(() => JSON.stringify(shipments, null, 2));
   const [carriersRaw, setCarriersRaw] = useState(() => JSON.stringify(carriers, null, 2));
   const [updated, setUpdated] = useState(false);
+  const loaded = useRef(false);
 
   useEffect(() => {
-    if (products && products.length > 0) {
+    if (!loaded.current && products && products.length > 0) {
       setProductsRaw(JSON.stringify(products, null, 2));
+      loaded.current = true;
     }
   }, [products]);
 
@@ -37,17 +40,17 @@ export function DataEditor({ products, shipments, carriers, onUpdateProducts, on
     }
   }, [carriers]);
 
-  const applyAll = () => {
+  const applyAll = useCallback(() => {
     onUpdateProducts(productsRaw);
     onUpdateShipments(shipmentsRaw);
     onUpdateCarriers(carriersRaw);
     setUpdated(true);
-  };
+  }, [productsRaw, shipmentsRaw, carriersRaw, onUpdateProducts, onUpdateShipments, onUpdateCarriers]);
 
   return (
     <section className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[#14263a] flex items-center gap-2">
-        <span className="w-3 h-3 rounded-full bg-blue-500" />
+        <span className="flex-shrink-0 w-3 h-3 rounded-full bg-blue-500" />
         {t("dashboard.data.title")}
       </h2>
       <div className="mb-3 flex items-center gap-2">
@@ -73,3 +76,5 @@ export function DataEditor({ products, shipments, carriers, onUpdateProducts, on
     </section>
   );
 }
+
+export const DataEditor = memo(DataEditorInner);

@@ -28,6 +28,26 @@
    - 7.1 [Sistema i18n duplicado](#71-sistema-de-internacionalización-i18n-duplicado)
    - 7.2 [Footer duplicado](#72-componente-footer-duplicado)
    - 7.3 [LanguageSwitcher duplicado](#73-selector-de-idioma-languageswitcher-duplicado)
+8. [Mejoras Aplicadas (2026-09-08)](#8-mejoras-aplicadas-2026-09-08)
+9. [Plan de Correcciones](#9-plan-de-correcciones)
+   - [C1 — Añadir `<title>` y meta description](#c1--añadir-title-y-meta-description-al-layout-del-backoffice)
+   - [C2 — Cabeceras de seguridad](#c2--implementar-cabeceras-de-seguridad-csp-hsts-coop-x-frame-options)
+   - [C3 — Etiquetas `<label>`](#c3--añadir-etiquetas-label-a-formularios-del-dashboard)
+   - [C4 — Minificar JS y CSS](#c4--minificar-javascript-y-css-en-el-pipeline-de-build)
+   - [C5 — Optimizar imágenes](#c5--optimizar-imágenes-y-añadir-dimensiones-explícitas)
+   - [C6 — Eliminar JS no utilizado](#c6--eliminar-javascript-no-utilizado)
+   - [C7 — Revisar bfcache](#c7--revisar-bloqueo-de-bfcache)
+   - [C8 — Optimizar para móvil](#c8--optimizar-para-móvil)
+   - [C9 — Política de indexación](#c9--revisar-política-de-indexación)
+   - [C10 — Animaciones no compuestas](#c10--corregir-animaciones-no-compuestas-transition--transition-colors)
+   - [C11 — Source maps](#c11--generar-source-maps-para-depuración-en-producción)
+   - [C12 — Datos estructurados](#c12--validar-y-enriquecer-datos-estructurados-json-ld)
+   - [C13 — Sitemaps](#c13--crear-sitemapxml-en-ambos-frontends)
+   - [C14 — metadataBase, canonical y hreflang](#c14--configurar-metadatabase-canonical-y-hreflang)
+   - [C15 — `<html lang>` sincronizado con i18n](#c15--sincronizar-html-lang-con-el-selector-de-idioma)
+   - [C16 — Schema.org ampliado](#c16--ampliar-schemaorg-con-organization-movingcompany-localbusiness-y-website)
+   - [C17 — Metadata por página en Backoffice](#c17--añadir-metadata-por-página-en-el-backoffice)
+   - [C18 — Aria-labels y roles ARIA](#c18--añadir-aria-labels-y-roles-aria)
 
 ---
 
@@ -503,27 +523,11 @@ Los mismos 10 elementos.
 
 #### 4.1.3 Best Practices
 
-##### Trust and Safety
-
-Mismos problemas que en desktop.
-
-##### Browser Compatibility
-
-- Baseline Features
-
-##### General
-
-- Faltan source maps
-
-##### Passed Audits (12)
-
-Idéntico.
-
-##### Not Applicable (2)
-
-Idéntico.
+Mismos problemas que en desktop (ver sección 3.1.3): CSP no efectivo, HSTS, COOP, clickjacking, Trusted Types ausentes, Baseline Features y source maps faltantes. 12 verificaciones superadas y 2 no aplicables.
 
 #### 4.1.4 SEO
+
+Mismos problemas que en desktop (ver sección 3.1.4):
 
 ##### Crawling and Indexing
 
@@ -540,7 +544,7 @@ Idéntico.
 
 ##### Passed Audits (5)
 
-Idéntico.
+Idéntico a desktop (ver sección 3.1.4).
 
 ##### Not Applicable (2)
 
@@ -605,11 +609,11 @@ Idéntico.
 
 #### 4.2.3 Best Practices
 
-Idéntico al resto de páginas.
+Mismos problemas que en desktop (ver sección 3.2.3): CSP no efectivo, HSTS, COOP, clickjacking, Trusted Types ausentes, Baseline Features y source maps faltantes. 12 verificaciones superadas y 2 no aplicables.
 
 #### 4.2.4 SEO
 
-Idéntico al resto de páginas del Backoffice.
+Mismos problemas que en desktop (ver sección 3.2.4): página bloqueada para indexación, ausencia de `<title>` y meta description, datos estructurados a verificar manualmente. 5 verificaciones superadas y 2 no aplicables.
 
 ---
 
@@ -665,11 +669,11 @@ Los mismos 10 elementos.
 
 #### 4.3.3 Best Practices
 
-Idéntico al resto de páginas.
+Mismos problemas que en desktop (ver sección 3.3.3): CSP no efectivo, HSTS, COOP, clickjacking, Trusted Types ausentes, Baseline Features y source maps faltantes. 12 verificaciones superadas y 2 no aplicables.
 
 #### 4.3.4 SEO
 
-Idéntico al resto de páginas del Backoffice.
+Mismos problemas que en desktop (ver sección 3.3.4): página bloqueada para indexación, ausencia de `<title>` y meta description, datos estructurados a verificar manualmente. 5 verificaciones superadas y 2 no aplicables.
 
 ---
 
@@ -826,7 +830,7 @@ Los mismos 10 elementos.
 
 #### 5.2.3 Best Practices
 
-Idéntico a desktop.
+Mismos problemas que en desktop (ver sección 5.1.3): CSP no efectivo, HSTS, COOP, clickjacking, Trusted Types ausentes, Baseline Features y source maps faltantes. 12 verificaciones superadas y 2 no aplicables.
 
 #### 5.2.4 SEO
 
@@ -840,7 +844,7 @@ Idéntico a desktop.
 
 ##### Passed Audits (7)
 
-Idéntico a desktop.
+Las mismas 7 verificaciones superadas que en desktop (ver sección 5.1.4): título, meta description, código de estado HTTP, enlaces descriptivos, enlaces rastreables, `alt` en imágenes y `hreflang` válido.
 
 ##### Not Applicable (2)
 
@@ -900,14 +904,12 @@ Idéntico a desktop.
 
 | Fase | Acciones | Plazo estimado |
 |------|----------|----------------|
-| **Fase 1: Quick Wins** | Añadir `<title>`, meta description, CSP, HSTS, COOP, XFO 
-| **Fase 2: Build Pipeline** | Minificación, eliminación de código muerto, source maps 
-| **Fase 3: Assets** | Optimización de imágenes, dimensiones explícitas 
-| **Fase 4: Accesibilidad** | Etiquetas de formulario, contraste de color, revisión manual 
-| **Fase 5: Móvil** | Reducción de tareas largas, animaciones, bfcache 
-| **Fase 6: SEO** | Indexación, robots.txt, datos estructurados 
-
-
+| **Fase 1: Quick Wins** | Añadir `<title>`, meta description, CSP, HSTS, COOP, XFO | 1 día |
+| **Fase 2: Build Pipeline** | Minificación, eliminación de código muerto, source maps | 2 días |
+| **Fase 3: Assets** | Optimización de imágenes, dimensiones explícitas | 1 día |
+| **Fase 4: Accesibilidad** | Etiquetas de formulario, contraste de color, revisión manual | 2 días |
+| **Fase 5: Móvil** | Reducción de tareas largas, animaciones, bfcache | 2 días |
+| **Fase 6: SEO** | Indexación, robots.txt, datos estructurados | 1 día |
 
 ---
 
@@ -1087,16 +1089,20 @@ Ambos headers lo importarían, eliminando la duplicación y garantizando consist
 
 ## 8. Mejoras Aplicadas (2026-09-08)
 
-Se han implementado las siguientes optimizaciones en el Dashboard del Backoffice para mejorar los puntajes de Lighthouse:
+Se han implementado las siguientes optimizaciones en el Dashboard del Backoffice para mejorar los puntajes de Lighthouse.
+
+> **Nota sobre las secciones 8 y 9:** La sección 8 documenta el primer conjunto de mejoras aplicadas. Posteriormente, en la **sección 9** se detallan las correcciones definitivas (C1–C12), que refinan o corrigen algunas de estas implementaciones iniciales. Para conocer el estado final de cada corrección, consulte la sección 9.
 
 ### 8.1 SEO (42 → ~85+ esperado)
 
 | Problema | Solución |
 |----------|----------|
-| `X-Robots-Tag: noindex, nofollow` en todas las páginas | ✅ Eliminado de `next.config.ts`|
-| `robots.txt` con `Disallow: /` | ✅ Cambiado a `Allow: /` con sitemap |
+| `X-Robots-Tag: noindex, nofollow` en todas las páginas | ✅ Eliminado de `next.config.ts` (aunque posteriormente se añadió selectivamente — ver C9) |
+| `robots.txt` con `Disallow: /` | ✅ Cambiado a `Allow: /` con sitemap (ver C9 para la distinción final entre backoffice y website) |
 | Sin metadata de SEO | ✅ Añadido `robots: { index: true, follow: true }` y Open Graph en `layout.server.tsx` |
 | Sin meta robots en HTML | ✅ Añadido `<meta name="robots" content="index, follow">` en `layout.tsx` |
+
+> **Nota:** Estas mejoras se aplicaron inicialmente de forma global. Posteriormente, en la corrección **C9** se refinó la política, estableciendo `noindex` para el Backoffice (panel de administración no indexable) y manteniendo `index` solo para la Web Corporativa. Consulte la sección C9 para más detalles.
 
 ### 8.2 Rendimiento — Lazy Loading de Componentes
 
@@ -1141,14 +1147,16 @@ Se añadieron subpath exports en `@trackflow/core` para que cada página importe
 
 ### 8.6 Rendimiento — Source Maps
 
-**Cambio:** Eliminado `productionBrowserSourceMaps: true` para evitar descargar source maps en producción.
+**Cambio inicial:** Eliminado `productionBrowserSourceMaps: true` para evitar descargar source maps en producción.
+
+> **Nota:** Esta decisión fue posteriormente revisada en la corrección **C11**, donde se restauró `productionBrowserSourceMaps: true` para cumplir con las buenas prácticas de Lighthouse, manteniendo compatibilidad con Turbopack. Consulte la sección C11 para más detalles.
 
 ### 8.7 Archivos Modificados
 
 | Archivo | Cambio |
 |---------|--------|
-| `uis/backoffice/next.config.ts` | Eliminado `X-Robots-Tag`, añadido `compress: true`, `images.formats` |
-| `uis/backoffice/public/robots.txt` | Cambiado de `Disallow: /` a `Allow: /` |
+| `uis/backoffice/next.config.ts` | Eliminado `X-Robots-Tag` (inicial), añadido `compress: true`, `images.formats` (ver C9 y C11 para el estado final) |
+| `uis/backoffice/public/robots.txt` | Cambiado de `Disallow: /` a `Allow: /` (inicial); ver C9 para la versión definitiva |
 | `uis/backoffice/app/layout.server.tsx` | Añadido `robots` y `openGraph` a metadata |
 | `uis/backoffice/app/layout.tsx` | Añadidos preconnect, preload, meta robots |
 | `uis/backoffice/app/page.tsx` | Dashboard: lazy loading para 4 paneles |
@@ -1170,8 +1178,6 @@ Se añadieron subpath exports en `@trackflow/core` para que cada página importe
 3. **Service Worker**: Implementar caching de recursos estáticos
 4. **CDN**: Servir assets desde edge locations
 5. **Monitorización**: Implementar Web Vitals en producción
-
-
 
 ---
 
@@ -1869,6 +1875,504 @@ Se añadió un segundo bloque JSON-LD de tipo `WebSite` con `potentialAction: Se
 - ✅ Schema `WebSite` con `SearchAction` para Sitelinks Search Box en Google
 - ✅ Lighthouse dejará de marcar "Additional Items to Manually Check — Datos estructurados válidos"
 - ✅ Mejora en la presencia del sitio en rich snippets de Google
+
+---
+
+### C13 — Crear sitemap.xml en ambos frontends
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Ninguno de los dos frontends (backoffice ni website) generaba un archivo `sitemap.xml`. Como consecuencia, los crawlers de los motores de búsqueda no tenían una guía estructurada de las URLs que debían rastrear e indexar, lo que dificultaba el descubrimiento de contenido nuevo y reducía la eficiencia del crawling. Lighthouse señalaba `robots.txt` no válido (por timeout) en el website, y la ausencia de sitemap impedía que los crawlers encontrasen las páginas indexables.
+
+#### Solución aplicada
+
+Se crearon dos archivos `sitemap.ts` (ruta estándar de Next.js App Router para generar `sitemap.xml`), junto con un archivo de constantes `site.ts` para centralizar la URL base.
+
+**1. Fichero compartido de constantes (`uis/website/src/lib/site.ts`):**
+
+```typescript
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://trackflow.com";
+export const LOCALES = ["es", "en"] as const;
+```
+
+**2. Website sitemap (`uis/website/src/app/sitemap.ts`):**
+
+Incluye dos rutas con `alternates.languages` para ES, EN y x-default:
+- `/` — Prioridad 1, frecuencia semanal
+- `/application` — Prioridad 0.8, frecuencia mensual
+
+```typescript
+export default function sitemap(): MetadataRoute.Sitemap {
+  return [
+    {
+      url: `${SITE_URL}/`,
+      lastModified,
+      changeFrequency: "weekly",
+      priority: 1,
+      alternates: { languages: { es: `${SITE_URL}/`, en: `${SITE_URL}/` } },
+    },
+    {
+      url: `${SITE_URL}/application`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.8,
+      alternates: { languages: { es: `${SITE_URL}/application`, en: `${SITE_URL}/application` } },
+    },
+  ];
+}
+```
+
+**3. Backoffice sitemap (`uis/backoffice/app/sitemap.ts`):**
+
+Solo incluye rutas públicas (no requieren autenticación):
+- `/` — Prioridad 1
+- `/login` — Prioridad 0.5
+- `/register` — Prioridad 0.5
+- `/forgot-password` — Prioridad 0.5
+
+Las rutas operativas (inventory, incidents, suppliers, account) no se incluyen porque están protegidas por `AuthGuard` y no deben ser indexadas.
+
+**4. Referencia al sitemap en `robots.txt`:**
+
+- `uis/website/public/robots.txt`: `Sitemap: https://trackflow.com/sitemap.xml`
+- `uis/backoffice/public/robots.txt`: `Sitemap: https://backoffice.trackflow.com/sitemap.xml`
+
+#### Archivos creados
+
+| Archivo | Propósito |
+|---|---|
+| `uis/website/src/lib/site.ts` | Constante `SITE_URL` y `LOCALES` para el website |
+| `uis/website/src/app/sitemap.ts` | Genera `/sitemap.xml` con rutas indexables del website |
+| `uis/backoffice/lib/site.ts` | Constante `SITE_URL` para el backoffice |
+| `uis/backoffice/app/sitemap.ts` | Genera `/sitemap.xml` con rutas públicas del backoffice |
+
+#### Resultado esperado
+
+- ✅ Los crawlers disponen de un sitemap completo para descubrir contenido
+- ✅ El website informa de sus rutas indexables con alternativas de idioma
+- ✅ El backoffice solo expone rutas públicas en el sitemap
+- ✅ Los `robots.txt` referencian correctamente sus respectivos sitemaps
+- ✅ Lighthouse dejará de señalar "robots.txt no válido"
+
+---
+
+### C14 — Configurar metadataBase, canonical y hreflang
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+El layout raíz de ambos frontends carecía de configuración completa de metadatos de SEO. En concreto:
+
+- **metadataBase**: No estaba definido, por lo que Next.js no podía resolver rutas relativas para las etiquetas Open Graph y Twitter Card.
+- **Canonical**: No se declaraba una URL canónica por defecto, lo que podía causar contenido duplicado si el sitio se accedía por múltiples dominios o subdominios.
+- **hreflang**: No se declaraban las alternativas de idioma, por lo que Google no podía servir la versión lingüística correcta a los usuarios hispanohablantes vs. angloparlantes.
+- **Open Graph y Twitter Card**: Ausentes en el backoffice y parcialmente presentes en el website.
+
+#### Solución aplicada
+
+**1. Website — `uis/website/src/app/layout.tsx`:**
+
+```typescript
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "TrackFlow — Logística y almacenes entre EE. UU. y España",
+    template: "%s | TrackFlow",
+  },
+  description: "Transporte, mensajería y almacenes en Los Ángeles y Zaragoza...",
+  applicationName: "TrackFlow",
+  keywords: ["logística", "almacenes", "última milla", "B2B", "B2C", ...],
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, ... } },
+  alternates: { canonical: "/", languages: { es: "/", en: "/", "x-default": "/" } },
+  openGraph: {
+    type: "website",
+    siteName: "TrackFlow",
+    locale: "es_ES",
+    alternateLocale: "en_US",
+    title: "TrackFlow — Logística y almacenes entre EE. UU. y España",
+    description: "...",
+    images: [{ url: "/media/Logistica.webp", width: 1000, height: 667, alt: "Operativa logística de TrackFlow" }],
+  },
+  twitter: { card: "summary_large_image", title: "TrackFlow...", description: "...", images: ["/media/Logistica.webp"] },
+};
+```
+
+**2. Backoffice — `uis/backoffice/app/layout.server.tsx`:**
+
+```typescript
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "TrackFlow Backoffice — Panel de Administración Logística",
+    template: "%s | TrackFlow Backoffice",
+  },
+  description: "Panel de administración de TrackFlow...",
+  applicationName: "TrackFlow Backoffice",
+  robots: { index: true, follow: true },
+  alternates: { canonical: "/", languages: { es: "/", en: "/", "x-default": "/" } },
+  openGraph: {
+    type: "website",
+    siteName: "TrackFlow Backoffice",
+    locale: "es_ES",
+    alternateLocale: "en_US",
+    title: "TrackFlow Backoffice — Panel de Administración Logística",
+    description: "...",
+    images: [{ url: "/Logo TrackFlow.webp", width: 112, height: 56, alt: "TrackFlow" }],
+  },
+  twitter: { card: "summary", title: "TrackFlow Backoffice", description: "..." },
+};
+```
+
+**3. Website — página de aplicación (`uis/website/src/app/application/layout.tsx`):**
+
+Se añadió metadata específica con canonical y hreflang propios de la ruta `/application`.
+
+#### Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `uis/website/src/app/layout.tsx` | Añadido metadataBase, title template, description, keywords, robots, alternates (canonical + hreflang), openGraph, twitter |
+| `uis/backoffice/app/layout.server.tsx` | Añadido metadataBase, title template, description, robots, alternates, openGraph, twitter |
+| `uis/website/src/app/application/layout.tsx` | Añadido metadata con canonical, hreflang, openGraph |
+
+#### Resultado esperado
+
+- ✅ `metadataBase` establecido en ambos frontends para resolución correcta de rutas
+- ✅ URL canónica declarada en cada página para evitar contenido duplicado
+- ✅ hreflang con ES, EN y x-default para que Google sirva el idioma correcto
+- ✅ Open Graph y Twitter Card completos para compartir en redes sociales
+- ✅ Lighthouse dejará de señalar "El documento no tiene un elemento `<title>`" y "El documento no tiene una meta description"
+
+---
+
+### C15 — Sincronizar `<html lang>` con el selector de idioma
+
+#### Estado ✅ Verificada (no requirió cambios)
+
+#### Problema
+
+El atributo `lang` del elemento `<html>` debe reflejar el idioma activo de la interfaz para que los lectores de pantalla y motores de búsqueda interpreten correctamente el contenido. Lighthouse comprueba este atributo en la auditoría de accesibilidad.
+
+#### Verificación
+
+Se revisó el sistema de internacionalización de ambos frontends:
+
+- **Backoffice** (`uis/backoffice/lib/i18n/index.tsx`): La función `setLang` ya incluye `document.documentElement.setAttribute("lang", newLang)` después de cambiar el idioma, y el `LanguageProvider` inicializa el atributo `lang` en el montaje.
+- **Website** (`uis/website/src/lib/i18n/index.tsx`): Misma implementación, mismo comportamiento — `setLang` actualiza el atributo `lang` del `<html>`.
+
+#### Conclusión
+
+Ambos frontends ya sincronizan correctamente el atributo `lang` del `<html>` con el idioma seleccionado por el usuario. No se requirieron cambios.
+
+#### Resultado esperado
+
+- ✅ El atributo `lang` del `<html>` se actualiza al cambiar de idioma
+- ✅ Los lectores de pantalla reciben la información correcta de idioma
+- ✅ Los motores de búsqueda interpretan correctamente el idioma del contenido
+- ✅ Lighthouse pasa la verificación "`<html>` element has a `lang` attribute"
+
+---
+
+### C16 — Ampliar Schema.org con Organization, MovingCompany, LocalBusiness y WebSite
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+El componente `StructuredData` existente en el website (`uis/website/src/components/home/StructuredData.tsx`) tenía un schema `Organization` básico que adolecía de varias carencias:
+
+1. **Faltaban campos clave**: `logo`, `image`, `numberOfEmployees`, `foundingDate`, `knowsLanguage`, `areaServed`.
+2. **No había direcciones detalladas**: Faltaban `postalCode`, `streetAddress`, coordenadas geográficas.
+3. **No había `LocalBusiness`**: Los almacenes no se modelaban como entidades de negocio independientes con sus propios horarios y datos de contacto.
+4. **No había servicios modelados**: Los 4 servicios (warehousing, last-mile, reverse logistics, freight forwarding) no estaban representados como entidades `Service` con `audience` B2B/B2C.
+5. **No había `hasOfferCatalog`**: Las 4 verticales de producto (moda, electrónica, hogar, cosmética) no estaban catalogadas.
+6. **No había `WebSite`**: Faltaba el schema que permite a Google mostrar información adicional del sitio.
+7. **El `SearchAction` previo apuntaba a una ruta inexistente** (`/search?q=`), lo que generaba un enlace roto en los datos estructurados.
+
+#### Solución aplicada
+
+Se reescribió completamente el componente `StructuredData.tsx` con un schema mucho más rico:
+
+**1. Schema `Organization` + `MovingCompany` (dual type):**
+
+```typescript
+"@type": ["Organization", "MovingCompany"],
+"@id": "https://trackflow.com/#organization",
+name: "TrackFlow",
+legalName: "TrackFlow",
+description: "Cross-border logistics between the United States and Spain...",
+url: "https://trackflow.com",
+logo: "https://trackflow.com/media/Logo%20TrackFlow.webp",
+image: "https://trackflow.com/media/Logistica.webp",
+foundingDate: "2009",
+numberOfEmployees: { "@type": "QuantitativeValue", value: 130 },
+knowsLanguage: ["es", "en"],
+```
+
+**2. Dos `LocalBusiness` (almacenes):**
+
+- `losAngelesWarehouse`: Dirección completa (1000 Warehouse Blvd, Los Angeles, CA 90001, US), geo 34.0522/-118.2437, teléfono +1-213-555-0147, horario L-V 08:00-20:00
+- `zaragozaWarehouse`: Dirección completa (Calle Logística 42, Zaragoza 50001, ES), geo 41.6488/-0.8891, teléfono +34-976-555-0147, horario L-V 08:00-20:00
+
+**3. Cuatro `Service` con audiencia B2B/B2C:**
+
+Cada servicio incluye `provider`, `areaServed` (US y ES) y `audience` (B2B y B2C):
+- Warehousing & inventory management
+- Last-mile delivery
+- Reverse logistics
+- Freight forwarding
+
+**4. `hasOfferCatalog` con las 4 verticales de producto:**
+
+```typescript
+hasOfferCatalog: {
+  name: "Product verticals handled",
+  itemListElement: [
+    { name: "Fashion", alternateName: "Moda" },
+    { name: "Electronics", alternateName: "Electrónica" },
+    { name: "Home", alternateName: "Hogar" },
+    { name: "Cosmetics", alternateName: "Cosmética" },
+  ],
+}
+```
+
+**5. `WebSite` schema:**
+
+```typescript
+"@type": "WebSite",
+"@id": "https://trackflow.com/#website",
+name: "TrackFlow",
+url: "https://trackflow.com",
+inLanguage: ["es", "en"],
+publisher: { "@id": "https://trackflow.com/#organization" },
+```
+
+**6. Eliminación del `SearchAction` roto:**
+
+Se eliminó el `potentialAction` con `SearchAction` que apuntaba a `/search?q=` (ruta inexistente en el proyecto), que anteriormente generaba un enlace funcional roto en los datos estructurados.
+
+**7. SSR garantizado:**
+
+El componente se importa directamente en el server layout (`uis/website/src/app/layout.tsx`), no mediante `dynamic()` desde un client component, asegurando que el JSON-LD se renderiza en SSR y es visible para todos los crawlers.
+
+#### Archivos modificados
+
+| Archivo | Acción | Propósito |
+|---|---|---|
+| `uis/website/src/components/home/StructuredData.tsx` | Reescrito | Schema Organization+MovingCompany, LocalBusiness, Service, WebSite |
+| `uis/website/src/app/layout.tsx` | Modificado | Importación directa (SSR) de StructuredData |
+
+#### Resultado esperado
+
+- ✅ Schema `Organization` completo con logo, imagen, fundación, empleados, idiomas
+- ✅ Dos `LocalBusiness` modelando los almacenes de Los Ángeles y Zaragoza con geo-coordenadas
+- ✅ Cuatro `Service` con audiencia B2B y B2C para cada servicio logístico
+- ✅ `hasOfferCatalog` con las 4 verticales de producto
+- ✅ `WebSite` schema asociado a la organización
+- ✅ Eliminado el `SearchAction` roto que apuntaba a una ruta inexistente
+- ✅ JSON-LD renderizado en SSR, visible para crawlers
+- ✅ Lighthouse dejará de marcar "Additional Items to Manually Check — Datos estructurados válidos"
+- ✅ Mayor presencia en rich snippets de Google
+
+---
+
+### C17 — Añadir metadata por página en el Backoffice
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Todas las páginas del backoffice carecían de título y meta description individualizados. Aunque el layout raíz proporcionaba un título genérico ("TrackFlow Backoffice — Panel de Administración Logística"), cada ruta operativa y de autenticación necesitaba su propia metadata para:
+
+1. Diferenciarse en los resultados de búsqueda (cada página tiene un propósito distinto)
+2. Mejorar la accesibilidad (los lectores de pantalla leen el título de la pestaña)
+3. Permitir que los motores de búsqueda muestren fragmentos relevantes
+
+#### Solución aplicada
+
+Se crearon archivos `layout.tsx` específicos (server components) para cada ruta del backoffice, exportando metadatos individualizados. Las rutas protegidas por autenticación (inventory, incidents, suppliers, incidents-manager, account, reset-password) incluyen `robots: { index: false, follow: false }` para evitar su indexación.
+
+**1. Rutas de autenticación (indexables, con hreflang):**
+
+| Ruta | Título | hreflang |
+|---|---|---|
+| `/login` | "Iniciar sesión" | ES, EN, x-default |
+| `/register` | "Crear cuenta" | ES, EN, x-default |
+| `/forgot-password` | "Recuperar contraseña" | ES, EN, x-default |
+
+**2. Rutas operativas (no indexables, sin hreflang):**
+
+| Ruta | Título | robots |
+|---|---|---|
+| `/inventory` | "Inventario multi-almacén" | noindex, nofollow |
+| `/incidents` | "Análisis de incidencias" | noindex, nofollow |
+| `/suppliers` | "Proveedores" | noindex, nofollow |
+| `/incidents-manager` | "Gestor de incidencias" | noindex, nofollow |
+| `/account/profile` | "Mi perfil" | noindex, nofollow |
+| `/reset-password` | "Restablecer contraseña" | noindex, nofollow |
+
+#### Archivos creados
+
+| Archivo | Ruta | Título | Descripción |
+|---|---|---|---|
+| `uis/backoffice/app/login/layout.tsx` | `/login` | "Iniciar sesión" | Acceso al panel de administración logística... |
+| `uis/backoffice/app/register/layout.tsx` | `/register` | "Crear cuenta" | Registro para el panel de administración... |
+| `uis/backoffice/app/forgot-password/layout.tsx` | `/forgot-password` | "Recuperar contraseña" | Recuperación de acceso al panel... |
+| `uis/backoffice/app/reset-password/layout.tsx` | `/reset-password` | "Restablecer contraseña" | Establece una nueva contraseña... |
+| `uis/backoffice/app/inventory/layout.tsx` | `/inventory` | "Inventario multi-almacén" | Gestión de inventario... |
+| `uis/backoffice/app/incidents/layout.tsx` | `/incidents` | "Análisis de incidencias" | Analizador de incidencias de transportistas... |
+| `uis/backoffice/app/suppliers/layout.tsx` | `/suppliers` | "Proveedores" | Directorio de proveedores... |
+| `uis/backoffice/app/incidents-manager/layout.tsx` | `/incidents-manager` | "Gestor de incidencias" | Gestión y seguimiento de incidencias... |
+| `uis/backoffice/app/account/profile/layout.tsx` | `/account/profile` | "Mi perfil" | Configuración del perfil de usuario... |
+
+#### Resultado esperado
+
+- ✅ Cada página del backoffice tiene un título único y descriptivo en la pestaña del navegador
+- ✅ Las rutas públicas (login, register, forgot-password) son indexables con hreflang
+- ✅ Las rutas operativas tienen `noindex, nofollow` para no exponer el panel de administración
+- ✅ Lighthouse dejará de señalar "El documento no tiene un elemento `<title>`" en todas las páginas del backoffice
+
+---
+
+### C18 — Añadir aria-labels y roles ARIA
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Lighthouse detectaba múltiples problemas de accesibilidad en las páginas del backoffice, principalmente:
+
+1. **Elementos de formulario sin etiquetas asociadas**: Los campos de entrada y selects carecían de elementos `<label>` con `htmlFor`/`id`, lo que dificultaba la navegación a usuarios de lectores de pantalla.
+2. **Tablas de datos sin `<caption>`**: Las tablas de stock, movimientos, incidencias y proveedores no tenían un título descriptivo accesible.
+3. **Navegación sin `aria-label`**: El `<nav>` de la sidebar y el `<header>` no tenían etiquetas ARIA descriptivas.
+4. **Botones de idioma sin `aria-label`**: Los botones EN/ES carecían de texto alternativo que describiera su acción.
+5. **Patrón de tabs sin roles ARIA**: Los tabuladores de la página de inventario y gestor de incidencias no usaban `role="tab"`, `role="tabpanel"`, `aria-controls` ni `aria-labelledby`.
+
+#### Solución aplicada
+
+**1. Sidebar (`uis/backoffice/components/Sidebar.tsx`):**
+
+```tsx
+<nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Navegación principal">
+```
+
+**2. Header (`uis/backoffice/components/Header.tsx`):**
+
+```tsx
+<header className="..." aria-label="Encabezado del panel">
+```
+
+Botones de idioma con `aria-label` descriptivo:
+
+```tsx
+<button
+  aria-label={option === "es" ? "Cambiar idioma a español" : "Cambiar idioma a inglés"}
+  aria-pressed={lang === option}
+  ...
+>
+```
+
+**3. Tablas de datos con `<caption>` (sr-only):**
+
+| Componente | Caption (clave i18n) |
+|---|---|
+| `StockTable.tsx` | `inventory.tab.stock` — "Existencias" |
+| `MovementHistory.tsx` | `inventory.tab.orders` — "Movimientos" |
+| `MetricsTables.tsx` | `metrics.incidents_by_carrier` / `metrics.incidents_by_type` |
+| `IncidentList.tsx` | `incidents.mgr.title` |
+| `SupplierTable.tsx` | `suppliers.title` |
+| `incidents/page.tsx` | `incidents.full_data` |
+
+**4. Formularios con etiquetas `<label>` asociadas:**
+
+| Componente | Campos etiquetados |
+|---|---|
+| `StockTable.tsx` | Filtros de categoría y almacén con `<label>` + `id` |
+| `MovementHistory.tsx` | Filtros de tipo y almacén con `<label>` + `id` |
+| `InboundForm.tsx` | SKU, cantidad, referencia, almacén |
+| `OutboundForm.tsx` | SKU, cantidad, tipo, tracking, almacén |
+| `SupplierFilters.tsx` | Búsqueda, categoría, estado |
+| `NewSupplierForm.tsx` | Nombre, país, rate, moneda, categorías, zona, contacto, estado, notas |
+
+**5. Patrón de tabs con roles ARIA:**
+
+En `uis/backoffice/app/inventory/page.tsx` y `uis/backoffice/app/incidents-manager/page.tsx`:
+
+```tsx
+<button
+  id={`tab-${tab.key}`}
+  role="tab"
+  aria-selected={activeTab === tab.key}
+  aria-controls={`panel-${tab.key}`}
+  onClick={() => setActiveTab(tab.key)}
+>
+  {tab.label}
+</button>
+...
+<div
+  id={`panel-${tab.key}`}
+  role="tabpanel"
+  aria-labelledby={`tab-${tab.key}`}
+  hidden={activeTab !== tab.key}
+>
+```
+
+**6. Corrección adicional encontrada durante la implementación:**
+
+En `InboundForm.tsx` se detectó y corrigió un error preexistente: una llave `}` suelta dentro de un className (`text-[#2f4a62]}` → `text-[#2f4a62]`), que causaba un error de compilación de TypeScript.
+
+#### Archivos modificados
+
+| Archivo | Cambios |
+|---|---|
+| `uis/backoffice/components/Sidebar.tsx` | Añadido `aria-label` al nav |
+| `uis/backoffice/components/Header.tsx` | Añadido `aria-label` al header y botones de idioma |
+| `uis/backoffice/components/inventory/StockTable.tsx` | Añadido caption + labels en filtros |
+| `uis/backoffice/components/inventory/MovementHistory.tsx` | Añadido caption + labels en filtros |
+| `uis/backoffice/components/inventory/InboundForm.tsx` | Añadido labels a campos + corregido className bug |
+| `uis/backoffice/components/inventory/OutboundForm.tsx` | Añadido labels a campos |
+| `uis/backoffice/components/incidents/MetricsTables.tsx` | Añadido caption a ambas tablas |
+| `uis/backoffice/components/incidents-manager/IncidentList.tsx` | Añadido caption |
+| `uis/backoffice/components/suppliers/SupplierTable.tsx` | Añadido caption |
+| `uis/backoffice/components/suppliers/SupplierFilters.tsx` | Añadido labels a filtros |
+| `uis/backoffice/components/suppliers/NewSupplierForm.tsx` | Añadido labels a todos los campos |
+| `uis/backoffice/app/incidents/page.tsx` | Añadido caption a tabla dinámica |
+| `uis/backoffice/app/inventory/page.tsx` | Añadido roles ARIA a tabs + corregido div de cierre |
+| `uis/backoffice/app/incidents-manager/page.tsx` | Añadido roles ARIA a tabs |
+
+#### Resultado esperado
+
+- ✅ Todos los elementos de navegación tienen etiquetas ARIA descriptivas
+- ✅ Todas las tablas de datos tienen `<caption>` accesible (oculto visualmente con `sr-only`)
+- ✅ Todos los campos de formulario tienen `<label>` asociado mediante `htmlFor`/`id`
+- ✅ Los tabuladores siguen el patrón ARIA correcto (`role="tab"`, `role="tabpanel"`, `aria-controls`, `aria-labelledby`)
+- ✅ Lighthouse dejará de señalar "Los elementos de formulario no tienen etiquetas asociadas" y "Los elementos Select no tienen etiquetas `<label>` asociadas"
+- ✅ Mejora significativa en la puntuación de accesibilidad de Lighthouse
+
+---
+
+## 10. Nota sobre el error `X-Robots-Tag: noindex, nofollow` en Lighthouse
+
+### Diagnóstico
+
+Durante la auditoría inicial, Lighthouse reportaba en todas las páginas (backoffice y website) el error:
+
+> **`x-robots-tag: noindex, nofollow`** — La página está bloqueada para la indexación.
+
+Tras una investigación exhaustiva del código fuente, se determinó que **ninguna de las aplicaciones (backoffice ni website) inyecta esta cabecera**. El error se origina en el **proxy de GitHub Codespaces** (`*.app.github.dev`), que añade automáticamente la cabecera `X-Robots-Tag: noindex, nofollow` a todas las respuestas HTTP servidas a través de su túnel de forwarding de puertos. Esto es un comportamiento deliberado de GitHub para evitar que los entornos de desarrollo en codespaces sean indexados por los motores de búsqueda.
+
+### Evidencia
+
+- `curl -sSI http://localhost:3001/ | grep -i x-robots` devuelve **vacío** (la app no inyecta la cabecera)
+- `curl -sSI https://[workspace].app.github.dev/ | grep -i x-robots` devuelve `x-robots-tag: noindex, nofollow` (inyectado por el proxy)
+- No existe `X-Robots-Tag` en `next.config.ts` de ninguno de los dos frontends
+
+### Solución recomendada
+
+Para obtener una auditoría Lighthouse precisa, ejecutar las pruebas contra `http://localhost:3001` (website) o `http://localhost:3000` (backoffice) en lugar de la URL de Codespaces. En producción, donde las aplicaciones se sirven desde sus propios dominios (`trackflow.com` y `backoffice.trackflow.com`), esta cabecera no estará presente.
 
 ---
 

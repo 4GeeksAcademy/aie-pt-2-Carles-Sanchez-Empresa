@@ -16,7 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Meta tag para que sea indexable */}
         <meta name="robots" content="index, follow" />
       </head>
-      <body className="flex min-h-full flex-col bg-[#c6dced] text-[#2f4a62]">
+      {/* suppressHydrationWarning evita warnings por la diferencia entre
+          renderizado SSR (sin token) e hidratación cliente (con token) */}
+      <body className="flex min-h-full flex-col bg-[#c6dced] text-[#2f4a62]" suppressHydrationWarning>
         <BackofficeClientLayout>{children}</BackofficeClientLayout>
       </body>
     </html>

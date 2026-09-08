@@ -55,6 +55,8 @@ export default function InventoryPage() {
               key={tab.key}
               type="button"
               role="tab"
+              id={`inventory-tab-${tab.key}`}
+              aria-controls={`inventory-panel-${tab.key}`}
               aria-selected={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`min-h-11 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${activeTab === tab.key ? "bg-[#f8fbff] text-[#14263a] shadow-sm" : "text-[#2f4a62] hover:bg-[#edf5fb]"}`}
@@ -67,6 +69,7 @@ export default function InventoryPage() {
 
       {/* Tab content */}
       {activeTab === "stock" && (
+        <div role="tabpanel" id="inventory-panel-stock" aria-labelledby="inventory-tab-stock">
         <StockTable
           products={products}
           loading={loading}
@@ -77,28 +80,35 @@ export default function InventoryPage() {
           onWarehouseChange={setWarehouseFilter}
           onRefresh={() => loadProducts()}
         />
+        </div>
       )}
 
       {activeTab === "inbound" && (
+        <div role="tabpanel" id="inventory-panel-inbound" aria-labelledby="inventory-tab-inbound">
         <InboundForm
           products={productOptions}
           onSubmit={registerInbound}
         />
+        </div>
       )}
 
       {activeTab === "outbound" && (
+        <div role="tabpanel" id="inventory-panel-outbound" aria-labelledby="inventory-tab-outbound">
         <OutboundForm
           products={productOptions}
           onSubmit={registerOutbound}
         />
+        </div>
       )}
 
       {activeTab === "orders" && (
+        <div role="tabpanel" id="inventory-panel-orders" aria-labelledby="inventory-tab-orders">
         <MovementHistory
           movements={movements}
           loading={loading}
           error={error}
         />
+        </div>
       )}
     </div>
   );

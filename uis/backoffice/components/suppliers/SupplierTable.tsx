@@ -27,6 +27,7 @@ export function SupplierTable({ suppliers, onEdit, onDelete }: SupplierTableProp
   return (
     <div className="overflow-hidden rounded-xl border border-[#c89d66] shadow-sm">
       <table className="w-full text-left text-sm">
+        <caption className="sr-only">{t("suppliers.title")}</caption>
         <thead className="bg-[#14263a] text-[#f8fbff]">
           <tr>
             <th className="px-4 py-3">{t("suppliers.name")}</th>

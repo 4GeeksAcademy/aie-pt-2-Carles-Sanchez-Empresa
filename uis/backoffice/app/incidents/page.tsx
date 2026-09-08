@@ -58,6 +58,7 @@ export default function IncidentsPage() {
             </h2>
             <div className="overflow-x-auto rounded-lg border border-[#c89d66] bg-[#f8fbff]">
               <table className="w-full text-left text-xs">
+                <caption className="sr-only">{t("incidents.full_data")}</caption>
                 <thead className="bg-[#14263a] text-[#f8fbff]">
                   <tr>
                     {Object.keys(rows[0]).map((header) => (
