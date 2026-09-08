@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@trackflow/core"],
+  webpack(config, { dev }) {
+    if (!dev) {
+      config.devtool = "hidden-source-map";
+    }
+    return config;
+  },
   async headers() {
     return [
       {

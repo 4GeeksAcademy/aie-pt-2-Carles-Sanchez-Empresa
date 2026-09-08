@@ -29,8 +29,9 @@ COPY uis/website/ ./uis/website/
 COPY uis/backoffice/ ./uis/backoffice/
 
 # Build de producción (minifica JS con Terser y CSS con cssnano)
-RUN cd uis/website && npx next build
-RUN cd uis/backoffice && npx next build
+# -> usa --webpack para que se aplique hidden-source-map
+RUN cd uis/website && npx next build --webpack
+RUN cd uis/backoffice && npx next build --webpack
 
 # ─── Stage 3: Producción ───────────────────────────────────
 FROM node:20-alpine AS runner

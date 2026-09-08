@@ -5,6 +5,12 @@ const API_PORT = process.env.NEXT_PUBLIC_API_PORT || "8000";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@trackflow/core"],
+  webpack(config, { dev }) {
+    if (!dev) {
+      config.devtool = "hidden-source-map";
+    }
+    return config;
+  },
   async rewrites() {
     const apiTarget = `http://${API_HOST}:${API_PORT}`;
     return [

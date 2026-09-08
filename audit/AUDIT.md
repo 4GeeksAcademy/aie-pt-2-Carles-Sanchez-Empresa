@@ -1678,4 +1678,51 @@ Se reemplazó la clase genérica `transition` por `transition-colors` en todos l
 
 ---
 
+### C11 — Generar source maps para depuración en producción
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Lighthouse reportaba en todas las páginas (backoffice y website, desktop y mobile) la advertencia **"Faltan source maps para JavaScript de primera parte de gran tamaño"** en la sección de Buenas Prácticas. Sin source maps, la depuración en producción es considerablemente más difícil: los errores se muestran como código minificado ilegible, impidiendo localizar el archivo y línea de origen.
+
+#### Solución aplicada
+
+Se activó la generación de **hidden source maps** en ambos frontends usando la opción `hidden-source-map` de webpack:
+
+```ts
+webpack(config, { dev }) {
+  if (!dev) {
+    config.devtool = "hidden-source-map";
+  }
+  return config;
+},
+```
+
+**¿Por qué `hidden-source-map` y no `productionBrowserSourceMaps: true`?**
+
+| Opción | Source maps | Referencia en JS | Visibilidad |
+|---|---|---|---|
+| `productionBrowserSourceMaps: true` | ✅ Generados | ✅ `//# sourceMappingURL=...` en cada chunk | Cualquier usuario puede abrir DevTools y ver el código fuente original |
+| `hidden-source-map` | ✅ Generados | ❌ Sin referencia en los bundles | Solo accesible si se conoce la URL del `.map` — ideal para depuración interna sin exponer código fuente al público |
+
+Además, se actualizó el Dockerfile para pasar el flag `--webpack` al comando `next build`, ya que Next.js 16 habilita **Turbopack** por defecto y la configuración webpack personalizada no se aplica si no se especifica explícitamente.
+
+#### Archivos modificados
+
+| Archivo | Acción | Propósito |
+|---|---|---|
+| `uis/backoffice/next.config.ts` | Modificado | Añadir `webpack` config con `hidden-source-map` |
+| `uis/website/next.config.ts` | Modificado | Añadir `webpack` config con `hidden-source-map` |
+| `uis/Dockerfile` | Modificado | Añadir `--webpack` flag en los comandos `next build` |
+
+#### Resultado esperado
+
+- ✅ Lighthouse dejará de marcar "Faltan source maps" en Buenas Prácticas
+- ✅ Source maps generados y accesibles para el equipo de desarrollo bajo demanda
+- ✅ Los `.map` no están referenciados en los bundles, por lo que no se exponen al público general
+- ✅ Sin impacto en el rendimiento de carga (los mapas no se descargan a menos que se soliciten explícitamente)
+
+---
+
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*
