@@ -1427,4 +1427,50 @@ Se implementó un **caching en memoria** (`loadedModules`) que evita recargar la
 
 ---
 
+### C7 — Revisar bloqueo de bfcache
+
+#### Estado ✅ Aplicada
+
+#### Problema
+
+Lighthouse detectó **3 razones de fallo de bfcache** en las páginas del backoffice (Inventario, Incidencias, Gestor de Incidencias). El bfcache (back/forward cache) permite que el navegador almacene una instantánea completa de la página cuando el usuario navega a otra, de modo que al pulsar retroceso/adelante la página se restaura instantáneamente. Su bloqueo empeora la experiencia de navegación.
+
+#### Causas raíz identificadas
+
+| Causa | Código afectado | Impacto |
+|---|---|---|
+| `export const dynamic = "force-dynamic"` | `uis/backoffice/app/layout.tsx` | Next.js emite `Cache-Control: no-store` en las respuestas HTTP, lo que impide que el navegador almacene la página en bfcache |
+| `export function reportWebVitals() {}` | `uis/backoffice/app/layout.tsx` | Aunque el cuerpo esté vacío, Next.js registra un `PerformanceObserver` internamente. Los PerformanceObservers son una causa conocida de bloqueo de bfcache |
+
+#### Solución aplicada
+
+Se eliminaron ambas líneas del layout raíz:
+
+```diff
+ import "./globals.css";
+ import BackofficeClientLayout from "./BackofficeClientLayout";
+ 
+-export const dynamic = "force-dynamic";
+-
+-export function reportWebVitals() {}
+-
+ export { metadata } from "./layout.server";
+```
+
+**Nota:** Se mantiene `export const dynamic = "force-dynamic"` como comentario en las páginas que realmente lo necesitan (login, register, etc.), pero al eliminarlo del layout raíz se evita que las páginas que pueden usar bfcache (Dashboard, Inventario, etc.) hereden `Cache-Control: no-store`.
+
+#### Archivos modificados
+
+- `uis/backoffice/app/layout.tsx`
+
+#### Resultado esperado
+
+- ✅ Las páginas del backoffice ahora permiten la restauración de bfcache.
+- ✅ No se emite `Cache-Control: no-store` de forma global.
+- ✅ No hay PerformanceObservers registrados que bloqueen la caché.
+- ✅ Mejora la experiencia de navegación con retroceso/adelante.
+- ✅ Lighthouse dejará de señalar "La página impidió la restauración de la caché de retroceso/adelante".
+
+---
+
 *Documento generado a partir de los resultados de Google Lighthouse. Las imágenes de puntuación se encuentran en `audit/before/desktop/` y `audit/before/mobile/` según corresponda.*

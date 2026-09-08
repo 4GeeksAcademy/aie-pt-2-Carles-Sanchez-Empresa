@@ -1,10 +1,6 @@
 import "./globals.css";
 import BackofficeClientLayout from "./BackofficeClientLayout";
 
-export const dynamic = "force-dynamic";
-
-export function reportWebVitals() {}
-
 export { metadata } from "./layout.server";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
