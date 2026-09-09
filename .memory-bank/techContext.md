@@ -47,7 +47,7 @@
 | **TypeScript** | ^7.0.2 | Fuente única de lógica y handlers reutilizados desde `src/` para el panel de utilidades |
 | **esbuild** | ^0.28.1 | Bundling de navegador en un único archivo `js/app.js` |
 
-### Backend API — `services/api/` (FastAPI + TinyDB + JWT Auth)
+### Backend API — `services/api/` (FastAPI + TinyDB + JWT Auth + Caching)
 
 | Tecnología | Versión | Propósito |
 |---|---|---|
@@ -61,6 +61,7 @@
 | **libpass[bcrypt]** | ^1.9.3 | Hashing de contraseñas con bcrypt (fork drop-in de passlib, import como `from passlib.hash import bcrypt`) |
 | **python-dotenv** | ^1.2.2 | Carga de variables de entorno desde `.env` (SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES) |
 | **uv** | — | Gestor de proyectos Python (alternativa a pip/poetry) |
+| **Caching propio** | — | Módulo `caching.py`: `TTLCache` thread-safe, decorador `@cached(ttl=N)` e `invalidate(pattern)` sin dependencias externas |
 
 ### Paquete compartido Python — `packages/shared-py/`
 
@@ -91,7 +92,16 @@ aie-pt-2-Carles-Sanchez-Empresa/
 ├── infra/                  # Infraestructura
 ├── mcps/                   # MCPs
 ├── data/                   # Datos
-├── docs/                   # Documentación
+├── docs/                   # Documentación técnica (arquitectura, serialización, caching, auditorías)
+│   ├── ARCHITECTURE_PROPOSAL.md
+│   ├── CACHING_REPORT.md
+│   ├── serialization-audit.md
+│   └── Auditoria de Errores.md
+├── audit/                  # Auditorías Lighthouse y reportes de rendimiento
+│   ├── AUDIT.md
+│   ├── REPORT.md
+│   ├── before/ (capturas antes de correcciones)
+│   └── after/  (capturas después de correcciones)
 ├── internal/               # Documentación interna
 └── media/                  # Recursos multimedia (logos, imágenes)
 ```
@@ -196,6 +206,51 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
 - El submódulo `trackflow_shared.legacy` contiene el código migrado del analyzer original (`_core.py`), que ahora importa desde allí sin duplicar constantes ni funciones.
 - La validación de transiciones de estado (`open → in_progress → resolved/discarded`) es estricta y se aplica tanto en Pydantic (tipos) como en `validate_incident_record()` (reglas de negocio).
 
+### 11. Serialización Pydantic completa (30/30 endpoints)
+
+- **Todos los endpoints con `response_model` explícito**: 30/30 data endpoints OK.
+- **2 excepciones justificadas**: `GET /api/incidents/results/export` (StreamingResponse CSV) y `GET /api/health` (dict fijo).
+- **Separación entrada/salida**: 0 esquemas compartidos entre input y output.
+- **Listados sin over-fetching**: `SupplierListItem` (6 campos), `IncidentListItem` (7 campos).
+- **Seguridad**: ningún response schema expone `hashed_password`, tokens internos o secretos.
+- Esquemas adicionales en `pydantic_models.py`: `MessageResponse`, `DeleteResponse`, `ProfileResponse`, `IncidentSummaryResponse`, `RuleDetail`, `MetricsData`, `AnalyzeResponse`.
+
+### 12. Frontend Caching — requestCache en cliente
+
+- Cache en memoria (`Map<string, CacheEntry>`) para peticiones GET de la API con TTL de 30s.
+- Cache key: `GET:{url}`.
+- Lazy eviction en lectura: se comprueba `Date.now()` al acceder.
+- `invalidateCache(pattern?)` público para limpiar por patrón desde endpoints de escritura.
+- Solo cachea GET, nunca mutaciones (POST/PUT/PATCH/DELETE pasan directamente).
+
+### 13. Backend Caching Layer — módulo propio sin dependencias
+
+- `services/api/caching.py`: `TTLCache` thread-safe con expiración por `time.monotonic()`.
+- Decorador `@cached(ttl=N)` para endpoints GET con cache key = `{method}:{path}?{query}`.
+- Función `invalidate(pattern)` para invalidación write-through desde endpoints de escritura.
+- TTLs por endpoint: products/orders 30s, incidents 30s, summary 60s, suppliers 120s.
+- No se cachean datos privados/sesión (auth, perfil, CSV export).
+
+### 14. Optimización de consultas SQL — Batch N+1 eliminado
+
+- `_batch_calculate_stock()`: calcula stock de N SKUs con solo 2 consultas SQL agregadas (GROUP BY) en lugar de 2N.
+- `sku_cache` en `list_orders`: carga todos los SKU relacionados en una sola consulta con lookup O(1) en memoria.
+- Resultado: `GET /inventory/products` de ~1.460ms → ~50ms; `GET /inventory/orders` de ~4.500ms → ~80ms.
+
+### 15. Frontend Performance — Correcciones Lighthouse (C1-C18)
+
+- **Lazy Loading con `next/dynamic`**: 4 páginas del backoffice cargan componentes pesados bajo demanda.
+- **bfcache**: eliminado `force-dynamic` y `reportWebVitals` que bloqueaban el back/forward cache.
+- **Imágenes WebP**: Logo (110KB→25KB) y Logistica.jpg (88KB→55KB) convertidos a WebP con dimensiones explícitas.
+- **Transiciones CSS composicionadas**: reemplazo de `transition` genérica por `transition-colors`.
+- **Source Maps ocultos**: 236 .map generados, 0 referencias en chunks JS en producción.
+- **Seguridad**: CSP, HSTS, X-Frame-Options y demás cabeceras HTTP en backoffice, website y FastAPI.
+- **SEO**: sitemap, metadataBase, Schema.org en SSR, robots.txt, aria-labels.
+
+### 16. Skill: Core Web Vitals
+
+- `skills/core-web-vitals/`: skill documentado con guías de LCP, INP y CLS para el equipo de desarrollo.
+
 ---
 
 ## Restricciones Técnicas
@@ -246,8 +301,27 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
   - `analyzer/_core.py` — 8 reglas de validación, métricas y exportación CSV para incidencias
   - `routes/suppliers.py` — CRUD completo del directorio de proveedores
   - `models.py` — Modelos Pydantic con `SupplierCreate`, `SupplierResponse`, `SupplierUpdateRate`, `SupplierUpdateStatus`, validaciones cruzadas país↔moneda, categorías, estado (Enum)
+  - `pydantic_models.py` — Esquemas adicionales de serialización: `MessageResponse`, `DeleteResponse`, `ProfileResponse`, `IncidentListItem`, `IncidentSummaryResponse`, `RuleDetail`, `MetricsData`, `AnalyzeResponse`, `SupplierListItem`
+  - `caching.py` — Módulo de caché propio: `TTLCache` thread-safe, decorador `@cached(ttl=N)`, `invalidate(pattern)`
   - `seed.py` — Poblado inicial con 15 proveedores (9 USA + 6 Spain), idempotente
+  - `seed_caching.py` — Poblado de datos con volumen realista (~50 SKUs, ~370 movimientos, ~100 incidencias, ~30 proveedores)
 - **Base de datos**: TinyDB 4.8+ — persistencia en JSON (`suppliers_db.json`), tabla `suppliers`, consultas con `tinydb.Query`
+
+### Endpoints adicionales (serialización completa)
+
+| Método | Ruta | `response_model` | Estado |
+|--------|------|------------------|--------|
+| POST | `/auth/forgot-password` | `MessageResponse` | ✅ |
+| POST | `/auth/reset-password` | `MessageResponse` | ✅ |
+| POST | `/auth/change-password` | `MessageResponse` | ✅ |
+| GET | `/api/incidents` | `IncidentListItem` | ✅ (7 campos, sin over-fetching) |
+| GET | `/api/incidents/summary` | `IncidentSummaryResponse` | ✅ |
+| POST | `/api/incidents/analyze` | `AnalyzeResponse` | ✅ (con `RuleDetail` + `MetricsData`) |
+| GET | `/suppliers` | `SupplierListItem` | ✅ (6 campos, sin over-fetching) |
+| DELETE | `/suppliers/{id}` | `DeleteResponse` | ✅ |
+| DELETE | `/users/{id}` | `DeleteResponse` | ✅ |
+
+**Estado de serialización**: 30/30 data endpoints con `response_model` explícito. 2 excepciones justificadas: `GET /api/incidents/results/export` (StreamingResponse CSV) y `GET /api/health` (dict fijo).
 
 ### Sistema de Inventario — Supabase + SQLModel
 
@@ -291,6 +365,9 @@ Router `/inventory` (protegido con JWT):
 ### Seed
 
 ```bash
+# Datos de prueba con volumen realista para caching (~50 SKUs, ~370 movs, ~100 incidencias, ~30 proveedores)
+cd services/api && python ../../scripts/seed_caching.py
+
 # Inventario (crea 6 SKUs + 6 entradas + 4 salidas, idempotente)
 cd services/api && python ../../scripts/seed_inventory.py
 
@@ -303,7 +380,7 @@ cd services/api && uv run seed
 
 ### Deuda Técnica
 
-- **N+1 en `list_orders`**: `GET /inventory/orders` ejecuta `db.get(SKU, ...)` por cada movimiento. Solución: cargar todos los SKU relacionados en una única consulta anticipada.
+- ~~**N+1 en `list_orders`**~~ → ✅ Resuelto en `feature/caching-optimisation` (Fase 2): implementado `sku_cache` con carga por lotes y `_batch_calculate_stock()` con GROUP BY.
 
 **CORS**: configurado con `allow_origins=["*"]`, `allow_credentials=False`
 - **Ejecución**: `uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload` (o con `uvicorn` directamente)

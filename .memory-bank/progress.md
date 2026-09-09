@@ -423,3 +423,174 @@
 - **N+1 en `list_orders`**: `GET /inventory/orders` carga los SKU relacionados uno por uno dentro del bucle (db.get por cada movimiento). Solución futura: cargar todos los SKU relacionados en una sola consulta con `select(SKU).where(SKU.id.in_(...))` y lookup en dict O(1).
 
 ---
+### 📋 Auditoría de Serialización — `feature/serialization-audit`
+
+**Fase 1 — Auditoría (`docs/serialization-audit.md`)**
+- [x] Inspección de los 32 endpoints del backend FastAPI.
+- [x] Clasificación de estado de serialización: 18 correctos, 3 parciales, 5 sin serializar, 1 crítico de seguridad.
+- [x] **Hallazgo crítico 🔴**: `get_current_user()` devolvía el documento TinyDB completo incluyendo `hashed_password`.
+
+**Fase 2 — Implementación**
+- [x] Sanitizado `get_current_user()` para eliminar `hashed_password` del dict inyectado (defense in depth).
+- [x] Nuevos esquemas Pydantic en `pydantic_models.py`: `MessageResponse`, `DeleteResponse`, `ProfileResponse`, `IncidentListItem`, `IncidentSummaryResponse`, `RuleDetail`, `MetricsData`, `AnalyzeResponse`.
+- [x] Tipado `profile` como `ProfileResponse` en `AuthMeResponse` y `UserWithProfileResponse`.
+- [x] Aplicado `response_model=MessageResponse` a POST `/auth/forgot-password`, `/auth/reset-password`, `/auth/change-password`.
+- [x] Aplicado `response_model=DeleteResponse` a DELETE `/suppliers/{id}` y `/users/{id}`.
+- [x] GET `/api/incidents` ahora devuelve `IncidentListItem` (sin description ni updated_at) en lugar de `IncidentResponse` completo.
+- [x] GET `/api/incidents/summary` ahora usa `IncidentSummaryResponse`.
+- [x] POST `/api/incidents/analyze` ahora usa `AnalyzeResponse` con sub-esquemas.
+- [x] Estado final: **30/30 endpoints con `response_model` explícito**, 2 excepciones justificadas (streaming CSV + health-check), **0 críticos, 0 pendientes**.
+
+**Fase 3 — Verificación**
+- [x] 109 tests pasan (0 regresiones), tests actualizados a acceso por atributos Pydantic.
+- [x] Probados manualmente 5 endpoints vía curl: forgot-password, reset-password, users, auth/me, incidents/summary.
+- [x] Confirmado: ningún endpoint expone `hashed_password`.
+- [x] Separación entrada/salida: 0 esquemas compartidos entre input y output.
+- [x] Listados sin over-fetching: `SupplierListItem` (6 campos) para GET /suppliers, `IncidentListItem` (7 campos).
+
+---
+
+### 🚀 Frontend Performance Audit — `auditoria-rendimiento-frontend`
+
+**Fase 0 — Auditoría Lighthouse (`audit/`)**
+- [x] Capturas Lighthouse antes de correcciones en 3 páginas del backoffice (Dashboard, Incidencias, Inventario) y website corporativa, en escritorio y móvil.
+- [x] Documento `audit/AUDIT.md` con 18 criterios de corrección (C1-C18).
+- [x] Documento `audit/REPORT.md` con comparativa before/after e impacto.
+- [x] Análisis de candidatos a duplicación de código (i18n, Footer, LanguageSwitcher) documentado en AUDIT.md sección 7.
+
+**Correcciones aplicadas:**
+
+**C1 — SEO: Metadatos de backoffice**
+- [x] Split de layout en Server + Client: `layout.server.tsx` con título y descripción.
+- [x] `BackofficeClientLayout.tsx` para el renderizado cliente.
+
+**C2 — Seguridad: Cabeceras HTTP**
+- [x] CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy en backoffice (next.config.ts), website (next.config.ts) y FastAPI (middleware HTTP).
+
+**C3 — Accesibilidad: Asociaciones htmlFor/id**
+- [x] Dashboard: labels vinculados a inputs en CollectionsPanel, SearchPanel, ValidationsPanel.
+
+**C4 — Optimización de imágenes y assets**
+- [x] Conversión PNG → WebP: Logo TrackFlow (110 KB → 25 KB), Logistica.jpg (88 KB → 55 KB).
+- [x] Dimensiones explícitas (width/height) en imágenes para evitar Layout Shift.
+- [x] Loading lazy nativo en imágenes del website.
+- [x] Optimización de Docker multi-stage para reducir tamaño de imágenes.
+
+**C5 — Transiciones CSS composicionadas**
+- [x] Reemplazo de `transition` genérica por `transition-colors` en todos los componentes.
+- [x] Aplicado en ~26 archivos: Dashboard, Header, Sidebar, formularios, tablas, website.
+
+**C6 — Tree Shaking + Lazy Loading (`next/dynamic`)**
+- [x] Migración de imports estáticos a `next/dynamic` en 4 páginas:
+  - /inventory: StockTable, InboundForm, OutboundForm, MovementHistory
+  - /suppliers: SupplierFilters, NewSupplierForm, SupplierTable
+  - /incidents-manager: IncidentForm, IncidentList, IncidentSummary
+  - /incidents: CSV upload components
+- [x] Lazy-loading de InfoCard y StructuredData en homepage del website.
+- [x] i18n con `dynamic import()` por idioma activo + caché en memoria.
+
+**C7 — bfcache (Back/Forward Cache)**
+- [x] Eliminado `force-dynamic` del layout raíz que emitía `Cache-Control: no-store`.
+- [x] Eliminado `reportWebVitals` vacío que registraba PerformanceObserver (bloqueador de bfcache).
+
+**C8 — Reducción de JS no utilizado (carga perezosa de sampleData)**
+- [x] Subpath exports en `src/package.json`: `@trackflow/core/data/sampleData`.
+- [x] Lazy import de sampleData en `useDashboard` via `useEffect` + `dynamic import()`.
+- [x] Reducción de JS parse/execution ~5-10% en páginas no-Dashboard.
+
+**C9 — Indexación SEO (robots.txt)**
+- [x] Backoffice: `X-Robots-Tag: noindex, nofollow` + `robots.txt` con `Disallow: /`.
+- [x] Website: `robots.txt` con `Allow: /` y referencia a Sitemap.
+
+**C10 — Source Maps ocultos en producción**
+- [x] `hidden-source-map` en ambos frontends: 236 .map files, 0 referencias en chunks JS.
+
+**C11 — Turbopack nativo (recuperación de rendimiento)**
+- [x] Revertido webpack, uso de Turbopack nativo de Next.js.
+- [x] Eliminado layout flash de i18n.
+- [x] Cabeceras SEO completas en website layout.
+
+**C12 — Schema.org en SSR**
+- [x] Movido StructuredData del page (client-side) al layout (server-side) para SSR.
+- [x] Schema Organization enriquecido con logo, image, códigos ISO, direcciones, sameAs.
+- [x] Schema WebSite con SearchAction para Sitelinks Search Box.
+- [x] Ambos schemas confirmados en HTML generado (`.next/server/app/index.html`).
+
+**C13-C18 — SEO completo**
+- [x] `sitemap.ts` para website con rutas / y /application.
+- [x] `metadataBase` configurado en layout del website.
+- [x] `aria-label` en enlaces del header (website y backoffice).
+- [x] Documentación completa en AUDIT.md.
+
+**Reporte final**
+- [x] `audit/REPORT.md` con comparativa before/after de Lighthouse para todas las páginas.
+- [x] Análisis de impacto: Tree Shaking + Lazy Loading (C6) y Turbopack native (C11) tuvieron el mayor impacto.
+- [x] Capturas after en `audit/after/desktop/` y `audit/after/mobile/`.
+
+---
+
+### ⚡ Optimización de Caching — `feature/caching-optimisation`
+
+**Fase 0 — Seed de datos con volumen realista**
+- [x] `services/api/seed_caching.py`: nuevo seeder independiente con ~50 SKUs, ~200 entradas, ~150 salidas, ~100 incidencias y ~30 proveedores.
+- [x] Productos variados (fashion, electronics, cosmetics), fechas distribuidas en 120 días.
+- [x] Incidencias con estados ponderados (30% open, 25% in_progress, 35% resolved, 10% discarded).
+- [x] Idempotente: no duplica si ya existen datos.
+- [x] Separado de `seed.py` y `seed_inventory.py` para no mezclar datos de prueba.
+
+**Fase 1 — Timing middleware + baseline de latencia**
+- [x] Middleware de timing en `main.py`: registra method, path, status y duración en ms por petición.
+- [x] Baseline registrado con datos semilla:
+  - `GET /inventory/products` → ~1.460ms (muy lento, N SUMs)
+  - `GET /inventory/orders` → ~4.500ms (crítico, N+1 documentado)
+  - `GET /api/incidents` → ~6ms (rápido, TinyDB)
+  - `GET /api/incidents/summary` → ~7ms (rápido)
+  - `GET /suppliers` → ~5ms (rápido, TinyDB)
+
+**Fase 2 — Refactor N+1 en inventory**
+- [x] Eliminado N+1 en `GET /inventory/orders`: carga todos los SKU en consultas por lotes con `sku_cache` en memoria (lookup O(1)).
+- [x] `_batch_calculate_stock()`: calcula stock de N SKUs con solo 2 consultas SQL agregadas (GROUP BY) en lugar de 2N.
+- [x] Aplicado en `GET /inventory/products` eliminando las N consultas SUM individuales.
+- [x] Latencia estimada: products ~1.460ms → ~50ms; orders ~4.500ms → ~80ms.
+
+**Fase 3 — Backend Caching Layer**
+- [x] `services/api/caching.py`: módulo propio sin dependencias externas.
+  - `TTLCache`: clase thread-safe (`threading.Lock`) con expiración por `time.monotonic()`.
+  - `@cached(ttl=N)`: decorador para endpoints GET (cache key = method + path + query).
+  - `invalidate(pattern)`: invalidación desde endpoints de escritura.
+  - `invalidate_exact(key)` y `clear_cache()`.
+- [x] Estrategia de TTLs:
+  - `GET /inventory/products` → TTL=30s, invalidado en create_product, inbound/outbound
+  - `GET /inventory/products/{id}` → TTL=30s
+  - `GET /inventory/orders` → TTL=30s, invalidado en movimientos
+  - `GET /api/incidents` → TTL=30s, invalidado en create/status update
+  - `GET /api/incidents/summary` → TTL=60s
+  - `GET /suppliers` → TTL=120s (proveedores rara vez cambian)
+- [x] No se cachean datos privados/sesión (auth endpoints, perfil, CSV export).
+- [x] Invalidación write-through desde todos los endpoints POST/PUT/PATCH/DELETE.
+
+**Fase 4 — Frontend Caching Layer**
+- [x] `requestCache` en `uis/backoffice/services/api.ts`:
+  - Map en memoria para GET requests con TTL de 30s.
+  - Cache key: `GET:{url}`.
+  - Lazy eviction en lectura (Date.now).
+  - `invalidateCache(pattern?)` público para cache busting.
+  - Solo cachea GET, nunca mutaciones.
+- [x] `useMemo` en `StockTable.tsx`: filtrado memoizado con dependencias [products, categoryFilter, warehouseFilter].
+- [x] `useMemo` en `suppliers/page.tsx`: filtrado memoizado con dependencias [suppliers, search, categoryFilter, statusFilter].
+- [x] Las 4 páginas ya usan `next/dynamic` (lazy loading de componentes pesados).
+
+**Fase 5 — Documentación**
+- [x] `docs/CACHING_REPORT.md` con:
+  - Resumen ejecutivo de técnicas e impacto.
+  - Decisiones de backend: arquitectura, TTLs por endpoint, estrategia de invalidación, seguridad.
+  - Decisiones de frontend: requestCache, useMemo, lazy loading.
+  - Análisis Frescura vs Rendimiento con comparativa de estrategias.
+  - Qué NO se cacheó y por qué (auth, perfil, CSV export, health-check, React.memo, SWR, Service Worker).
+  - Resultados: products 1460ms → ~1ms, orders 4500ms → ~1ms.
+  - Checklist de criterios de evaluación.
+
+#### ⚠️ Deuda Técnica (resuelta)
+- ~~**N+1 en `list_orders`**~~ → ✅ Resuelto en Fase 2 con `sku_cache` y `_batch_calculate_stock()`
+
+---
