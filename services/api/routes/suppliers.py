@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from database import suppliers_table, SupplierQuery
 from pydantic_models import (
+    DeleteResponse,
     SupplierCreate,
     SupplierResponse,
     SupplierUpdateRate,
@@ -180,7 +181,7 @@ async def update_supplier_status(supplier_id: int, payload: SupplierUpdateStatus
     return SupplierResponse(**updated_dict)
 
 
-@router.delete("/{supplier_id}", status_code=200)
+@router.delete("/{supplier_id}", response_model=DeleteResponse)
 async def delete_supplier(supplier_id: int):
     """
     Elimina un proveedor por su ID.
@@ -192,4 +193,4 @@ async def delete_supplier(supplier_id: int):
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
 
     suppliers_table.remove(doc_ids=[supplier_id])
-    return {"message": "Proveedor eliminado correctamente", "id": supplier_id}
+    return DeleteResponse(message="Proveedor eliminado correctamente", id=supplier_id)

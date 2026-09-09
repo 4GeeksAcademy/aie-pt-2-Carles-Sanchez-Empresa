@@ -247,13 +247,52 @@ Todos los endpoints de escritura ya tienen esquemas de request específicos. ✅
 
 ## 7. Conclusión
 
-El backend tiene **18 endpoints correctamente serializados** (67 %), pero **7 endpoints sin esquema de respuesta** y **3 con tipado incompleto**. El hallazgo más grave es la exposición de `hashed_password` en `get_current_user()`.
+El backend tenía **18 endpoints correctamente serializados** (67 %), pero **7 endpoints sin esquema de respuesta** y **3 con tipado incompleto**. El hallazgo más grave era la exposición de `hashed_password` en `get_current_user()`.
 
-### Prioridades para Fase 2 (Implementación):
+---
 
-1. **🔴 Crítico:** Sanitizar `get_current_user()` para no exponer `hashed_password`.
-2. **Alta:** Crear `MessageResponse` / `DeleteResponse` y aplicarlo a endpoints de auth password + deletes.
-3. **Alta:** Crear `IncidentSummaryResponse` para `GET /api/incidents/summary`.
-4. **Media:** Crear `AnalyzeResponse` para `POST /api/incidents/analyze`.
-5. **Media:** Tipar `profile` como `ProfileResponse` en `AuthMeResponse` y `UserWithProfileResponse`.
-6. **Baja:** Crear `IncidentListItem` para el listado de incidencias.
+## 8. Fase 2 — Implementación completada
+
+> **Fecha:** 2026-09-09
+
+### Cambios realizados
+
+| # | Cambio | Archivos | Estado |
+|---|---|---|---|
+| 🔴 1 | Sanitizar `get_current_user()` — eliminar `hashed_password` del dict inyectado | `services/api/auth.py` | ✅ |
+| 2 | Crear esquemas compartidos en `pydantic_models.py` | `services/api/pydantic_models.py` | ✅ |
+| 3 | Tipar `profile` como `ProfileResponse` en `AuthMeResponse` y `UserWithProfileResponse` | `routes/auth.py`, `routes/users.py` | ✅ |
+| 4 | Aplicar `MessageResponse` a endpoints de auth password | `routes/auth.py` | ✅ |
+| 5 | Aplicar `DeleteResponse` a DELETE endpoints | `routes/suppliers.py`, `routes/users.py` | ✅ |
+| 6 | `IncidentSummaryResponse` para GET /api/incidents/summary | `routes/incidents.py` | ✅ |
+| 7 | `AnalyzeResponse` para POST /api/incidents/analyze | `main.py` | ✅ |
+| 8 | `IncidentListItem` ligero para listado de incidencias | `routes/incidents.py` | ✅ |
+
+### Estado actualizado
+
+| Estado | Antes | Después |
+|---|---|---|
+| ✅ Ya serializado | 18 | **27** |
+| ⚠️ Parcialmente serializado | 3 | **0** |
+| ❌ Sin serializar | 5 | **0** |
+| 🔴 Hallazgo crítico | 1 | **0** |
+
+### Esquemas creados
+
+| Esquema | Archivo | Para endpoint(s) |
+|---|---|---|
+| `MessageResponse` | `pydantic_models.py` | forgot/reset/change-password |
+| `DeleteResponse` | `pydantic_models.py` | DELETE /suppliers/{id}, DELETE /users/{id} |
+| `ProfileResponse` | `pydantic_models.py` | GET /auth/me (profile), POST /users (profile) |
+| `IncidentListItem` | `pydantic_models.py` | GET /api/incidents (listado ligero) |
+| `IncidentSummaryResponse` | `pydantic_models.py` | GET /api/incidents/summary |
+| `RuleDetail` | `pydantic_models.py` | POST /api/incidents/analyze (sub-esquema) |
+| `MetricsData` | `pydantic_models.py` | POST /api/incidents/analyze (sub-esquema) |
+| `AnalyzeResponse` | `pydantic_models.py` | POST /api/incidents/analyze |
+
+### Decisiones de serialización documentadas
+
+1. **Relaciones en respuestas de inventario:** `MovementResponse` aplanado con `sku_name` y `sku_code` en lugar de objeto SKU anidado — el consumidor (listado de movimientos) no necesita el objeto completo.
+2. **Listado de incidencias ligero:** `IncidentListItem` sin `description` ni `updated_at` — en una tabla/listado no se muestra la descripción completa ni el último timestamp de actualización.
+3. **Seguridad en auth:** Los endpoints de password nunca devuelven email en la respuesta — el email va en el body de la petición. `GET /auth/me` sí devuelve email porque es la vista de perfil del propio llamante.
+4. **`get_current_user()` sanitizado:** Se elimina `hashed_password` del dict antes de inyectarlo como dependencia, usando una copia (`dict(user)`) para no mutar el documento TinyDB original.

@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, field_validator
 
 from auth import get_current_user, require_admin
+from pydantic_models import DeleteResponse, ProfileResponse
 from services import (
     create_user,
     get_user_by_id,
@@ -82,7 +83,7 @@ class UserResponse(BaseModel):
 class UserWithProfileResponse(BaseModel):
     """Respuesta de usuario incluyendo perfil (para POST /users con perfil)."""
     user: UserResponse
-    profile: Optional[dict] = None
+    profile: ProfileResponse | None = None
 
 
 # ───────────────────── Endpoints ─────────────────────
@@ -195,7 +196,7 @@ async def update_user_endpoint(
     return UserResponse(**user)
 
 
-@router.delete("/{user_id}", status_code=200)
+@router.delete("/{user_id}", response_model=DeleteResponse)
 async def delete_user_endpoint(
     user_id: int,
     current_user: dict = Depends(require_admin),
@@ -215,4 +216,4 @@ async def delete_user_endpoint(
     if not deleted:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    return {"message": "Usuario y perfil eliminados correctamente", "id": user_id}
+    return DeleteResponse(message="Usuario y perfil eliminados correctamente", id=user_id)
