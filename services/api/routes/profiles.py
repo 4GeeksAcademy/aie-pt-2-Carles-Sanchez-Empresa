@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from auth import get_current_user
+from pydantic_models import ProfileResponse
 from services import get_profile_by_user_id, update_profile, create_profile
 
 router = APIRouter(prefix="/profiles", tags=["Profiles"])
@@ -22,17 +23,6 @@ class ProfileUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
-
-
-class ProfileResponse(BaseModel):
-    """Esquema de respuesta del perfil."""
-    id: int
-    user_id: int
-    name: str
-    phone: str
-    address: str
-    created_at: str
-    updated_at: str
 
 
 # ───────────────────── Endpoints ─────────────────────

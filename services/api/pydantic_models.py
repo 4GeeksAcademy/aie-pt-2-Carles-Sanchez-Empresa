@@ -134,6 +134,17 @@ class SupplierUpdateStatus(BaseModel):
     status: SupplierStatus = Field(..., description="Nuevo estado: active o suspended")
 
 
+class SupplierListItem(BaseModel):
+    """Esquema ligero para listado de proveedores (sin campos innecesarios en una tabla)."""
+
+    id: int = Field(..., description="Identificador único del proveedor")
+    name: str = Field(..., description="Nombre comercial del proveedor")
+    country: str = Field(..., description="País del contrato")
+    categories: list[str] = Field(..., description="Lista de categorías")
+    currency: str = Field(..., description="Moneda del contrato")
+    status: SupplierStatus = Field(..., description="Estado del proveedor: active o suspended")
+
+
 # ──────────────────────────── Helpers ────────────────────────────
 
 def generate_timestamp() -> str:

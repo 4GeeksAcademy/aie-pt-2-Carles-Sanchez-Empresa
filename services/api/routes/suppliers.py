@@ -11,6 +11,7 @@ from database import suppliers_table, SupplierQuery
 from pydantic_models import (
     DeleteResponse,
     SupplierCreate,
+    SupplierListItem,
     SupplierResponse,
     SupplierUpdateRate,
     SupplierUpdateStatus,
@@ -63,7 +64,7 @@ async def create_supplier(payload: SupplierCreate):
     return SupplierResponse(**doc)
 
 
-@router.get("", response_model=list[SupplierResponse])
+@router.get("", response_model=list[SupplierListItem])
 async def list_suppliers(
     country: str = Query(None, description="Filtrar por país (USA o Spain)"),
     category: str = Query(None, description="Filtrar por categoría"),
@@ -95,7 +96,7 @@ async def list_suppliers(
         if category and category not in doc_dict.get("categories", []):
             continue
 
-        results.append(SupplierResponse(**doc_dict))
+        results.append(SupplierListItem(**doc_dict))
 
     return results
 
