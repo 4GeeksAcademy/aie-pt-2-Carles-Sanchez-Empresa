@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslation } from "@/lib/i18n";
 import type { SKUItem } from "@/services/api";
 
@@ -28,11 +29,14 @@ export function StockTable({
 }: Props) {
   const { t } = useTranslation();
 
-  const filtered = products.filter((p) => {
-    if (categoryFilter && p.category !== categoryFilter) return false;
-    if (warehouseFilter && p.warehouse !== warehouseFilter) return false;
-    return true;
-  });
+  // Memoized filter: solo se recalcula cuando cambian products o los filtros
+  const filtered = useMemo(() => {
+    return products.filter((p) => {
+      if (categoryFilter && p.category !== categoryFilter) return false;
+      if (warehouseFilter && p.warehouse !== warehouseFilter) return false;
+      return true;
+    });
+  }, [products, categoryFilter, warehouseFilter]);
 
   const stockLabel = (stock: number) => {
     if (stock <= STOCK_THRESHOLDS.OUT) return { label: t("inventory.stock.out"), color: "text-red-600 bg-red-100" };

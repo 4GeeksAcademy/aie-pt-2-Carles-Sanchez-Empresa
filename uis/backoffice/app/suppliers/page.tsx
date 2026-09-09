@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSuppliers } from "@/hooks/useSuppliers";
 import type { Supplier } from "@/services/api";
 import { useTranslation } from "@/lib/i18n";
@@ -19,12 +19,15 @@ export default function SuppliersPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
-  const filtered = suppliers.filter((s) => {
-    if (search && !s.name.toLowerCase().includes(search.toLowerCase()) && !s.contact_email?.toLowerCase().includes(search.toLowerCase())) return false;
-    if (categoryFilter && !s.categories?.includes(categoryFilter)) return false;
-    if (statusFilter && s.status !== statusFilter) return false;
-    return true;
-  });
+  // Memoized filter: solo se recalcula cuando cambian suppliers o los filtros
+  const filtered = useMemo(() => {
+    return suppliers.filter((s) => {
+      if (search && !s.name.toLowerCase().includes(search.toLowerCase()) && !s.contact_email?.toLowerCase().includes(search.toLowerCase())) return false;
+      if (categoryFilter && !s.categories?.includes(categoryFilter)) return false;
+      if (statusFilter && s.status !== statusFilter) return false;
+      return true;
+    });
+  }, [suppliers, search, categoryFilter, statusFilter]);
 
   const handleEdit = (s: Supplier) => {
     setEditingSupplier(s);
