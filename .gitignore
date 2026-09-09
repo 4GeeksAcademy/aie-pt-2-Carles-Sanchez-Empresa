@@ -8,6 +8,7 @@ __pycache__/
 *.pyd
 venv/
 .venv/
+**/venv/
 .next/
 *.egg-info/
 build/
@@ -24,3 +25,4 @@ htmlcov/
 .terraform/
 *.tfstate
 *.tfstate.backup
+node_modules
