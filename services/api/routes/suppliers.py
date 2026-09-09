@@ -5,8 +5,9 @@ CRUD completo con filtros por país y categoría, más operaciones específicas
 para tarifa y estado con validación Pydantic.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
+from caching import cached, invalidate
 from database import suppliers_table, SupplierQuery
 from pydantic_models import (
     DeleteResponse,
@@ -61,11 +62,16 @@ async def create_supplier(payload: SupplierCreate):
     doc_id = suppliers_table.insert(doc)
     doc["id"] = doc_id
 
+    # Invalidar caché de listado de proveedores
+    invalidate("GET:/suppliers")
+
     return SupplierResponse(**doc)
 
 
 @router.get("", response_model=list[SupplierListItem])
+@cached(ttl=120)
 async def list_suppliers(
+    request: Request,
     country: str = Query(None, description="Filtrar por país (USA o Spain)"),
     category: str = Query(None, description="Filtrar por categoría"),
 ):
@@ -130,6 +136,10 @@ async def update_supplier(supplier_id: int, payload: SupplierCreate):
     updated = suppliers_table.get(doc_id=supplier_id)
     updated_dict = dict(updated)
     updated_dict["id"] = supplier_id
+
+    # Invalidar caché de listado de proveedores
+    invalidate("GET:/suppliers")
+
     return SupplierResponse(**updated_dict)
 
 
@@ -155,6 +165,10 @@ async def update_supplier_rate(supplier_id: int, payload: SupplierUpdateRate):
     updated = suppliers_table.get(doc_id=supplier_id)
     updated_dict = dict(updated)
     updated_dict["id"] = supplier_id
+
+    # Invalidar caché de listado de proveedores
+    invalidate("GET:/suppliers")
+
     return SupplierResponse(**updated_dict)
 
 
@@ -179,6 +193,10 @@ async def update_supplier_status(supplier_id: int, payload: SupplierUpdateStatus
     updated = suppliers_table.get(doc_id=supplier_id)
     updated_dict = dict(updated)
     updated_dict["id"] = supplier_id
+
+    # Invalidar caché de listado de proveedores
+    invalidate("GET:/suppliers")
+
     return SupplierResponse(**updated_dict)
 
 
@@ -194,4 +212,8 @@ async def delete_supplier(supplier_id: int):
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
 
     suppliers_table.remove(doc_ids=[supplier_id])
+
+    # Invalidar caché de listado de proveedores
+    invalidate("GET:/suppliers")
+
     return DeleteResponse(message="Proveedor eliminado correctamente", id=supplier_id)

@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import Session, select, func
 
 from auth import get_current_user
+from caching import cached, invalidate
 from database import get_db
 from i18n import get_language_from_request, get_translator
 from models import SKU, StockEntry, StockExit
@@ -127,7 +128,9 @@ def _sku_to_response(sku: SKU, current_stock: int) -> SKUResponse:
 # ════════════════════════════════════════════════════════════
 
 @router.get("/products", response_model=list[SKUResponse])
+@cached(ttl=30)
 async def list_products(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
     warehouse: Annotated[Optional[str], Query(description="Filtrar por almacén (LA, ZGZ)")] = None,
@@ -189,6 +192,9 @@ async def create_product(
     db.commit()
     db.refresh(sku)
 
+    # Invalidar caché de listado de productos
+    invalidate("GET:/inventory/products")
+
     return _sku_to_response(sku, current_stock=0)
 
 
@@ -197,7 +203,9 @@ async def create_product(
 # ════════════════════════════════════════════════════════════
 
 @router.get("/products/{id}", response_model=SKUResponse)
+@cached(ttl=30)
 async def get_product(
+    request: Request,
     id: int,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -252,6 +260,10 @@ async def create_inbound_order(
     db.add(entry)
     db.commit()
     db.refresh(entry)
+
+    # Invalidar caché de productos y movimientos
+    invalidate("GET:/inventory/products")
+    invalidate("GET:/inventory/orders")
 
     return StockEntryResponse(
         id=entry.id,
@@ -326,6 +338,10 @@ async def create_outbound_order(
     db.commit()
     db.refresh(exit_order)
 
+    # Invalidar caché de productos y movimientos
+    invalidate("GET:/inventory/products")
+    invalidate("GET:/inventory/orders")
+
     return StockExitResponse(
         id=exit_order.id,
         sku_id=exit_order.sku_id,
@@ -343,7 +359,9 @@ async def create_outbound_order(
 # ════════════════════════════════════════════════════════════
 
 @router.get("/orders", response_model=list[MovementResponse])
+@cached(ttl=30)
 async def list_orders(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
     warehouse: Annotated[Optional[str], Query(description="Filtrar por almacén")] = None,
