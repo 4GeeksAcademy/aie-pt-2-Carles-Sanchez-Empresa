@@ -51,6 +51,63 @@ def _calculate_stock(db: Session, sku_id: int, warehouse: str) -> int:
     return entries_sum - exits_sum
 
 
+def _batch_calculate_stock(
+    db: Session,
+    skus: list[SKU],
+) -> dict[int, int]:
+    """
+    Calcula el stock de múltiples SKUs en una sola pasada por tabla.
+
+    Para N SKUs, ejecuta 2 consultas totales (1 para entradas, 1 para salidas)
+    en lugar de 2N consultas individuales.
+
+    Returns:
+        dict[int, int] — {sku_id: current_stock}
+    """
+    if not skus:
+        return {}
+
+    sku_ids = [s.id for s in skus]
+
+    # Agregar entradas agrupadas por (sku_id, warehouse)
+    entries_sum_q = (
+        select(
+            StockEntry.sku_id,
+            StockEntry.warehouse,
+            func.coalesce(func.sum(StockEntry.quantity), 0).label("total"),
+        )
+        .where(StockEntry.sku_id.in_(sku_ids))
+        .group_by(StockEntry.sku_id, StockEntry.warehouse)
+    )
+    entry_totals: dict[tuple[int, str], int] = {}
+    for row in db.exec(entries_sum_q).all():
+        entry_totals[(row.sku_id, row.warehouse)] = row.total
+
+    # Agregar salidas agrupadas por (sku_id, warehouse)
+    exits_sum_q = (
+        select(
+            StockExit.sku_id,
+            StockExit.warehouse,
+            func.coalesce(func.sum(StockExit.quantity), 0).label("total"),
+        )
+        .where(StockExit.sku_id.in_(sku_ids))
+        .group_by(StockExit.sku_id, StockExit.warehouse)
+    )
+    exit_totals: dict[tuple[int, str], int] = {}
+    for row in db.exec(exits_sum_q).all():
+        exit_totals[(row.sku_id, row.warehouse)] = row.total
+
+    # Combinar: stock = entries - exits (por sku_id + warehouse)
+    stock_map: dict[int, int] = {}
+    for sku in skus:
+        key = (sku.id, sku.warehouse)
+        entries_val = entry_totals.get(key, 0)
+        exits_val = exit_totals.get(key, 0)
+        stock_map[sku.id] = entries_val - exits_val
+
+    return stock_map
+
+
 def _sku_to_response(sku: SKU, current_stock: int) -> SKUResponse:
     """Convierte un modelo ORM SKU a SKUResponse con stock calculado."""
     return SKUResponse(
@@ -88,9 +145,10 @@ async def list_products(
         query = query.where(SKU.category == category)
 
     skus = db.exec(query).all()
+    stock_map = _batch_calculate_stock(db, skus)
     result = []
     for sku in skus:
-        stock = _calculate_stock(db, sku.id, sku.warehouse)
+        stock = stock_map.get(sku.id, 0)
         result.append(_sku_to_response(sku, stock))
 
     return result
@@ -293,28 +351,41 @@ async def list_orders(
     """
     Lista todos los movimientos de stock (entradas y salidas) con datos del SKU.
 
-    NOTA: Actualmente carga los SKUs uno por uno dentro del bucle (N+1).
-    Esto es deuda técnica — ver TODO al final de la función.
+    Previene N+1 cargando todos los SKU relacionados en una sola consulta
+    anticipada y usando un dict para lookup O(1).
     """
     movements: list[MovementResponse] = []
+    sku_cache: dict[int, SKU] = {}  # sku_id -> SKU object
 
-    # Entradas
+    def _get_sku_name_code(sku_id: int) -> tuple[str, str]:
+        """Obtiene name y code del SKU desde el cache en lote."""
+        sku = sku_cache.get(sku_id)
+        if sku:
+            return sku.name, sku.sku_code
+        return "Unknown", "Unknown"
+
+    # ── Entradas ──
     stmt_entries = select(StockEntry)
     if warehouse:
         stmt_entries = stmt_entries.where(StockEntry.warehouse == warehouse)
     entries = db.exec(stmt_entries).all()
 
+    # Cargar SKUs de todas las entradas en una sola consulta
+    entry_sku_ids = list({e.sku_id for e in entries})
+    if entry_sku_ids:
+        missing_ids = [sid for sid in entry_sku_ids if sid not in sku_cache]
+        if missing_ids:
+            skus = db.exec(select(SKU).where(SKU.id.in_(missing_ids))).all()
+            sku_cache.update({s.id: s for s in skus})
+
     for e in entries:
-        # TODO: N+1 — cargar todos los SKUs en una sola consulta con
-        # select(SKU).where(SKU.id.in_([e.sku_id for e in entries]))
-        # y construir un dict {sku_id: sku} para lookup O(1).
-        sku = db.get(SKU, e.sku_id)
+        sku_name, sku_code = _get_sku_name_code(e.sku_id)
         movements.append(MovementResponse(
             id=e.id,
             type="inbound",
             sku_id=e.sku_id,
-            sku_name=sku.name if sku else "Unknown",
-            sku_code=sku.sku_code if sku else "Unknown",
+            sku_name=sku_name,
+            sku_code=sku_code,
             quantity=e.quantity,
             warehouse=e.warehouse,
             user_uuid=e.user_uuid,
@@ -322,22 +393,27 @@ async def list_orders(
             created_at=e.created_at,
         ))
 
-    # Salidas
+    # ── Salidas ──
     stmt_exits = select(StockExit)
     if warehouse:
         stmt_exits = stmt_exits.where(StockExit.warehouse == warehouse)
     exits = db.exec(stmt_exits).all()
 
+    # Cargar SKUs de todas las salidas (solo los que no estén ya en caché)
+    exit_sku_ids = list({ex.sku_id for ex in exits})
+    missing_ids = [sid for sid in exit_sku_ids if sid not in sku_cache]
+    if missing_ids:
+        skus = db.exec(select(SKU).where(SKU.id.in_(missing_ids))).all()
+        sku_cache.update({s.id: s for s in skus})
+
     for ex in exits:
-        # TODO: Mismo N+1 que en entradas — refactorizar cargando todos
-        # los SKU relacionados en una sola consulta anticipada.
-        sku = db.get(SKU, ex.sku_id)
+        sku_name, sku_code = _get_sku_name_code(ex.sku_id)
         movements.append(MovementResponse(
             id=ex.id,
             type="outbound",
             sku_id=ex.sku_id,
-            sku_name=sku.name if sku else "Unknown",
-            sku_code=sku.sku_code if sku else "Unknown",
+            sku_name=sku_name,
+            sku_code=sku_code,
             quantity=ex.quantity,
             warehouse=ex.warehouse,
             user_uuid=ex.user_uuid,
