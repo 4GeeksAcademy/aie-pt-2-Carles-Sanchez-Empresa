@@ -74,8 +74,8 @@ class TestRegisterHappyPath:
 
         assert result.user is not None
         assert result.profile is not None
-        assert result.profile["name"] == "John Doe"
-        assert result.profile["phone"] == "+34987654321"
+        assert result.profile.name == "John Doe"
+        assert result.profile.phone == "+34987654321"
 
 
 # ───────────────────── EDGE CASES ─────────────────────

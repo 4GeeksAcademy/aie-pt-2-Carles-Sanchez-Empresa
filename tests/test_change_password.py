@@ -35,7 +35,7 @@ class TestChangePassword:
 
         result = await change_password(payload, current_user=current_user)
 
-        assert result["message"] is not None
+        assert result.message is not None
 
         # Verificar que la contraseña se actualizó
         users = mock_db["users"]

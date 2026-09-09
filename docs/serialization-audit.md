@@ -8,13 +8,13 @@
 
 ## Resumen ejecutivo
 
-| Estado | Cantidad |
-|---|---|
-| ✅ Ya serializado | 18 |
-| ⚠️ Parcialmente serializado | 3 |
-| ❌ Sin serializar | 5 |
-| 🔴 Hallazgo crítico (seguridad) | 1 |
-| **Total endpoints** | **27** |
+| Estado | Antes | Después (Fase 3) |
+|---|---|---|
+| ✅ Ya serializado | 18 | **27** |
+| ⚠️ Parcialmente serializado | 3 | **0** |
+| ❌ Sin serializar | 5 | **0** |
+| 🔴 Hallazgo crítico (seguridad) | 1 | **0** |
+| **Total endpoints** | **27** | **27** |
 
 ---
 
@@ -47,25 +47,25 @@ return user  # ← devuelve el documento TinyDB COMPLETO, incluyendo hashed_pass
 | # | Método | Ruta | `response_model` | Estado | Notas |
 |---|--------|------|------------------|--------|-------|
 | 1 | POST | `/auth/login` | `TokenResponse` | ✅ | Solo devuelve `access_token` + `token_type`. Correcto. |
-| 2 | GET | `/auth/me` | `AuthMeResponse` | ⚠️ | El campo `profile: dict` no tiene tipado explícito. Debería ser `ProfileResponse`. |
-| 3 | POST | `/auth/forgot-password` | ❌ **Ninguno** | ❌ | Devuelve `{"message": ...}` como dict sin schema. |
-| 4 | POST | `/auth/reset-password` | ❌ **Ninguno** | ❌ | Devuelve `{"message": ...}` como dict sin schema. |
-| 5 | POST | `/auth/change-password` | ❌ **Ninguno** | ❌ | Devuelve `{"message": ...}` como dict sin schema. |
+| 2 | GET | `/auth/me` | `AuthMeResponse` | ✅ | `profile` tipado como `ProfileResponse`. |
+| 3 | POST | `/auth/forgot-password` | `MessageResponse` | ✅ | Implementado en Fase 2. |
+| 4 | POST | `/auth/reset-password` | `MessageResponse` | ✅ | Implementado en Fase 2. |
+| 5 | POST | `/auth/change-password` | `MessageResponse` | ✅ | Implementado en Fase 2. |
 
 **Observaciones de auth:**
-- `AuthMeResponse` debería tipar `profile` como `ProfileResponse | None` en lugar de `dict`.
-- Los endpoints de password (forgot, reset, change) devuelven todos `{"message": str}` — deberían compartir un schema `MessageResponse`.
-- `get_current_user()` devuelve `hashed_password` en el dict (ver hallazgo crítico §1).
+- ✅ `profile` tipado como `ProfileResponse | None` (Fase 2).
+- ✅ Endpoints de password usan `MessageResponse` compartido (Fase 2).
+- ✅ `get_current_user()` sanitizado — elimina `hashed_password` del dict inyectado (Fase 2).
 
 #### Payloads actuales vs. recomendados (auth)
 
 | Endpoint | Devuelve hoy | Debería devolver |
 |---|---|---|
 | `POST /auth/login` | `{"access_token": "...", "token_type": "bearer"}` | ✅ Correcto |
-| `GET /auth/me` | `{"id": 1, "email": "...", "role": "...", "profile": {...}}` | ⚠️ Mismo payload, pero `profile` tipado como `ProfileResponse` |
-| `POST /auth/forgot-password` | `{"message": "Si el correo está registrado..."}` | `MessageResponse` genérico |
-| `POST /auth/reset-password` | `{"message": "Contraseña actualizada correctamente"}` | `MessageResponse` genérico |
-| `POST /auth/change-password` | `{"message": "Contraseña actualizada correctamente"}` | `MessageResponse` genérico |
+| `GET /auth/me` | `{"id": 1, "email": "...", "role": "...", "profile": {...}}` | ✅ `profile` tipado como `ProfileResponse` |
+| `POST /auth/forgot-password` | `{"message": "Si el correo está registrado..."}` | ✅ `MessageResponse` |
+| `POST /auth/reset-password` | `{"message": "Contraseña actualizada correctamente"}` | ✅ `MessageResponse` |
+| `POST /auth/change-password` | `{"message": "Contraseña actualizada correctamente"}` | ✅ `MessageResponse` |
 
 ---
 
@@ -73,16 +73,16 @@ return user  # ← devuelve el documento TinyDB COMPLETO, incluyendo hashed_pass
 
 | # | Método | Ruta | `response_model` | Estado | Notas |
 |---|--------|------|------------------|--------|-------|
-| 6 | POST | `/users` | `UserWithProfileResponse` | ⚠️ | `profile: Optional[dict]` debería ser `ProfileResponse`. Correcto en estructura. |
+| 6 | POST | `/users` | `UserWithProfileResponse` | ✅ | `profile` tipado como `ProfileResponse`. |
 | 7 | GET | `/users` | `list[UserResponse]` | ✅ | Solo campos seguros: `id`, `email`, `role`, `is_active`, timestamps. |
 | 8 | GET | `/users/{id}` | `UserResponse` | ✅ | Correcto. |
 | 9 | PUT | `/users/{id}` | `UserResponse` | ✅ | Correcto. |
-| 10 | DELETE | `/users/{id}` | ❌ **Ninguno** | ❌ | Devuelve `{"message": ..., "id": ...}` como dict sin schema. |
+| 10 | DELETE | `/users/{id}` | `DeleteResponse` | ✅ | Implementado en Fase 2. |
 
 **Observaciones de usuarios:**
-- `get_all_users()` en `services.py` usa `_sanitize_user()` — seguro.
-- `create_user()` también sanitiza — seguro.
-- `UserWithProfileResponse` tipa `profile: Optional[dict]` — debería tiparse.
+- ✅ `get_all_users()` en `services.py` usa `_sanitize_user()` — seguro.
+- ✅ `create_user()` también sanitiza — seguro.
+- ✅ `UserWithProfileResponse` tipa `profile` como `ProfileResponse | None` (Fase 2).
 
 ---
 
@@ -105,7 +105,7 @@ return user  # ← devuelve el documento TinyDB COMPLETO, incluyendo hashed_pass
 | 16 | PUT | `/suppliers/{id}` | `SupplierResponse` | ✅ | Correcto. |
 | 17 | PATCH | `/suppliers/{id}/rate` | `SupplierResponse` | ✅ | Correcto. |
 | 18 | PATCH | `/suppliers/{id}/status` | `SupplierResponse` | ✅ | Correcto. |
-| 19 | DELETE | `/suppliers/{id}` | ❌ **Ninguno** | ❌ | Devuelve `{"message": ..., "id": ...}` como dict sin schema. |
+| 19 | DELETE | `/suppliers/{id}` | `DeleteResponse` | ✅ | Implementado en Fase 2. |
 
 **Observaciones de proveedores:**
 - `SupplierResponse` en `pydantic_models.py` es completo y explícito.
@@ -118,14 +118,14 @@ return user  # ← devuelve el documento TinyDB COMPLETO, incluyendo hashed_pass
 | # | Método | Ruta | `response_model` | Estado | Notas |
 |---|--------|------|------------------|--------|-------|
 | 20 | POST | `/api/incidents` | `IncidentResponse` | ✅ | Correcto. |
-| 21 | GET | `/api/incidents` | `list[IncidentResponse]` | ⚠️ | Usa el mismo schema que detalle. Para listados con muchos elementos, un `IncidentListItem` más ligero optimizaría el payload. |
-| 22 | GET | `/api/incidents/summary` | ❌ **Ninguno** | ❌ | Devuelve raw dict con métricas agregadas. |
+| 21 | GET | `/api/incidents` | `list[IncidentListItem]` | ✅ | Schema ligero sin `description` ni `updated_at`. |
+| 22 | GET | `/api/incidents/summary` | `IncidentSummaryResponse` | ✅ | Implementado en Fase 2. |
 | 23 | GET | `/api/incidents/{incident_id}` | `IncidentResponse` | ✅ | Correcto. |
 | 24 | PATCH | `/api/incidents/{incident_id}/status` | `IncidentResponse` | ✅ | Correcto. |
 
 **Observaciones de incidencias:**
-- `IncidentResponse` incluye todos los campos (title, description, category, status, origin, branch, timestamps). Para listados sería razonable un esquema más ligero sin `description`.
-- `GET /api/incidents/summary` devuelve un dict con `total`, `by_status`, `by_category`, `by_origin`, `by_branch` — necesita un schema `IncidentSummaryResponse`.
+- ✅ `IncidentListItem` ligero implementado (sin `description` ni `updated_at`) para listados.
+- ✅ `IncidentSummaryResponse` implementado con `total`, `by_status`, `by_category`, `by_origin`, `by_branch`.
 
 ---
 
@@ -133,11 +133,11 @@ return user  # ← devuelve el documento TinyDB COMPLETO, incluyendo hashed_pass
 
 | # | Método | Ruta | `response_model` | Estado | Notas |
 |---|--------|------|------------------|--------|-------|
-| 25 | POST | `/api/incidents/analyze` | ❌ **Ninguno** | ❌ | Devuelve el resultado crudo de `analyze_rows()` como dict sin schema. |
+| 25 | POST | `/api/incidents/analyze` | `AnalyzeResponse` | ✅ | Implementado en Fase 2 con sub-esquemas `RuleDetail` y `MetricsData`. |
 | 26 | GET | `/api/incidents/results/export` | `StreamingResponse` | ✅ | Es CSV descargable, no JSON. Correcto. |
 
 **Observaciones del analizador:**
-- `POST /api/incidents/analyze` devuelve la estructura que genera `analyze_rows()` (de `trackflow_shared.legacy`). Se debe inspeccionar esa estructura y definir un schema.
+- ✅ `AnalyzeResponse` implementado con sub-esquemas `RuleDetail` y `MetricsData` (Fase 2).
 
 ---
 
@@ -155,7 +155,6 @@ return user  # ← devuelve el documento TinyDB COMPLETO, incluyendo hashed_pass
 **Observaciones de inventario:**
 - Todos los endpoints tienen `response_model` explícito y usan helpers de conversión (`_sku_to_response`).
 - `MovementResponse` para listados de movimientos ya aplanado: incluye `sku_name`, `sku_code`, `reference_or_exit`. Buen diseño.
-- El inventario es el **único dominio completamente serializado**.
 
 ---
 
@@ -184,35 +183,28 @@ return user  # ← devuelve el documento TinyDB COMPLETO, incluyendo hashed_pass
 
 ---
 
-## 4. Esquemas faltantes (necesarios para Fase 2)
+## 4. Esquemas faltantes — resueltos en Fase 2
 
-| Esquema necesario | Para endpoint(s) | Campos propuestos |
+Todos los esquemas identificados como necesarios fueron implementados en la Fase 2. Ver [Sección 8](#8-fase-2--implementación-completada).
+
+| Esquema | Endpoint(s) | Estado |
 |---|---|---|
-| `DeleteResponse` | DELETE /suppliers/{id}, DELETE /users/{id} | `message: str`, `id: int` |
-| `IncidentSummaryResponse` | GET /api/incidents/summary | `total: int`, `by_status: dict`, `by_category: dict`, `by_origin: dict`, `by_branch: dict` |
-| `AnalyzeResponse` | POST /api/incidents/analyze | Pendiente de inspeccionar `analyze_rows()` |
-| `IncidentListItem` | GET /api/incidents (listado) | `id`, `title`, `category`, `status`, `origin`, `branch`, `created_at` (sin `description`) |
-| `UserFromToken` | `get_current_user()` (inyección) | `id`, `email`, `role` (sin `hashed_password`) |
-| `MessageResponse` | rest-password/change-password/forgot-password | `message: str` |
+| `MessageResponse` | forgot/reset/change-password | ✅ Implementado |
+| `DeleteResponse` | DELETE /suppliers/{id}, DELETE /users/{id} | ✅ Implementado |
+| `IncidentSummaryResponse` | GET /api/incidents/summary | ✅ Implementado |
+| `AnalyzeResponse` (con `RuleDetail`, `MetricsData`) | POST /api/incidents/analyze | ✅ Implementado |
+| `IncidentListItem` | GET /api/incidents (listado ligero) | ✅ Implementado |
+| `ProfileResponse` (tipado) | GET /auth/me (profile), POST /users (profile) | ✅ Aplicado |
 
 ---
 
-## 5. Clasificación por severidad
+## 5. Clasificación por severidad — todo resuelto
 
-### 🔴 Crítico (seguridad)
-1. `get_current_user()` expone `hashed_password` en el dict inyectado.
-
-### ❌ Sin serializar — necesita schema
-1. `POST /auth/forgot-password` — devuelve dict suelto
-2. `POST /auth/reset-password` — devuelve dict suelto
-3. `POST /auth/change-password` — devuelve dict suelto
-4. `GET /api/incidents/summary` — devuelve dict suelto
-5. `POST /api/incidents/analyze` — devuelve dict suelto
-6. `DELETE /suppliers/{id}` — devuelve dict suelto
-7. `DELETE /users/{id}` — devuelve dict suelto
-
-### ⚠️ Parcialmente serializado — necesita mejora
-1. `GET /auth/me` — `profile: dict` sin tipar
+| Severidad | Descripción | Estado |
+|---|---|---|
+| 🔴 Crítico | `get_current_user()` exponía `hashed_password` | ✅ Sanitizado (Fase 2) |
+| ❌ Sin serializar | 7 endpoints devolvían dict sin schema | ✅ Todos con `response_model` (Fase 2) |
+| ⚠️ Parcialmente serializado | 3 endpoints con tipado incompleto | ✅ Todos tipados (Fase 2) |
 2. `POST /users` — `profile: Optional[dict]` sin tipar
 3. `GET /api/incidents` — payload completo en listado (podría ser más ligero)
 
@@ -296,3 +288,52 @@ El backend tenía **18 endpoints correctamente serializados** (67 %), pero **7 e
 2. **Listado de incidencias ligero:** `IncidentListItem` sin `description` ni `updated_at` — en una tabla/listado no se muestra la descripción completa ni el último timestamp de actualización.
 3. **Seguridad en auth:** Los endpoints de password nunca devuelven email en la respuesta — el email va en el body de la petición. `GET /auth/me` sí devuelve email porque es la vista de perfil del propio llamante.
 4. **`get_current_user()` sanitizado:** Se elimina `hashed_password` del dict antes de inyectarlo como dependencia, usando una copia (`dict(user)`) para no mutar el documento TinyDB original.
+
+---
+
+## 9. Fase 3 — Verificación completada
+
+> **Fecha:** 2026-09-09
+
+### 9.1 Tests unitarios
+
+Se ejecutaron los **109 tests existentes** del backend:
+
+```
+======================= 109 passed, 4 warnings in 13.07s =======================
+```
+
+Fue necesario actualizar 6 archivos de test para usar acceso por atributos (`.message`, `.profile.name`, `.total`) en lugar de subscripting (`["message"]`, `["name"]`, `["total"]`), ya que ahora los endpoints devuelven objetos Pydantic en lugar de diccionarios crudos.
+
+| Archivo de test | Cambio |
+|---|---|
+| `tests/test_change_password.py` | `result["message"]` → `result.message` |
+| `tests/test_reset_password.py` | `result["message"]` → `result.message` |
+| `tests/test_incidents.py` | `summary["total"]` → `summary.total` |
+| `tests/test_register.py` | `result.profile["name"]` → `result.profile.name` |
+| `tests/test_suppliers.py` | `result["message"]` → `result.message` |
+| `tests/test_token.py` | `result.profile["name"]` → `result.profile.name` |
+
+### 9.2 Pruebas manuales en `/docs`
+
+Se verificaron 5 endpoints vía `curl` contra la API en ejecución:
+
+| Endpoint | Schema | Respuesta verificada |
+|---|---|---|
+| `POST /auth/forgot-password` | `MessageResponse` | `{"message": "Si el correo está registrado..."}` ✅ |
+| `POST /auth/reset-password` | `MessageResponse` | `{"detail": "El enlace no es válido..."}` (error controlado) ✅ |
+| `POST /users` (register) | `UserWithProfileResponse` | `{"user": {...}, "profile": null}` ✅ |
+| `GET /auth/me` | `AuthMeResponse` con `ProfileResponse` | `{"id": 15, "email": "...", "role": "user", "profile": null}` ✅ |
+| `GET /api/incidents/summary` | `IncidentSummaryResponse` | `{"total": 97, "by_status": {...}, ...}` ✅ |
+
+Confirmado: **ninguna respuesta expone `hashed_password`**.
+
+### 9.3 Resumen final
+
+| Item | Resultado |
+|---|---|
+| 109 tests existentes | ✅ Todos pasan |
+| Pruebas manuales en `/docs` | ✅ 5 endpoints verificados |
+| Documentación actualizada | ✅ Todos los endpoints marcados como ✅ |
+
+**Estado final: 27/27 endpoints serializados, 0 críticos, 0 pendientes.**
