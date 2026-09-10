@@ -718,6 +718,3 @@ Los siguientes dominios quedan fuera del alcance de este plan de telemetría:
 
 ---
 
-## 5. Fase 4 — Actualización del Memory Bank
-
-*(Pendiente — se completará al finalizar el plan y crear los archivos)*
