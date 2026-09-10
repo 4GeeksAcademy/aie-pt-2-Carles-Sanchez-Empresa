@@ -92,11 +92,14 @@ aie-pt-2-Carles-Sanchez-Empresa/
 ├── infra/                  # Infraestructura
 ├── mcps/                   # MCPs
 ├── data/                   # Datos
-├── docs/                   # Documentación técnica (arquitectura, serialización, caching, auditorías)
+├── docs/                   # Documentación técnica (arquitectura, serialización, caching, auditorías, telemetría)
 │   ├── ARCHITECTURE_PROPOSAL.md
 │   ├── CACHING_REPORT.md
 │   ├── serialization-audit.md
-│   └── Auditoria de Errores.md
+│   ├── Auditoria de Errores.md
+│   └── telemetry/           # Plan de Telemetría y esquemas de eventos
+│       ├── telemetry-plan.md
+│       └── event-schemas.json
 ├── audit/                  # Auditorías Lighthouse y reportes de rendimiento
 │   ├── AUDIT.md
 │   ├── REPORT.md

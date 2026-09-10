@@ -188,6 +188,30 @@
 
 ## ✅ Hitos Completados (continuación)
 
+### 📡 Plan de Telemetría — `docs/telemetry/`
+
+**Fase 1 — Catálogo exhaustivo de oportunidades de datos**
+- [x] Catálogo completo de **27 eventos** (5 obligatorios del CONTEXT + 22 oportunidades identificadas) en 5 categorías: inventario, autenticación, rendimiento, errores, navegación
+- [x] Cada evento justificado con la frase: _"Capturamos `[event_type]` porque necesitamos saber `[hipótesis]`, lo que nos permite tomar la decisión `[decisión concreta]`."_
+- [x] Métricas obligatorias del CONTEXT-empresa.md identificadas como piso: `inbound_order_created`, `outbound_order_created`, `stock_threshold_triggered`, `direct_stock_edit_rejected`, `inventory_discrepancy_detected`
+- [x] Clasificación: cada evento etiquetado como **obligatorio** (del CONTEXT) u **oportunidad identificada** (propuesta propia)
+
+**Fase 2 — Diseño del Event Envelope**
+- [x] Event Envelope estándar definido con 8 campos obligatorios: `eventId`, `timestamp` (ISO 8601), `sessionId`, `userId`, `event_type` (taxonomía `entidad_acción`), `schemaVersion`, `requestId`, `properties`
+- [x] Esquemas completos para los 27 eventos con allowlist de properties (tipo, obligatorio/opcional, descripción)
+- [x] Datos sensibles/PII identificados en 6 eventos con estrategia de anonimización (IP hasheada, mensajes sanitizados, sin contraseñas)
+- [x] Eventos descartados documentados con justificación (user_registered, supplier_created, incident_resolved_time, geolocation_of_operator)
+- [x] `event-schemas.json` creado con estructura JSON Schema draft-07 validable (27 eventos, todos con `additionalProperties: false`)
+
+**Fase 3 — Estrategia de entrega**
+- [x] Decisión stream vs. batch justificada por urgencia de negocio: **14 stream** (tiempo real) + **13 batch** (lotes periódicos)
+- [x] Estrategia de throttle/debounce para 4 eventos de alta frecuencia (product_stock_queried, page_viewed, api_latency_recorded, frontend_error_captured)
+- [x] Riesgos y exclusiones documentados: 5 exclusiones explícitas (datos consumidor final, contraseñas, IPs completas, stack traces, geolocalización), 5 riesgos con mitigación
+
+**Archivos creados:**
+- `docs/telemetry/telemetry-plan.md` — Documento completo del plan
+- `docs/telemetry/event-schemas.json` — Esquemas JSON de todos los eventos
+
 ### 🚀 Backend — API Unificada (`services/api/`)
 
 **Fase 5 — Directorio de Proveedores (`routes/suppliers.py`, `models.py`, `database.py`)**
