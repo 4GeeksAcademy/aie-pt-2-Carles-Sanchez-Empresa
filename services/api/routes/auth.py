@@ -195,14 +195,15 @@ async def forgot_password(payload: ForgotPasswordRequest):
         token = create_reset_token(user["id"])
         try:
             send_reset_email(to_email=email, token=token)
-        except Exception:
+        except Exception as exc:
             logger.exception(
-                "Error al enviar email de restablecimiento a %s", email
+                "Error al enviar email de restablecimiento a %s: %s",
+                email, exc,
             )
             # No se interrumpe el flujo — el usuario ve confirmación igualmente
 
     return {
-        "message": "Formulario rellenado correctamente, recibirás un enlace en breves",
+        "message": "Si el correo está registrado, recibirás un enlace en breves",
     }
 
 
@@ -218,6 +219,14 @@ async def reset_password(payload: ResetPasswordRequest):
     Devuelve 400 si el token es inválido, ha expirado o ya fue usado.
     """
     user_id = verify_reset_token(payload.token)
+
+    # No permitir usar la misma contraseña que la anterior
+    user = users_table.get(doc_id=user_id)
+    if user and verify_password(payload.new_password, user.get("hashed_password", "")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva contraseña no puede ser igual a la anterior",
+        )
 
     hashed = hash_password(payload.new_password)
     update_user(user_id, {"hashed_password": hashed})
@@ -254,6 +263,21 @@ async def change_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La contraseña actual no es correcta",
+        )
+
+    # No permitir usar la misma contraseña que la anterior
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva contraseña no puede ser igual a la actual",
+        )
+
+    # Doble verificación: aunque el texto sea distinto, comprobar que no es
+    # funcionalmente la misma (p.ej. mismo password, distinto hash por salt)
+    if verify_password(payload.new_password, user.get("hashed_password", "")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva contraseña no puede ser igual a la anterior",
         )
 
     hashed = hash_password(payload.new_password)
