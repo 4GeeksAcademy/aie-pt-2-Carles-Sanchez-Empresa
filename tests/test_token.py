@@ -277,7 +277,7 @@ class TestAuthMe:
         assert result.email == "test@trackflow.com"
         assert result.role == "user"
         assert result.profile is not None
-        assert result.profile["name"] == "Test User"
+        assert result.profile.name == "Test User"
 
     @pytest.mark.asyncio
     async def test_auth_me_no_profile(self, mock_db):
@@ -325,11 +325,11 @@ class TestAuthMe:
         result = await auth_me(current_user=current_user)
 
         assert result.profile is not None
-        assert "name" in result.profile
-        assert "phone" in result.profile
-        assert "address" in result.profile
-        assert "created_at" in result.profile
-        assert "updated_at" in result.profile
+        assert result.profile.name is not None
+        assert result.profile.phone is not None
+        assert result.profile.address is not None
+        assert result.profile.created_at is not None
+        assert result.profile.updated_at is not None
 
 
 # ═══════════════════════════════════════════════════════

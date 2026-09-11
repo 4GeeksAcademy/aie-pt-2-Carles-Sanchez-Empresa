@@ -378,8 +378,8 @@ class TestDeleteSupplier:
         ))
 
         result = await delete_supplier(created.id)
-        assert result["message"] is not None
-        assert result["id"] == created.id
+        assert result.message is not None
+        assert result.id == created.id
 
         # Verificar que ya no existe
         with pytest.raises(HTTPException) as exc:

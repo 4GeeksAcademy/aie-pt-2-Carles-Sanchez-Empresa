@@ -25,6 +25,7 @@ from auth import (
 )
 from database import users_table, UserQuery
 from email_service import send_reset_email
+from pydantic_models import MessageResponse, DeleteResponse, ProfileResponse
 from services import get_user_by_email, get_profile_by_user_id, update_user
 
 t = get_translator("es")
@@ -52,7 +53,7 @@ class AuthMeResponse(BaseModel):
     id: int
     email: str
     role: str
-    profile: dict | None = None
+    profile: ProfileResponse | None = None
 
 
 # ───────────────────── Endpoints ─────────────────────
@@ -177,7 +178,7 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
-@router.post("/forgot-password")
+@router.post("/forgot-password", response_model=MessageResponse)
 async def forgot_password(payload: ForgotPasswordRequest):
     """
     Solicita un enlace de restablecimiento de contraseña.
@@ -202,12 +203,12 @@ async def forgot_password(payload: ForgotPasswordRequest):
             )
             # No se interrumpe el flujo — el usuario ve confirmación igualmente
 
-    return {
-        "message": "Si el correo está registrado, recibirás un enlace en breves",
-    }
+    return MessageResponse(
+        message="Si el correo está registrado, recibirás un enlace en breves",
+    )
 
 
-@router.post("/reset-password")
+@router.post("/reset-password", response_model=MessageResponse)
 async def reset_password(payload: ResetPasswordRequest):
     """
     Restablece la contraseña usando un token válido.
@@ -233,10 +234,10 @@ async def reset_password(payload: ResetPasswordRequest):
 
     invalidate_reset_token(payload.token)
 
-    return {"message": "Contraseña actualizada correctamente"}
+    return MessageResponse(message="Contraseña actualizada correctamente")
 
 
-@router.post("/change-password")
+@router.post("/change-password", response_model=MessageResponse)
 async def change_password(
     payload: ChangePasswordRequest,
     current_user: dict = Depends(get_current_user),
@@ -283,4 +284,4 @@ async def change_password(
     hashed = hash_password(payload.new_password)
     update_user(user_id, {"hashed_password": hashed})
 
-    return {"message": "Contraseña actualizada correctamente"}
+    return MessageResponse(message="Contraseña actualizada correctamente")

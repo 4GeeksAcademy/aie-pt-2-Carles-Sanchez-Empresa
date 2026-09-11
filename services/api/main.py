@@ -31,6 +31,7 @@ from auth import get_current_user
 from database import engine
 from i18n import get_translator, get_language_from_request
 from models import SQLModel
+from pydantic_models import AnalyzeResponse
 from routes import (
     auth_router,
     incidents_router,
@@ -121,7 +122,7 @@ def _parse_csv(content: str) -> list[dict]:
 
 # ──────────────────────────── Endpoints ────────────────────────────
 
-@app.post("/api/incidents/analyze")
+@app.post("/api/incidents/analyze", response_model=AnalyzeResponse)
 async def post_analyze(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),

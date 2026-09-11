@@ -312,9 +312,9 @@ class TestGetSummary:
         """
         from routes.incidents import get_summary
         summary = await get_summary()
-        assert summary["total"] == 0
-        assert summary["by_status"] == {}
-        assert summary["by_category"] == {}
+        assert summary.total == 0
+        assert summary.by_status == {}
+        assert summary.by_category == {}
 
     @pytest.mark.asyncio
     async def test_summary_with_data(self, mock_db):
@@ -343,15 +343,15 @@ class TestGetSummary:
         ))
 
         summary = await get_summary()
-        assert summary["total"] == 4
-        assert summary["by_status"].get("open") == 3
-        assert summary["by_status"].get("resolved") == 1
-        assert summary["by_category"].get("lost_parcel") == 3
-        assert summary["by_category"].get("delivery_failure") == 1
-        assert summary["by_origin"].get("customer") == 3
-        assert summary["by_origin"].get("branch") == 1
-        assert summary["by_branch"].get("central") == 3
-        assert summary["by_branch"].get("la_warehouse") == 1
+        assert summary.total == 4
+        assert summary.by_status.get("open") == 3
+        assert summary.by_status.get("resolved") == 1
+        assert summary.by_category.get("lost_parcel") == 3
+        assert summary.by_category.get("delivery_failure") == 1
+        assert summary.by_origin.get("customer") == 3
+        assert summary.by_origin.get("branch") == 1
+        assert summary.by_branch.get("central") == 3
+        assert summary.by_branch.get("la_warehouse") == 1
 
 
 # ═══════════════════════════════════════════════════════

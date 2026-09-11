@@ -12,8 +12,10 @@ from fastapi import APIRouter, HTTPException, Query
 from database import incidents_table, IncidentQuery
 from pydantic_models import (
     IncidentCreate,
+    IncidentListItem,
     IncidentResponse,
     IncidentStatusUpdate,
+    IncidentSummaryResponse,
     generate_timestamp,
     doc_to_response,
 )
@@ -52,7 +54,7 @@ async def create_incident(payload: IncidentCreate):
 
 # ──────────────────────────── GET list ────────────────────────────
 
-@router.get("", response_model=list[IncidentResponse])
+@router.get("", response_model=list[IncidentListItem])
 async def list_incidents(
     status: Optional[str] = Query(None, description="Filtrar por estado (open, in_progress, resolved, discarded)"),
     origin: Optional[str] = Query(None, description="Filtrar por origen (customer, branch, internal)"),
@@ -85,7 +87,7 @@ async def list_incidents(
         if category and doc_dict.get("category") != category:
             continue
 
-        results.append(IncidentResponse(**doc_to_response(doc_dict, doc_id)))
+        results.append(IncidentListItem(**doc_to_response(doc_dict, doc_id)))
 
     return results
 
@@ -94,7 +96,7 @@ async def list_incidents(
 # NOTA: debe ir ANTES de /{incident_id} para evitar que "summary" se
 #       interprete como un integer.
 
-@router.get("/summary")
+@router.get("/summary", response_model=IncidentSummaryResponse)
 async def get_summary():
     """
     Devuelve métricas agregadas de todas las incidencias.
@@ -123,13 +125,13 @@ async def get_summary():
         b = doc.get("branch", "unknown")
         by_branch[b] = by_branch.get(b, 0) + 1
 
-    return {
-        "total": len(docs),
-        "by_status": by_status,
-        "by_category": by_category,
-        "by_origin": by_origin,
-        "by_branch": by_branch,
-    }
+    return IncidentSummaryResponse(
+        total=len(docs),
+        by_status=by_status,
+        by_category=by_category,
+        by_origin=by_origin,
+        by_branch=by_branch,
+    )
 
 
 # ──────────────────────────── GET by id ────────────────────────────
