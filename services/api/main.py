@@ -68,6 +68,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Security Headers Middleware ──
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Añade cabeceras de seguridad a todas las respuestas."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
+
 # Almacén en memoria del último resultado (para la exportación CSV)
 _last_result: dict | None = None
 

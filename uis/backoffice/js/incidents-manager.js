@@ -387,7 +387,7 @@ async function loadList() {
                     class="text-red-600 hover:text-red-800 text-xs font-medium">${window.__ ? window.__('incmgr.action_discard') : 'Descartar'}</button>
           `;
         } else {
-          statusActions = `<span class="text-xs text-gray-400 italic">${window.__ ? window.__('incmgr.final_status') : 'Estado final'}</span>`;
+          statusActions = `<span class="text-xs text-gray-400 italic">${statusLabel(inc.status)}</span>`;
         }
 
         return `<tr class="border-b border-gray-100 hover:bg-gray-50">

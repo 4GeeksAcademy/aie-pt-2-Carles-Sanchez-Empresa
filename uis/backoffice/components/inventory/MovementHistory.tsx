@@ -32,7 +32,9 @@ export function MovementHistory({ movements, loading, error }: Props) {
     <div className="space-y-4">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm">
+        <label htmlFor="movement-type" className="sr-only">{t("inventory.order.filter_all_types")}</label>
         <select
+          id="movement-type"
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
           className="rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62]"
@@ -41,7 +43,9 @@ export function MovementHistory({ movements, loading, error }: Props) {
           <option value="inbound">{t("inventory.order.inbound")}</option>
           <option value="outbound">{t("inventory.order.outbound")}</option>
         </select>
+        <label htmlFor="movement-warehouse" className="sr-only">{t("inventory.order.filter_all_warehouses")}</label>
         <select
+          id="movement-warehouse"
           value={warehouseFilter}
           onChange={(e) => setWarehouseFilter(e.target.value)}
           className="rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62]"
@@ -71,6 +75,7 @@ export function MovementHistory({ movements, loading, error }: Props) {
       {!loading && filtered.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-[#c89d66] bg-[#f8fbff] shadow-sm">
           <table className="w-full text-left text-sm">
+            <caption className="sr-only">{t("inventory.tab.orders")}</caption>
             <thead className="bg-[#14263a] text-[#f8fbff]">
               <tr>
                 <th className="px-4 py-3">{t("inventory.order.type")}</th>

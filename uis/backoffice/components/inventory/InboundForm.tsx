@@ -52,8 +52,9 @@ export function InboundForm({ products, onSubmit }: Props) {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.inbound.sku_id")}</label>
+          <label htmlFor="inbound-sku" className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.inbound.sku_id")}</label>
           <select
+            id="inbound-sku"
             value={skuId}
             onChange={(e) => {
               setSkuId(e.target.value);
@@ -72,8 +73,9 @@ export function InboundForm({ products, onSubmit }: Props) {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#2f4a62]}">{t("inventory.inbound.quantity")}</label>
+          <label htmlFor="inbound-quantity" className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.inbound.quantity")}</label>
           <input
+            id="inbound-quantity"
             type="number"
             min={1}
             value={quantity}
@@ -83,8 +85,9 @@ export function InboundForm({ products, onSubmit }: Props) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.inbound.reference")}</label>
+          <label htmlFor="inbound-reference" className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.inbound.reference")}</label>
           <input
+            id="inbound-reference"
             type="text"
             value={reference}
             onChange={(e) => setReference(e.target.value)}
@@ -94,8 +97,9 @@ export function InboundForm({ products, onSubmit }: Props) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.inbound.warehouse")}</label>
+          <label htmlFor="inbound-warehouse" className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.inbound.warehouse")}</label>
           <input
+            id="inbound-warehouse"
             type="text"
             value={warehouse}
             readOnly
@@ -106,7 +110,7 @@ export function InboundForm({ products, onSubmit }: Props) {
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-lg bg-[#10b981] px-5 py-2 text-sm font-medium text-white transition hover:bg-[#059669] disabled:opacity-50"
+        className="rounded-lg bg-[#10b981] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#059669] disabled:opacity-50"
       >
         {submitting ? t("inventory.inbound.submitting") : t("inventory.inbound.submit")}
       </button>

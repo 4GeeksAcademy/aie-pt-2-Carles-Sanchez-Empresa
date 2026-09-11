@@ -7,4 +7,6 @@ export * from './utils/transformations';
 export * from './utils/validations';
 export * from './services/auth';
 export * from './types/models';
-export * from './data/sampleData';
+
+// Sample data es importado explícitamente bajo demanda por el Dashboard
+// para evitar bundlear datos de demo en todas las páginas

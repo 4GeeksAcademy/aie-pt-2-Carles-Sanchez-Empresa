@@ -13,6 +13,8 @@
 - [x] README descriptivo para cada carpeta raíz (bilingües)
 - [x] Paquete compartido `@repo/shared-types` en `packages/shared/`
 - [x] Archivo `CONTEXT.md` con directrices del proyecto
+- [x] Corrección de arranque con `docker compose up --build`: adición de `--webpack` en comandos `next dev` en `docker-compose.yml`, `uis/website/package.json` y `uis/backoffice/package.json` para evitar incompatibilidad con Turbopack por defecto en Next.js 16.
+- [x] Restauración y actualización de datos de prueba (seeds) en `src/data/sampleData.ts` para el Dashboard del Backoffice (`DataEditor`, `SearchPanel`, etc.).
 
 ### 🧠 Lógica de Dominio — `src/`
 - [x] Definición de interfaces y tipos del dominio (`src/types/models.ts`):

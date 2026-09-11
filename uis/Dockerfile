@@ -1,12 +1,13 @@
 # ─────────────────────────────────────────────────────────────
 # Dockerfile — Contenedor de interfaces (website + backoffice)
+# Multi-stage: build (minificación) → producción
 # Basado en Node.js Alpine para imagen ligera
 # ─────────────────────────────────────────────────────────────
-FROM node:20-alpine AS base
+
+# ─── Stage 1: Dependencias ─────────────────────────────────
+FROM node:20-alpine AS deps
 
 WORKDIR /app
-
-# ─── Instalar dependencias ─────────────────────────────────
 
 # Copiar los package.json y lockfiles necesarios
 COPY package.json ./package.json
@@ -15,26 +16,42 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY uis/website/package.json ./uis/website/package.json
 COPY uis/backoffice/package.json ./uis/backoffice/package.json
 
-# Instalar dependencias (sin dev para producción, pero como usamos
-# --include=dev las instalamos todas porque necesitamos next dev)
+# Instalar dependencias (incluyendo dev para next build)
 RUN npm install --include=dev
 
-# ─── Copiar código fuente ──────────────────────────────────
+# ─── Stage 2: Build ────────────────────────────────────────
+FROM deps AS builder
 
-# Compartido (types, utils)
+# Copiar código fuente
 COPY src/ ./src/
 COPY packages/shared/ ./packages/shared/
-
-# Aplicaciones Next.js
 COPY uis/website/ ./uis/website/
 COPY uis/backoffice/ ./uis/backoffice/
+
+# Build de producción (minifica JS con Terser y CSS con cssnano)
+RUN cd uis/website && npx next build
+RUN cd uis/backoffice && npx next build
+
+# ─── Stage 3: Producción ───────────────────────────────────
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copiar solo lo necesario desde builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/packages/shared ./packages/shared
+COPY --from=builder /app/uis/website ./uis/website
+COPY --from=builder /app/uis/backoffice ./uis/backoffice
+
+# Script de arranque (usa next start en lugar de next dev)
+COPY uis/start.sh ./start.sh
+RUN chmod +x ./start.sh
 
 # ─── Exponer puertos ───────────────────────────────────────
 # 3000 = website, 3001 = backoffice
 EXPOSE 3000 3001
-
-# ─── Script de arranque ────────────────────────────────────
-COPY uis/start.sh ./start.sh
-RUN chmod +x ./start.sh
 
 CMD ["./start.sh"]

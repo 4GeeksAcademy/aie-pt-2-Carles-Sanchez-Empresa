@@ -1,12 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState, useEffect } from "react";
 import { useInventory } from "@/hooks/useInventory";
-import { StockTable } from "@/components/inventory/StockTable";
-import { InboundForm } from "@/components/inventory/InboundForm";
-import { OutboundForm } from "@/components/inventory/OutboundForm";
-import { MovementHistory } from "@/components/inventory/MovementHistory";
 import { useTranslation } from "@/lib/i18n";
+
+const StockTable = dynamic(() => import("@/components/inventory/StockTable").then((m) => m.StockTable), { ssr: false });
+const InboundForm = dynamic(() => import("@/components/inventory/InboundForm").then((m) => m.InboundForm), { ssr: false });
+const OutboundForm = dynamic(() => import("@/components/inventory/OutboundForm").then((m) => m.OutboundForm), { ssr: false });
+const MovementHistory = dynamic(() => import("@/components/inventory/MovementHistory").then((m) => m.MovementHistory), { ssr: false });
 
 type Tab = "stock" | "inbound" | "outbound" | "orders";
 
@@ -55,7 +57,7 @@ export default function InventoryPage() {
               role="tab"
               aria-selected={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`min-h-11 rounded-lg px-2 py-2 text-sm font-semibold transition ${activeTab === tab.key ? "bg-[#f8fbff] text-[#14263a] shadow-sm" : "text-[#2f4a62] hover:bg-[#edf5fb]"}`}
+              className={`min-h-11 rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${activeTab === tab.key ? "bg-[#f8fbff] text-[#14263a] shadow-sm" : "text-[#2f4a62] hover:bg-[#edf5fb]"}`}
             >
               {tab.label}
             </button>

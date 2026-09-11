@@ -10,10 +10,15 @@ services:
     build:
       context: .
       dockerfile: uis/Dockerfile
+      target: deps  # Solo dependencias (dev, con bind mounts para recarga)
     container_name: trackflow-interfaces
     ports:
       - "3000:3000"   # website
       - "3001:3001"   # backoffice
+    command: >
+      sh -c "cd /app/uis/website && npx next dev --port 3000 &
+             cd /app/uis/backoffice && npx next dev --port 3001 &
+             wait"
     volumes:
       # Bind mounts para recarga en caliente
       - ./uis/website:/app/uis/website

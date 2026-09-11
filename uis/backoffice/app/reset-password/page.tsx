@@ -29,7 +29,7 @@ function ResetPasswordForm() {
             </p>
             <Link
               href="/forgot-password"
-              className="inline-block rounded-lg bg-[#14263a] px-6 py-2.5 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a]"
+              className="inline-block rounded-lg bg-[#14263a] px-6 py-2.5 text-sm font-semibold text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]"
             >
               {t("auth.reset.request_new")}
             </Link>
@@ -97,7 +97,7 @@ function ResetPasswordForm() {
                 minLength={6}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
                 placeholder={t("auth.reset.password_placeholder")}
               />
             </div>
@@ -111,7 +111,7 @@ function ResetPasswordForm() {
                 minLength={6}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
                 placeholder={t("auth.reset.confirm_placeholder")}
               />
             </div>
@@ -126,7 +126,7 @@ function ResetPasswordForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2.5 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2.5 text-sm font-semibold text-[#f8fbff] transition-colors hover:bg-[#1d4f7a] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? t("auth.reset.submitting") : t("auth.reset.submit")}
             </button>

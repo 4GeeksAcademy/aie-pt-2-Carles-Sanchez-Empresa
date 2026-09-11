@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { login, getToken } from "@trackflow/core";
+import { login, getToken } from "@trackflow/core/services/auth";
 import { useTranslation } from "@/lib/i18n";
 
 function LoginForm() {
@@ -77,7 +77,7 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
                 placeholder={t("auth.login.email_placeholder")}
               />
             </div>
@@ -91,7 +91,7 @@ function LoginForm() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
+                className="w-full rounded-xl border border-[#c89d66] bg-[#f8fbff] px-4 py-2.5 text-sm text-[#14263a] outline-none transition-colors focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20"
                 placeholder="••••••••"
               />
             </div>
@@ -103,7 +103,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2.5 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2.5 text-sm font-semibold text-[#f8fbff] transition-colors hover:bg-[#1d4f7a] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? t("auth.login.submitting") : t("auth.login.submit")}
             </button>

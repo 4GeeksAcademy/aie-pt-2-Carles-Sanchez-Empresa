@@ -1,6 +1,16 @@
 {
   "name": "@trackflow/core",
   "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./data/sampleData": "./data/sampleData.ts",
+    "./utils/collections": "./utils/collections.ts",
+    "./utils/search": "./utils/search.ts",
+    "./utils/transformations": "./utils/transformations.ts",
+    "./utils/validations": "./utils/validations.ts",
+    "./services/auth": "./services/auth.ts",
+    "./types/models": "./types/models.ts"
+  },
   "scripts": {
     "build": "npx tsc -p tsconfig.json --noEmit",
     "typecheck": "npx tsc -p tsconfig.json --noEmit"
