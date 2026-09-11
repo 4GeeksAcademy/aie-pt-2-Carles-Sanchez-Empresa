@@ -114,7 +114,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     if user is None:
         raise credentials_exception
 
-    # Añadir el id al dict para facilitar el acceso
+    # Sanitizar: eliminar hashed_password del dict inyectado
+    # para evitar exposición accidental en respuestas o logs (defense in depth).
+    user = dict(user)  # copia para no mutar el documento TinyDB
+    user.pop("hashed_password", None)
     user["id"] = user_id_int
     return user
 

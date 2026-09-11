@@ -33,7 +33,7 @@ class TestForgotPassword:
         result = await forgot_password(payload)
 
         # Respuesta 200 con mensaje
-        assert result["message"] is not None
+        assert result.message is not None
 
         # send_reset_email debe haberse llamado
         mock_email_service.assert_called_once()
@@ -55,7 +55,7 @@ class TestForgotPassword:
         result = await forgot_password(payload)
 
         # misma respuesta 200
-        assert result["message"] is not None
+        assert result.message is not None
 
         # NO debe llamar a send_reset_email
         mock_email_service.assert_not_called()
@@ -77,7 +77,7 @@ class TestForgotPassword:
             result = await forgot_password(payload)
 
             # El usuario sigue viendo éxito
-            assert result["message"] is not None
+            assert result.message is not None
 
             # Verificar que logger.exception se llamó (desde el código real de routes/auth.py)
             # Nota: el código usa logger.exception("Error al enviar email de restablecimiento a %s", email)
@@ -97,7 +97,7 @@ class TestForgotPassword:
         payload = ForgotPasswordRequest(email="")
 
         result = await forgot_password(payload)
-        assert result["message"] is not None
+        assert result.message is not None
 
     @pytest.mark.asyncio
     async def test_forgot_password_invalid_email(self):
@@ -134,7 +134,7 @@ class TestResetPassword:
 
         result = await reset_password(payload)
 
-        assert result["message"] is not None
+        assert result.message is not None
 
         # Verificar que la contraseña se actualizó
         users = mock_db["users"]

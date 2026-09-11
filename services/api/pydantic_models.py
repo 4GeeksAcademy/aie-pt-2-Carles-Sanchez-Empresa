@@ -134,6 +134,17 @@ class SupplierUpdateStatus(BaseModel):
     status: SupplierStatus = Field(..., description="Nuevo estado: active o suspended")
 
 
+class SupplierListItem(BaseModel):
+    """Esquema ligero para listado de proveedores (sin campos innecesarios en una tabla)."""
+
+    id: int = Field(..., description="Identificador único del proveedor")
+    name: str = Field(..., description="Nombre comercial del proveedor")
+    country: str = Field(..., description="País del contrato")
+    categories: list[str] = Field(..., description="Lista de categorías")
+    currency: str = Field(..., description="Moneda del contrato")
+    status: SupplierStatus = Field(..., description="Estado del proveedor: active o suspended")
+
+
 # ──────────────────────────── Helpers ────────────────────────────
 
 def generate_timestamp() -> str:
@@ -210,6 +221,18 @@ class IncidentResponse(BaseModel):
     updated_at: str = Field(..., description="Fecha y hora de última modificación (ISO 8601)")
 
 
+class IncidentListItem(BaseModel):
+    """Esquema ligero para listado de incidencias — sin description ni updated_at."""
+
+    id: int = Field(..., description="Identificador único de la incidencia")
+    title: str = Field(..., description="Título breve de la incidencia")
+    category: str = Field(..., description="Categoría de la incidencia")
+    status: str = Field(..., description="Estado del ciclo de vida")
+    origin: str = Field(..., description="Origen del reporte")
+    branch: str = Field(..., description="Sede que gestiona o reporta la incidencia")
+    created_at: str = Field(..., description="Fecha y hora de creación (ISO 8601)")
+
+
 class IncidentStatusUpdate(BaseModel):
     """Esquema para actualizar únicamente el estado de una incidencia."""
 
@@ -226,6 +249,91 @@ class IncidentStatusUpdate(BaseModel):
             )
         return v
 
+
+# ═══════════════════════════════════════════════════════════════════
+# MODELOS COMPARTIDOS DE RESPUESTA (multi-dominio)
+# ═══════════════════════════════════════════════════════════════════
+
+class ProfileResponse(BaseModel):
+    """Esquema de respuesta del perfil de usuario."""
+
+    id: int = Field(..., description="Identificador único del perfil")
+    user_id: int = Field(..., description="ID del usuario al que pertenece")
+    name: str = Field(..., description="Nombre visible del usuario")
+    phone: str = Field(..., description="Teléfono de contacto")
+    address: str = Field(..., description="Dirección postal")
+    created_at: str = Field(..., description="Timestamp ISO 8601 de creación")
+    updated_at: str = Field(..., description="Timestamp ISO 8601 de última modificación")
+
+
+class MessageResponse(BaseModel):
+    """Respuesta genérica con un mensaje informativo."""
+
+    message: str = Field(..., description="Mensaje informativo para el cliente")
+
+
+class DeleteResponse(BaseModel):
+    """Respuesta para operaciones de eliminación."""
+
+    message: str = Field(..., description="Mensaje informativo")
+    id: int = Field(..., description="Identificador del recurso eliminado")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MODELOS DEL ANALIZADOR DE INCIDENCIAS (CSV)
+# ═══════════════════════════════════════════════════════════════════
+
+class RuleDetail(BaseModel):
+    """Detalle de una regla de validación incumplida."""
+
+    rule: str = Field(..., description="Identificador interno de la regla")
+    label: str = Field(..., description="Etiqueta legible de la regla")
+    count: int = Field(..., description="Número de registros que incumplen esta regla")
+    pct: float = Field(..., description="Porcentaje sobre el total de inválidos")
+
+
+class MetricsData(BaseModel):
+    """Métricas calculadas sobre los registros válidos del CSV."""
+
+    category_counts: dict[str, int] = Field(..., description="Conteo por categoría")
+    category_pcts: dict[str, float] = Field(..., description="Porcentaje por categoría")
+    status_counts: dict[str, int] = Field(..., description="Conteo por estado")
+    status_pcts: dict[str, float] = Field(..., description="Porcentaje por estado")
+    country_counts: dict[str, int] = Field(..., description="Conteo por país")
+    country_pcts: dict[str, float] = Field(..., description="Porcentaje por país")
+    avg_satisfaction: float | None = Field(None, description="Satisfacción media (casos cerrados con puntuación)")
+    closed_with_score_count: int = Field(..., description="Nº de casos cerrados con puntuación")
+    score_distribution: dict[str, int] = Field(..., description="Distribución de puntuaciones (1-5)")
+    score_pcts: dict[str, float] = Field(..., description="Porcentaje por puntuación")
+
+
+class AnalyzeResponse(BaseModel):
+    """Respuesta completa del análisis de incidencias CSV."""
+
+    total: int = Field(..., description="Total de registros procesados")
+    valid: int = Field(..., description="Registros válidos (sin errores)")
+    invalid: int = Field(..., description="Registros inválidos (con al menos un error)")
+    rules: list[RuleDetail] = Field(..., description="Desglose de reglas incumplidas")
+    metrics: MetricsData = Field(..., description="Métricas calculadas")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MODELOS DEL GESTOR DE INCIDENCIAS — Summary
+# ═══════════════════════════════════════════════════════════════════
+
+class IncidentSummaryResponse(BaseModel):
+    """Métricas agregadas de todas las incidencias."""
+
+    total: int = Field(..., description="Total de incidencias registradas")
+    by_status: dict[str, int] = Field(..., description="Agrupación por estado")
+    by_category: dict[str, int] = Field(..., description="Agrupación por categoría")
+    by_origin: dict[str, int] = Field(..., description="Agrupación por origen")
+    by_branch: dict[str, int] = Field(..., description="Agrupación por sede")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# HELPER — Conversión de documentos TinyDB
+# ═══════════════════════════════════════════════════════════════════
 
 def doc_to_response(doc: dict, doc_id: int) -> dict:
     """Convierte un documento TinyDB al formato esperado por IncidentResponse."""
