@@ -79,41 +79,41 @@ export function NewSupplierForm({ onSubmit, initial, isEditing, onCancel }: NewS
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.name")} *</label>
-          <input type="text" value={form.name} onChange={(e) => handleChange("name", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" required />
+          <label htmlFor="supplier-name" className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.name")} *</label>
+          <input id="supplier-name" type="text" value={form.name} onChange={(e) => handleChange("name", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" required />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.country")}</label>
-          <select value={form.country} onChange={(e) => handleChange("country", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]">
+          <label htmlFor="supplier-country" className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.country")}</label>
+          <select id="supplier-country" value={form.country} onChange={(e) => handleChange("country", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]">
             {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.rate")}</label>
-          <input type="number" step="0.01" min="0" value={form.rate_per_shipment} onChange={(e) => handleChange("rate_per_shipment", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" required />
+          <label htmlFor="supplier-rate" className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.rate")}</label>
+          <input id="supplier-rate" type="number" step="0.01" min="0" value={form.rate_per_shipment} onChange={(e) => handleChange("rate_per_shipment", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" required />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.currency")}</label>
-          <input type="text" value={form.currency} onChange={(e) => handleChange("currency", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder="EUR" />
+          <label htmlFor="supplier-currency" className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.currency")}</label>
+          <input id="supplier-currency" type="text" value={form.currency} onChange={(e) => handleChange("currency", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder="EUR" />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.categories")}</label>
-          <select value={form.categories} onChange={(e) => handleChange("categories", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]">
+          <label htmlFor="supplier-categories" className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.categories")}</label>
+          <select id="supplier-categories" value={form.categories} onChange={(e) => handleChange("categories", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]">
             <option value="">{t("suppliers.form.select")}</option>
             {SUPPLIER_CATEGORIES.map((cat) => <option key={cat.value} value={cat.value}>{t(cat.labelKey)}</option>)}
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.zone")}</label>
-          <input type="text" value={form.service_zone ?? ""} onChange={(e) => handleChange("service_zone", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder={t("suppliers.form.zone_placeholder")} />
+          <label htmlFor="supplier-zone" className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.zone")}</label>
+          <input id="supplier-zone" type="text" value={form.service_zone ?? ""} onChange={(e) => handleChange("service_zone", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder={t("suppliers.form.zone_placeholder")} />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.contact")}</label>
-          <input type="email" value={form.contact_email ?? ""} onChange={(e) => handleChange("contact_email", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder="proveedor@email.com" />
+          <label htmlFor="supplier-contact" className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.contact")}</label>
+          <input id="supplier-contact" type="email" value={form.contact_email ?? ""} onChange={(e) => handleChange("contact_email", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" placeholder="proveedor@email.com" />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.status")}</label>
-          <select value={form.status} onChange={(e) => handleChange("status", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]">
+          <label htmlFor="supplier-status-form" className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.status")}</label>
+          <select id="supplier-status-form" value={form.status} onChange={(e) => handleChange("status", e.target.value)} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]">
             <option value="active">{t("suppliers.active")}</option>
             <option value="suspended">{t("suppliers.suspended")}</option>
           </select>
@@ -121,18 +121,18 @@ export function NewSupplierForm({ onSubmit, initial, isEditing, onCancel }: NewS
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.notes")}</label>
-        <textarea value={form.notes ?? ""} onChange={(e) => handleChange("notes", e.target.value)} rows={3} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" />
+        <label htmlFor="supplier-notes" className="mb-1 block text-sm font-medium text-[#14263a]">{t("suppliers.form.notes")}</label>
+        <textarea id="supplier-notes" value={form.notes ?? ""} onChange={(e) => handleChange("notes", e.target.value)} rows={3} className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#14263a]" />
       </div>
 
       {localError && <p className="text-sm text-red-600">{localError}</p>}
 
       <div className="flex gap-3">
-        <button type="submit" disabled={submitting} className="rounded-lg bg-[#14263a] px-6 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:opacity-50">
+        <button type="submit" disabled={submitting} className="rounded-lg bg-[#14263a] px-6 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a] disabled:opacity-50">
           {submitting ? t("suppliers.form.saving") : t(isEditing ? "suppliers.form.update" : "suppliers.form.create")}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} className="rounded-lg border border-[#c89d66] bg-[#f8fbff] px-6 py-2 text-sm font-medium text-[#14263a] transition hover:bg-[#f3ddba]">
+          <button type="button" onClick={onCancel} className="rounded-lg border border-[#c89d66] bg-[#f8fbff] px-6 py-2 text-sm font-medium text-[#14263a] transition-colors hover:bg-[#f3ddba]">
             {t("suppliers.cancel")}
           </button>
         )}

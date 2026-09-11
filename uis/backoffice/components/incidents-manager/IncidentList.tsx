@@ -63,6 +63,7 @@ export function IncidentList({ incidents, loading, error, updatingId, onLoad, on
       {!loading && incidents.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-[#c89d66] shadow-sm">
           <table className="w-full min-w-[980px] text-left text-sm">
+            <caption className="sr-only">{t("incidents.mgr.title")}</caption>
             <thead className="bg-[#14263a] text-[#f8fbff]">
               <tr>
                 <th className="px-4 py-3">ID</th>
@@ -76,7 +77,7 @@ export function IncidentList({ incidents, loading, error, updatingId, onLoad, on
             </thead>
             <tbody className="divide-y divide-[#c89d66] bg-[#f3ddba]">
               {incidents.map((incident) => (
-                <tr key={incident.id} className="align-top transition hover:bg-[#f8fbff]">
+                <tr key={incident.id} className="align-top transition-colors hover:bg-[#f8fbff]">
                   <td className="px-4 py-3 font-mono text-xs text-[#2f4a62]">#{incident.id}</td>
                   <td className="max-w-72 px-4 py-3">
                     <p className="font-semibold text-[#14263a]">{incident.title}</p>
@@ -88,7 +89,7 @@ export function IncidentList({ incidents, loading, error, updatingId, onLoad, on
                   <td className="px-4 py-3 text-xs">{t(`incident.branch.${incident.branch}`)}</td>
                   <td className="px-4 py-3">
                     {STATUS_TRANSITIONS[incident.status].length === 0 ? (
-                      <span className="text-xs text-gray-500">{t("incidents.mgr.final_status")}</span>
+                      <span className="text-xs text-gray-500">{t(`incident.status.${incident.status}`)}</span>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {STATUS_TRANSITIONS[incident.status].map((status) => (

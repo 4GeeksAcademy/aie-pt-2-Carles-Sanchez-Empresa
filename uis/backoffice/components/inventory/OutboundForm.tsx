@@ -55,8 +55,9 @@ export function OutboundForm({ products, onSubmit }: Props) {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.sku_id")}</label>
+          <label htmlFor="outbound-sku" className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.sku_id")}</label>
           <select
+            id="outbound-sku"
             value={skuId}
             onChange={(e) => {
               setSkuId(e.target.value);
@@ -75,8 +76,9 @@ export function OutboundForm({ products, onSubmit }: Props) {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.quantity")}</label>
+          <label htmlFor="outbound-quantity" className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.quantity")}</label>
           <input
+            id="outbound-quantity"
             type="number"
             min={1}
             value={quantity}
@@ -86,8 +88,9 @@ export function OutboundForm({ products, onSubmit }: Props) {
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.type")}</label>
+          <label htmlFor="outbound-type" className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.type")}</label>
           <select
+            id="outbound-type"
             value={exitType}
             onChange={(e) => setExitType(e.target.value as "dispatch" | "loss")}
             className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm"
@@ -98,8 +101,9 @@ export function OutboundForm({ products, onSubmit }: Props) {
         </div>
         {exitType === "dispatch" && (
           <div>
-            <label className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.tracking")}</label>
+            <label htmlFor="outbound-tracking" className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.tracking")}</label>
             <input
+              id="outbound-tracking"
               type="text"
               value={tracking}
               onChange={(e) => setTracking(e.target.value)}
@@ -109,8 +113,9 @@ export function OutboundForm({ products, onSubmit }: Props) {
           </div>
         )}
         <div>
-          <label className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.warehouse")}</label>
+          <label htmlFor="outbound-warehouse" className="mb-1 block text-sm font-medium text-[#2f4a62]">{t("inventory.outbound.warehouse")}</label>
           <input
+            id="outbound-warehouse"
             type="text"
             value={warehouse}
             readOnly
@@ -121,7 +126,7 @@ export function OutboundForm({ products, onSubmit }: Props) {
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:opacity-50"
+        className="rounded-lg bg-[#14263a] px-5 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a] disabled:opacity-50"
       >
         {submitting ? t("inventory.outbound.submitting") : t("inventory.outbound.submit")}
       </button>

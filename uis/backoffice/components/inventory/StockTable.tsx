@@ -65,7 +65,7 @@ export function StockTable({
         </select>
         <button
           onClick={onRefresh}
-          className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]"
+          className="rounded-lg bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]"
         >
           ↻ {t("app.loading")}
         </button>
@@ -107,7 +107,7 @@ export function StockTable({
               {filtered.map((p) => {
                 const sl = stockLabel(p.current_stock);
                 return (
-                  <tr key={p.id} className="transition hover:bg-[#f8fbff]">
+                  <tr key={p.id} className="transition-colors hover:bg-[#f8fbff]">
                     <td className="px-4 py-3 font-mono text-xs">{p.id}</td>
                     <td className="px-4 py-3 font-medium">{p.name}</td>
                     <td className="px-4 py-3 font-mono text-xs">{p.sku_code}</td>

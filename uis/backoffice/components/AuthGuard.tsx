@@ -2,14 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getToken } from "@trackflow/core";
+import { getToken } from "@trackflow/core/services/auth";
 import { useTranslation } from "@/lib/i18n";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
-  const [canRender, setCanRender] = useState(false);
+
+  // Leer token SÍNCRONAMENTE para evitar loading flash y CLS.
+  // En SSR (window=undefined) devuelve null; en hidratación cliente
+  // devuelve el token real si existe.
+  const [canRender] = useState(() => {
+    if (typeof window === "undefined") return "loading";
+    const token = getToken();
+    if (!token) return "redirect";
+    return "ok";
+  });
 
   const redirectsWhenAuthenticated = pathname === "/login" || pathname === "/register";
   const isPublicAuthPage =
@@ -20,25 +29,21 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     if (isPublicAuthPage) {
       if (token && redirectsWhenAuthenticated) {
-        setCanRender(false);
         router.replace("/");
-      } else {
-        setCanRender(true);
       }
       return;
     }
 
     if (!token) {
-      setCanRender(false);
       const redirect = encodeURIComponent(pathname || "/");
       router.replace(`/login?redirect=${redirect}`);
-      return;
     }
-
-    setCanRender(true);
   }, [isPublicAuthPage, pathname, redirectsWhenAuthenticated, router]);
 
-  if (!canRender) {
+  // En páginas protegidas con token → renderizar AL INSTANTE (sin CLS)
+  if (!isPublicAuthPage) {
+    if (canRender === "ok") return <>{children}</>;
+    // SSR o sin token: mostrar loading (raro porque useEffect redirige rápido)
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#c6dced] p-6">
         <p className="text-sm font-medium text-[#2f4a62]">{t("app.loading")}</p>

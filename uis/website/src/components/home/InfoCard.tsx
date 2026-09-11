@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface InfoCardProps {
   title: string;
   points: string[];
@@ -22,9 +24,11 @@ export function InfoCard({ title, points, image }: InfoCardProps) {
       </div>
       {image ? (
         <div className="mt-auto pt-4">
-          <img
+          <Image
             src={image.src}
             alt={image.alt}
+            width={1000}
+            height={667}
             className="h-48 w-full rounded-md object-cover"
             loading="lazy"
             decoding="async"

@@ -1,11 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { InfoCard } from "@/components/home/InfoCard";
 import { SectionContainer } from "@/components/home/SectionContainer";
-import { StructuredData } from "@/components/home/StructuredData";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { useTranslation } from "@/lib/i18n";
+
+const InfoCard = dynamic(() => import("@/components/home/InfoCard").then((m) => m.InfoCard), { ssr: false });
 
 export default function HomePage() {
   const { t } = useTranslation();
@@ -24,7 +25,7 @@ export default function HomePage() {
     {
       titleKey: "home.service.3.title",
       points: [t("home.service.3.point.1"), t("home.service.3.point.2"), t("home.service.3.point.3")],
-      image: { src: "/media/Logistica.jpg", alt: t("home.service.3.img_alt") },
+      image: { src: "/media/Logistica.webp", alt: t("home.service.3.img_alt") },
     },
   ];
 
@@ -41,7 +42,6 @@ export default function HomePage() {
 
   return (
     <>
-      <StructuredData />
       <SiteHeader variant="home" />
 
       <main className="mx-auto w-full max-w-5xl space-y-8 px-4 pb-24 pt-6 md:pb-10 md:pt-8">
@@ -58,7 +58,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/application"
-            className="mt-5 inline-flex items-center rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a]"
+            className="mt-5 inline-flex items-center rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]"
           >
             {t("home.hero.cta")}
           </Link>

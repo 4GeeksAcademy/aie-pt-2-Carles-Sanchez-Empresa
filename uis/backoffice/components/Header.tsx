@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { getToken } from "@trackflow/core";
+import { getToken } from "@trackflow/core/services/auth";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 
@@ -32,8 +32,7 @@ export function Header({ onToggleSidebar }: Props) {
           {showAuth && (
             <button
               onClick={onToggleSidebar}
-              className="rounded-lg p-2 text-[#2f4a62] hover:bg-[#e5be83] transition"
-              aria-label="Toggle sidebar"
+              className="rounded-lg p-2 text-[#2f4a62] hover:bg-[#e5be83] transition-colors" aria-label="Toggle sidebar"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -42,7 +41,7 @@ export function Header({ onToggleSidebar }: Props) {
           )}
           <Link href="/" className="inline-flex items-center bg-transparent">
             <Image
-              src="/Logo TrackFlow.png"
+              src="/Logo TrackFlow.webp"
               alt="TrackFlow"
               width={112}
               height={56}
@@ -67,7 +66,7 @@ function LanguageSelector({ lang, setLang }: { lang: string; setLang: (lang: str
           <button
             type="button"
             onClick={() => setLang(option)}
-            className={`rounded px-2 py-1 transition ${lang === option ? "bg-[#14263a] text-white" : "text-[#2f4a62] hover:bg-[#e5be83]"}`}
+            className={`rounded px-2 py-1 transition-colors ${lang === option ? "bg-[#14263a] text-white" : "text-[#2f4a62] hover:bg-[#e5be83]"}`}
             aria-pressed={lang === option}
           >
             {option.toUpperCase()}

@@ -50,7 +50,7 @@ export function FileUpload({ onParse, onError }: FileUploadProps) {
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
-        className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#c89d66] bg-[#f8fbff] p-8 transition hover:border-[#14263a]"
+        className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#c89d66] bg-[#f8fbff] p-8 transition-colors hover:border-[#14263a]"
         onClick={() => fileInputRef.current?.click()}
       >
         <span className="mb-2 text-4xl">📂</span>
