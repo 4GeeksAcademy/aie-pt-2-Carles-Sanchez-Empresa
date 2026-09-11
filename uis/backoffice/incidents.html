@@ -72,28 +72,21 @@
 
   <header class="bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6 shadow-lg">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
-        <p class="text-blue-100 mt-1" data-i18n="incidents.header_subtitle">Analizador de incidencias</p>
+      <div class="flex items-center gap-3">
+        <button id="sidebarToggle">☰</button>
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
+          <p class="text-blue-100 mt-1" data-i18n="incidents.header_subtitle">Analizador de incidencias</p>
+        </div>
       </div>
       <div class="flex items-center gap-2">
-        <a href="/"
-           class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          ⬅ <span data-i18n="incidents.back_home">Volver al panel</span>
-        </a>
         <button onclick="window.__toggleLang()" id="langToggle"
                 class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
           ES | EN
         </button>
-        <span class="w-px h-6 bg-white/20 mx-1"></span>
-        <a href="/account/profile"
-           class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-          👤 <span data-i18n="incidents.profile">Perfil</span>
-        </a>
-        <button onclick="window.logout()"
-                class="bg-red-400/20 hover:bg-red-400/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
-          🚪 <span data-i18n="incidents.logout">Salir</span>
-        </button>
+      </div>
+    </div>
+  </header>
       </div>
     </div>
   </header>
@@ -299,6 +292,7 @@
   </footer>
 
   <script src="./js/i18n.js"></script>
+  <script src="./js/sidebar.js"></script>
   <script src="./js/app.js"></script>
   <script src="./js/incidents.js"></script>
 </body>

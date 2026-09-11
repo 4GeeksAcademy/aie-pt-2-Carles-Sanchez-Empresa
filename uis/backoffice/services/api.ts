@@ -172,3 +172,112 @@ export async function updateIncidentStatus(id: number, status: IncidentStatus): 
 export async function fetchIncidentSummary(): Promise<IncidentSummary> {
   return request<IncidentSummary>("/incidents/summary");
 }
+
+// ── Inventory ──
+
+export interface SKUItem {
+  id: number;
+  name: string;
+  sku_code: string;
+  client_name: string;
+  category: string;
+  warehouse: string;
+  current_stock: number;
+  created_at: string;
+}
+
+export interface SKUCreateInput {
+  name: string;
+  sku_code: string;
+  client_name: string;
+  category: string;
+  warehouse: string;
+}
+
+export interface StockEntryInput {
+  sku_id: number;
+  quantity: number;
+  reference: string;
+  warehouse: string;
+}
+
+export interface StockEntryResult {
+  id: number;
+  sku_id: number;
+  quantity: number;
+  reference: string;
+  warehouse: string;
+  user_uuid: string;
+  created_at: string;
+}
+
+export interface StockExitInput {
+  sku_id: number;
+  quantity: number;
+  exit_type: "dispatch" | "loss";
+  tracking_number?: string | null;
+  warehouse: string;
+}
+
+export interface StockExitResult {
+  id: number;
+  sku_id: number;
+  quantity: number;
+  exit_type: string;
+  tracking_number: string | null;
+  warehouse: string;
+  user_uuid: string;
+  created_at: string;
+}
+
+export interface Movement {
+  id: number;
+  type: "inbound" | "outbound";
+  sku_id: number;
+  sku_name: string;
+  sku_code: string;
+  quantity: number;
+  warehouse: string;
+  user_uuid: string;
+  reference_or_exit: string;
+  tracking_number?: string | null;
+  created_at: string;
+}
+
+export async function fetchProducts(filters?: { warehouse?: string; category?: string }): Promise<SKUItem[]> {
+  const params = new URLSearchParams();
+  if (filters?.warehouse) params.set("warehouse", filters.warehouse);
+  if (filters?.category) params.set("category", filters.category);
+  const query = params.toString();
+  return request<SKUItem[]>(`/inventory/products${query ? `?${query}` : ""}`);
+}
+
+export async function createProduct(data: SKUCreateInput): Promise<SKUItem> {
+  return request<SKUItem>("/inventory/products", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchProduct(id: number): Promise<SKUItem> {
+  return request<SKUItem>(`/inventory/products/${id}`);
+}
+
+export async function createInboundOrder(data: StockEntryInput): Promise<StockEntryResult> {
+  return request<StockEntryResult>("/inventory/orders/inbound", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function createOutboundOrder(data: StockExitInput): Promise<StockExitResult> {
+  return request<StockExitResult>("/inventory/orders/outbound", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchOrders(warehouse?: string): Promise<Movement[]> {
+  const params = warehouse ? `?warehouse=${warehouse}` : "";
+  return request<Movement[]>(`/inventory/orders${params}`);
+}
