@@ -5,3 +5,4 @@ tinydb>=4.8.0
 python-jose[cryptography]>=3.5.0
 libpass[bcrypt]>=1.9.3
 python-dotenv>=1.2.2
+resend>=2.39.0

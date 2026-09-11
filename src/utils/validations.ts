@@ -1,6 +1,6 @@
 //Validaciones de negocio
 
-import { Product, Shipment, Carrier } from '../types/models.js';
+import { Product, Shipment, Carrier } from '../types/models';
 
 /*
     - Valida todas las reglas de negocio para un producto
