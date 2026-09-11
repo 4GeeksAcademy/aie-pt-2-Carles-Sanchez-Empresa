@@ -7,8 +7,9 @@ de métricas agregadas.
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
+from caching import cached, invalidate
 from database import incidents_table, IncidentQuery
 from pydantic_models import (
     IncidentCreate,
@@ -49,13 +50,19 @@ async def create_incident(payload: IncidentCreate):
     doc_id = incidents_table.insert(doc)
     response = doc_to_response(doc, doc_id)
 
+    # Invalidar caché de listado y resumen de incidencias
+    invalidate("GET:/api/incidents")
+    invalidate("GET:/api/incidents/summary")
+
     return IncidentResponse(**response)
 
 
 # ──────────────────────────── GET list ────────────────────────────
 
 @router.get("", response_model=list[IncidentListItem])
+@cached(ttl=30)
 async def list_incidents(
+    request: Request,
     status: Optional[str] = Query(None, description="Filtrar por estado (open, in_progress, resolved, discarded)"),
     origin: Optional[str] = Query(None, description="Filtrar por origen (customer, branch, internal)"),
     branch: Optional[str] = Query(None, description="Filtrar por sede (central, la_warehouse, la_office, zaragoza_warehouse, zaragoza_office)"),
@@ -97,7 +104,8 @@ async def list_incidents(
 #       interprete como un integer.
 
 @router.get("/summary", response_model=IncidentSummaryResponse)
-async def get_summary():
+@cached(ttl=60)
+async def get_summary(request: Request):
     """
     Devuelve métricas agregadas de todas las incidencias.
 
@@ -203,4 +211,9 @@ async def update_incident_status(incident_id: int, payload: IncidentStatusUpdate
     doc_dict = dict(doc)
     doc_dict["status"] = new_status
     doc_dict["updated_at"] = now
+
+    # Invalidar caché de listado y resumen de incidencias
+    invalidate("GET:/api/incidents")
+    invalidate("GET:/api/incidents/summary")
+
     return IncidentResponse(**doc_to_response(doc_dict, incident_id))

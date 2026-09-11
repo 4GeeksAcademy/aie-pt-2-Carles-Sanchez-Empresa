@@ -1,0 +1,577 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "TrackFlow Telemetry Event Schemas",
+  "description": "Catálogo completo de esquemas de eventos de telemetría para TrackFlow. Cada evento sigue la taxonomía entidad_acción e incluye un allowlist de properties.",
+  "version": "1.0",
+  "last_updated": "2026-09-10",
+  "eventEnvelope": {
+    "description": "Campos obligatorios que todo evento debe incluir en su raíz. Ningún evento puede emitirse sin completar todos los campos del envelope.",
+    "type": "object",
+    "required": ["eventId", "timestamp", "sessionId", "event_type", "schemaVersion", "requestId", "properties"],
+    "properties": {
+      "eventId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Identificador único del evento (UUID v4). Generado en el punto de emisión. Permite deduplicación."
+      },
+      "timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Momento exacto en que ocurrió el evento. Formato ISO 8601: 2026-09-10T14:30:00.000Z."
+      },
+      "sessionId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Identificador de la sesión del usuario. Permite agrupar eventos de una misma interacción."
+      },
+      "userId": {
+        "type": "string",
+        "description": "Identificador del usuario autenticado. Usar 'anonymous' si no hay sesión activa (ej. pre-login)."
+      },
+      "event_type": {
+        "type": "string",
+        "pattern": "^[a-z]+_[a-z]+$",
+        "description": "Tipo de evento en taxonomía entidad_acción. Ej: inbound_order_created."
+      },
+      "schemaVersion": {
+        "type": "string",
+        "pattern": "^\\d+\\.\\d+$",
+        "description": "Versión del esquema del evento. Formato SemVer sin patch. Este plan usa '1.0'."
+      },
+      "requestId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Identificador de correlación extremo a extremo. Se genera en frontend y se propaga al backend y logs. Une frontend ↔ backend ↔ base de datos."
+      },
+      "properties": {
+        "type": "object",
+        "description": "Payload específico del evento. Solo las claves definidas en el allowlist de cada event_type están permitidas."
+      }
+    }
+  },
+  "events": {
+    "inbound_order_created": {
+      "description": "Se dispara cuando un almacén registra la recepción de mercancía de un cliente. Corresponde a la creación de un StockEntry.",
+      "mandatory": true,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["warehouse", "client_id", "product_id", "product_category", "quantity"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén receptor." },
+          "client_id": { "type": "string", "description": "Identificador del cliente (marca B2B) propietaria del SKU." },
+          "product_id": { "type": "integer", "description": "ID del SKU recibido." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría del producto." },
+          "quantity": { "type": "integer", "exclusiveMinimum": 0, "description": "Unidades recibidas." },
+          "reference": { "type": "string", "description": "Referencia de despacho del cliente para trazabilidad externa." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "outbound_order_created": {
+      "description": "Se dispara cuando un almacén completa el picking y despacho de un pedido. Corresponde a StockExit con exit_type=dispatch.",
+      "mandatory": true,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["warehouse", "client_id", "product_id", "product_category", "quantity", "exit_type"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén de salida." },
+          "client_id": { "type": "string", "description": "Identificador del cliente (marca B2B)." },
+          "product_id": { "type": "integer", "description": "ID del SKU despachado." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría del producto." },
+          "quantity": { "type": "integer", "exclusiveMinimum": 0, "description": "Unidades despachadas." },
+          "exit_type": { "type": "string", "enum": ["dispatch", "loss"], "description": "Tipo de salida." },
+          "tracking_number": { "type": "string", "description": "Número de tracking del transportista (solo si exit_type es dispatch)." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "stock_threshold_triggered": {
+      "description": "Se dispara cuando el stock de un SKU cae por debajo del mínimo configurado para ese cliente tras una orden de salida.",
+      "mandatory": true,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["warehouse", "client_id", "product_id", "product_category", "current_stock", "threshold_min", "quantity_sold"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén donde se disparó el umbral." },
+          "client_id": { "type": "string", "description": "Cliente propietario del SKU." },
+          "product_id": { "type": "integer", "description": "ID del SKU por debajo del umbral." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría del producto." },
+          "current_stock": { "type": "integer", "description": "Stock actual después de la orden." },
+          "threshold_min": { "type": "integer", "description": "Umbral mínimo configurado para ese cliente/SKU." },
+          "quantity_sold": { "type": "integer", "description": "Unidades de la orden que dispararon el umbral." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "direct_stock_edit_rejected": {
+      "description": "Se dispara cuando un usuario intenta modificar el stock directamente y el sistema lo rechaza.",
+      "mandatory": true,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["warehouse", "attempted_new_stock", "current_stock", "method", "rejection_reason"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén donde se intentó la edición." },
+          "client_id": { "type": "string", "description": "Cliente del SKU afectado." },
+          "product_id": { "type": "integer", "description": "ID del SKU que se intentó modificar." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría del producto." },
+          "attempted_new_stock": { "type": "integer", "description": "Valor de stock que el usuario intentó establecer." },
+          "current_stock": { "type": "integer", "description": "Stock real actual del SKU en el sistema." },
+          "method": { "type": "string", "enum": ["api", "backoffice", "database_tool"], "description": "Método desde donde se intentó." },
+          "rejection_reason": { "type": "string", "description": "Motivo del rechazo." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "inventory_discrepancy_detected": {
+      "description": "Se dispara cuando un conteo físico o auditoría detecta una diferencia entre stock del sistema y stock real.",
+      "mandatory": true,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["warehouse", "client_id", "product_id", "product_category", "system_stock", "physical_stock", "difference"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén donde se realizó el conteo." },
+          "client_id": { "type": "string", "description": "Cliente propietario del SKU." },
+          "product_id": { "type": "integer", "description": "ID del SKU con discrepancia." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría del producto." },
+          "system_stock": { "type": "integer", "description": "Stock registrado en el sistema antes del conteo." },
+          "physical_stock": { "type": "integer", "description": "Stock real contado físicamente." },
+          "difference": { "type": "integer", "description": "Diferencia: system_stock - physical_stock." },
+          "audit_reference": { "type": "string", "description": "Referencia interna de la auditoría." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "inbound_order_cancelled": {
+      "description": "Se dispara cuando una orden de entrada previamente creada es cancelada antes de completarse.",
+      "mandatory": false,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["warehouse", "client_id", "product_id", "product_category", "quantity", "original_entry_id"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén donde se canceló la entrada." },
+          "client_id": { "type": "string", "description": "Cliente de la orden cancelada." },
+          "product_id": { "type": "integer", "description": "ID del SKU asociado." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría del producto." },
+          "quantity": { "type": "integer", "description": "Unidades de la orden cancelada." },
+          "reason": { "type": "string", "description": "Motivo de la cancelación." },
+          "original_entry_id": { "type": "integer", "description": "ID de la entrada original cancelada." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "outbound_order_cancelled": {
+      "description": "Se dispara cuando un despacho previamente creado es cancelado.",
+      "mandatory": false,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["warehouse", "client_id", "product_id", "product_category", "quantity", "exit_type", "original_exit_id"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén donde se canceló la salida." },
+          "client_id": { "type": "string", "description": "Cliente de la orden cancelada." },
+          "product_id": { "type": "integer", "description": "ID del SKU asociado." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría del producto." },
+          "quantity": { "type": "integer", "description": "Unidades de la orden cancelada." },
+          "exit_type": { "type": "string", "enum": ["dispatch", "loss"], "description": "Tipo de salida." },
+          "reason": { "type": "string", "description": "Motivo de la cancelación." },
+          "original_exit_id": { "type": "integer", "description": "ID de la salida original cancelada." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "stock_validation_failed": {
+      "description": "Se dispara cuando el sistema rechaza una orden de salida por stock insuficiente.",
+      "mandatory": false,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["warehouse", "client_id", "product_id", "product_category", "requested_quantity", "available_stock"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén donde se intentó la salida." },
+          "client_id": { "type": "string", "description": "Cliente del SKU." },
+          "product_id": { "type": "integer", "description": "ID del SKU sin stock suficiente." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría del producto." },
+          "requested_quantity": { "type": "integer", "description": "Unidades solicitadas." },
+          "available_stock": { "type": "integer", "description": "Stock disponible en el momento del intento." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "product_stock_queried": {
+      "description": "Se dispara cada vez que un operador consulta el stock de un SKU. Aplica throttle (debounce 10s).",
+      "mandatory": false,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "batch",
+      "throttle": "debounce_10s",
+      "properties": {
+        "type": "object",
+        "required": ["query_type"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén por el que se filtró." },
+          "client_id": { "type": "string", "description": "Cliente por el que se filtró." },
+          "product_id": { "type": "integer", "description": "ID del SKU consultado." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría por la que se filtró." },
+          "query_type": { "type": "string", "enum": ["detail", "list", "search"], "description": "Tipo de consulta." },
+          "results_count": { "type": "integer", "description": "Número de resultados devueltos." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "picking_item_not_found": {
+      "description": "Se dispara durante el picking cuando un operador no encuentra un SKU en su ubicación esperada.",
+      "mandatory": false,
+      "category": "inventory",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["warehouse", "client_id", "product_id", "product_category", "outbound_order_id", "resolved"],
+        "properties": {
+          "warehouse": { "type": "string", "enum": ["los_angeles", "zaragoza"], "description": "Almacén donde ocurrió el incidente." },
+          "client_id": { "type": "string", "description": "Cliente del SKU no encontrado." },
+          "product_id": { "type": "integer", "description": "ID del SKU no encontrado." },
+          "product_category": { "type": "string", "enum": ["fashion", "electronics", "cosmetics"], "description": "Categoría del producto." },
+          "expected_location": { "type": "string", "description": "Ubicación esperada del SKU en el almacén." },
+          "outbound_order_id": { "type": "integer", "description": "ID de la orden de salida en proceso." },
+          "resolved": { "type": "boolean", "description": "Si el item fue encontrado después." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "login_attempted": {
+      "description": "Se dispara en cada intento de login, antes de validar credenciales. No captura contraseña. PII: IP hasheada.",
+      "mandatory": false,
+      "category": "authentication",
+      "containsPII": true,
+      "pii_fields": ["ip_hash"],
+      "anonymization": "IP se almacena como hash SHA-256 truncado. No IP completa.",
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["login_method", "ip_hash"],
+        "properties": {
+          "login_method": { "type": "string", "enum": ["password", "oauth2", "token"], "description": "Método de autenticación." },
+          "ip_hash": { "type": "string", "description": "Hash SHA-256 truncado de la IP del cliente." },
+          "user_agent": { "type": "string", "description": "User-Agent sanitizado (solo browser y OS)." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "login_succeeded": {
+      "description": "Se dispara cuando un intento de login es exitoso.",
+      "mandatory": false,
+      "category": "authentication",
+      "containsPII": true,
+      "pii_fields": ["ip_hash"],
+      "anonymization": "IP hasheada. No IP completa.",
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["ip_hash"],
+        "properties": {
+          "ip_hash": { "type": "string", "description": "Hash SHA-256 truncado de la IP." },
+          "previous_session_id": { "type": "string", "description": "ID de sesión anterior si existía." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "login_failed": {
+      "description": "Se dispara cuando un login es rechazado por credenciales incorrectas o cuenta desactivada.",
+      "mandatory": false,
+      "category": "authentication",
+      "containsPII": true,
+      "pii_fields": ["ip_hash"],
+      "anonymization": "IP hasheada. No se captura la contraseña intentada.",
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["failure_reason", "ip_hash", "attempt_number"],
+        "properties": {
+          "failure_reason": { "type": "string", "enum": ["invalid_credentials", "account_disabled"], "description": "Motivo del fallo." },
+          "ip_hash": { "type": "string", "description": "Hash SHA-256 truncado de la IP." },
+          "attempt_number": { "type": "integer", "description": "Número de intentos fallidos consecutivos desde la misma IP." },
+          "user_agent": { "type": "string", "description": "Browser/OS sanitizado." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "session_expired": {
+      "description": "Se dispara cuando un usuario intenta usar un token JWT expirado.",
+      "mandatory": false,
+      "category": "authentication",
+      "containsPII": false,
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["expired_at", "token_age_minutes"],
+        "properties": {
+          "expired_at": { "type": "string", "format": "date-time", "description": "Timestamp de expiración del token." },
+          "token_age_minutes": { "type": "integer", "description": "Edad del token al expirar." },
+          "operation_attempted": { "type": "string", "description": "Acción que el usuario intentaba realizar." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "password_reset_requested": {
+      "description": "Se dispara cuando un usuario solicita restablecimiento de contraseña.",
+      "mandatory": false,
+      "category": "authentication",
+      "containsPII": true,
+      "pii_fields": ["ip_hash"],
+      "anonymization": "IP hasheada. No se expone si el email existe.",
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["ip_hash"],
+        "properties": {
+          "ip_hash": { "type": "string", "description": "Hash truncado de la IP." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "password_changed": {
+      "description": "Se dispara cuando un usuario cambia su contraseña exitosamente.",
+      "mandatory": false,
+      "category": "authentication",
+      "containsPII": false,
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["change_type"],
+        "properties": {
+          "change_type": { "type": "string", "enum": ["self_change", "reset_via_token"], "description": "Tipo de cambio de contraseña." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "account_locked": {
+      "description": "Se dispara cuando una cuenta es bloqueada por superar el límite de intentos fallidos.",
+      "mandatory": false,
+      "category": "authentication",
+      "containsPII": true,
+      "pii_fields": ["ip_hash"],
+      "anonymization": "IP hasheada.",
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["failed_attempts", "lock_duration_minutes", "ip_hash"],
+        "properties": {
+          "failed_attempts": { "type": "integer", "description": "Intentos fallidos que provocaron el bloqueo." },
+          "lock_duration_minutes": { "type": "integer", "description": "Duración del bloqueo en minutos." },
+          "ip_hash": { "type": "string", "description": "Hash truncado de la IP origen." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "api_latency_recorded": {
+      "description": "Se dispara al finalizar cada request a la API. Sampleo 1:10 para endpoints de alta frecuencia.",
+      "mandatory": false,
+      "category": "performance",
+      "containsPII": false,
+      "processing": "stream",
+      "throttle": "sample_1_in_10",
+      "properties": {
+        "type": "object",
+        "required": ["endpoint", "method", "status_code", "latency_ms"],
+        "properties": {
+          "endpoint": { "type": "string", "description": "Ruta del endpoint sin query params." },
+          "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"], "description": "Método HTTP." },
+          "status_code": { "type": "integer", "description": "Código de respuesta HTTP." },
+          "latency_ms": { "type": "integer", "minimum": 0, "description": "Tiempo de respuesta en ms." },
+          "db_queries_count": { "type": "integer", "description": "Número de consultas a base de datos." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "page_load_timed": {
+      "description": "Se dispara desde frontend al completar la carga de una página del backoffice.",
+      "mandatory": false,
+      "category": "performance",
+      "containsPII": false,
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["page", "load_time_ms"],
+        "properties": {
+          "page": { "type": "string", "enum": ["dashboard", "inventory", "incidents", "suppliers", "settings"], "description": "Identificador de la página." },
+          "load_time_ms": { "type": "integer", "description": "Tiempo de carga total en ms." },
+          "ttfb_ms": { "type": "integer", "description": "Time to First Byte en ms." },
+          "api_calls_count": { "type": "integer", "description": "Número de llamadas API al cargar." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "slow_query_detected": {
+      "description": "Se dispara cuando una consulta a Supabase supera los 500ms.",
+      "mandatory": false,
+      "category": "performance",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["query_duration_ms", "table", "operation"],
+        "properties": {
+          "query_duration_ms": { "type": "integer", "minimum": 500, "description": "Duración de la consulta en ms." },
+          "table": { "type": "string", "enum": ["skus", "stock_entries", "stock_exits", "users", "suppliers", "profiles", "incidents"], "description": "Tabla consultada." },
+          "operation": { "type": "string", "enum": ["SELECT", "INSERT", "UPDATE", "DELETE"], "description": "Tipo de operación." },
+          "endpoint": { "type": "string", "description": "Endpoint que originó la consulta lenta." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "api_dependency_failed": {
+      "description": "Se dispara cuando una dependencia externa (Supabase, email) falla o devuelve error.",
+      "mandatory": false,
+      "category": "performance",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["dependency", "error_type"],
+        "properties": {
+          "dependency": { "type": "string", "enum": ["supabase", "email_service"], "description": "Nombre de la dependencia." },
+          "error_type": { "type": "string", "enum": ["connection_timeout", "connection_refused", "http_error"], "description": "Tipo de error." },
+          "http_status": { "type": "integer", "description": "Código HTTP del error." },
+          "endpoint": { "type": "string", "description": "Endpoint que falló." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "frontend_error_captured": {
+      "description": "Se dispara cuando el frontend captura un error JS no manejado. Mensaje sanitizado (máx 200 chars, emails/teléfonos enmascarados). Deduplicación 5m.",
+      "mandatory": false,
+      "category": "errors",
+      "containsPII": true,
+      "pii_fields": ["error_message_safe"],
+      "anonymization": "Regex de emails y teléfonos aplicado con [REDACTED]. Truncado a 200 caracteres.",
+      "processing": "stream",
+      "throttle": "dedup_5m",
+      "properties": {
+        "type": "object",
+        "required": ["error_type", "error_message_safe", "page", "stack_trace"],
+        "properties": {
+          "error_type": { "type": "string", "description": "Tipo de error JS (TypeError, ReferenceError, etc.)." },
+          "error_message_safe": { "type": "string", "maxLength": 200, "description": "Mensaje sanitizado (máx 200 chars, PII enmascarado)." },
+          "page": { "type": "string", "description": "Página donde ocurrió el error." },
+          "component": { "type": "string", "description": "Componente donde se produjo." },
+          "stack_trace": { "type": "boolean", "description": "Si se incluyó stack trace (no se almacena texto completo)." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "api_error_returned": {
+      "description": "Se dispara cuando la API devuelve un error 4xx o 5xx.",
+      "mandatory": false,
+      "category": "errors",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["endpoint", "method", "status_code"],
+        "properties": {
+          "endpoint": { "type": "string", "description": "Ruta del endpoint." },
+          "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"], "description": "Método HTTP." },
+          "status_code": { "type": "integer", "description": "Código de error HTTP." },
+          "error_detail": { "type": "string", "description": "Mensaje de error (omitido si contiene posible PII)." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "validation_error_occurred": {
+      "description": "Se dispara cuando un formulario o endpoint rechaza datos por error de validación.",
+      "mandatory": false,
+      "category": "errors",
+      "containsPII": false,
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["endpoint", "field", "validation_rule"],
+        "properties": {
+          "endpoint": { "type": "string", "description": "Ruta del endpoint." },
+          "field": { "type": "string", "description": "Nombre del campo que falló validación." },
+          "validation_rule": { "type": "string", "description": "Regla de validación incumplida." },
+          "field_type": { "type": "string", "description": "Tipo del campo (omitido si expone información sensible)." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "unauthorized_access_attempted": {
+      "description": "Se dispara cuando un usuario autenticado intenta acceder a un recurso sin permisos.",
+      "mandatory": false,
+      "category": "errors",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["endpoint", "method", "required_role", "user_role"],
+        "properties": {
+          "endpoint": { "type": "string", "description": "Ruta del endpoint." },
+          "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"], "description": "Método HTTP." },
+          "required_role": { "type": "string", "enum": ["admin", "manager", "user"], "description": "Rol mínimo requerido." },
+          "user_role": { "type": "string", "enum": ["admin", "manager", "user"], "description": "Rol actual del usuario." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "page_viewed": {
+      "description": "Se dispara cuando un operador navega a una sección del backoffice. Aplica throttle 30s.",
+      "mandatory": false,
+      "category": "navigation",
+      "containsPII": false,
+      "processing": "batch",
+      "throttle": "throttle_30s",
+      "properties": {
+        "type": "object",
+        "required": ["page"],
+        "properties": {
+          "page": { "type": "string", "description": "Identificador de la página visitada." },
+          "referrer": { "type": "string", "description": "Página desde la que se navegó." },
+          "duration_seconds": { "type": "integer", "description": "Tiempo estimado en la página (se envía al salir)." }
+        },
+        "additionalProperties": false
+      }
+    },
+    "flow_abandoned": {
+      "description": "Se dispara cuando un usuario inicia un flujo multi-paso pero no lo completa.",
+      "mandatory": false,
+      "category": "navigation",
+      "containsPII": false,
+      "processing": "batch",
+      "properties": {
+        "type": "object",
+        "required": ["flow_type", "current_step", "total_steps", "time_spent_seconds", "partial_data"],
+        "properties": {
+          "flow_type": { "type": "string", "enum": ["create_inbound_order", "create_outbound_order", "register_incident", "create_supplier"], "description": "Tipo de flujo abandonado." },
+          "current_step": { "type": "string", "description": "Paso en el que se abandonó." },
+          "total_steps": { "type": "integer", "description": "Número total de pasos del flujo." },
+          "time_spent_seconds": { "type": "integer", "description": "Tiempo invertido antes de abandonar." },
+          "partial_data": { "type": "boolean", "description": "Si se había introducido algún dato." }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

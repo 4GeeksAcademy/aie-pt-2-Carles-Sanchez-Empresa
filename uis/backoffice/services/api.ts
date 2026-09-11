@@ -2,6 +2,49 @@
 import { getToken, clearToken } from "@trackflow/core/services/auth";
 import { API_BASE } from "@/lib/constants";
 
+// ── Client-side request cache (GET only, TTL-based) ──
+
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+const requestCache = new Map<string, CacheEntry<unknown>>();
+const DEFAULT_TTL = 30_000; // 30 seconds
+
+function getCacheKey(url: string): string {
+  return `GET:${url}`;
+}
+
+function getFromCache<T>(url: string): T | null {
+  const key = getCacheKey(url);
+  const entry = requestCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    requestCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function setInCache<T>(url: string, data: T, ttl: number = DEFAULT_TTL): void {
+  requestCache.set(getCacheKey(url), { data, expiresAt: Date.now() + ttl });
+}
+
+export function invalidateCache(pattern?: string): void {
+  if (!pattern) {
+    requestCache.clear();
+    return;
+  }
+  for (const key of requestCache.keys()) {
+    if (key.includes(pattern)) {
+      requestCache.delete(key);
+    }
+  }
+}
+
+// ── Base request function ──
+
 function formatErrorDetail(detail: unknown, fallback: string): string {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) {
@@ -22,6 +65,14 @@ function formatErrorDetail(detail: unknown, fallback: string): string {
 }
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
+  const isGet = !options?.method || options.method === "GET";
+
+  // For GET requests, check the in-memory cache first
+  if (isGet) {
+    const cached = getFromCache<T>(url);
+    if (cached) return cached;
+  }
+
   const token = typeof window !== "undefined" ? getToken() : null;
 
   const res = await fetch(`${API_BASE}${url}`, {
@@ -49,7 +100,14 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     throw new Error(detail);
   }
 
-  return res.json();
+  const data: T = await res.json();
+
+  // Cache GET responses
+  if (isGet) {
+    setInCache(url, data);
+  }
+
+  return data;
 }
 
 // ── Suppliers ──
