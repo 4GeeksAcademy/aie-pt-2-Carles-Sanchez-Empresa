@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from datetime import datetime, timezone
 from database import suppliers_table
-from models import VALID_CATEGORIES, SupplierStatus
+from pydantic_models import VALID_CATEGORIES, SupplierStatus
 
 
 # ──────────────────────────── Datos iniciales ────────────────────────────

@@ -8,7 +8,7 @@ para tarifa y estado con validación Pydantic.
 from fastapi import APIRouter, HTTPException, Query
 
 from database import suppliers_table, SupplierQuery
-from models import (
+from pydantic_models import (
     SupplierCreate,
     SupplierResponse,
     SupplierUpdateRate,
