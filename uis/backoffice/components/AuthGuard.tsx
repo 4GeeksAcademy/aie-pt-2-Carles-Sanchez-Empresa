@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getToken } from "@trackflow/core/services/auth";
 import { useTranslation } from "@/lib/i18n";
+import { track } from "@/services/telemetry";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -35,6 +36,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (!token) {
+      // O9: session_expired — detectar cuando el token no existe
+      track("session_expired", {
+        expired_at: new Date().toISOString(),
+        token_age_minutes: 0, // No tenemos acceso al token expirado
+        operation_attempted: pathname || "unknown",
+      });
       const redirect = encodeURIComponent(pathname || "/");
       router.replace(`/login?redirect=${redirect}`);
     }

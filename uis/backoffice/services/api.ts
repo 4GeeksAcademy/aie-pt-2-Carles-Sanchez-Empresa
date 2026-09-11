@@ -1,6 +1,7 @@
 // API service for backoffice — uses fetch with auth token from @trackflow/core
 import { getToken, clearToken } from "@trackflow/core/services/auth";
 import { API_BASE } from "@/lib/constants";
+import { track } from "@/services/telemetry";
 
 // ── Client-side request cache (GET only, TTL-based) ──
 
@@ -66,6 +67,8 @@ function formatErrorDetail(detail: unknown, fallback: string): string {
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const isGet = !options?.method || options.method === "GET";
+  const method = options?.method || "GET";
+  const startTime = performance.now();
 
   // For GET requests, check the in-memory cache first
   if (isGet) {
@@ -83,7 +86,27 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     ...options,
   });
 
+  const latencyMs = Math.round(performance.now() - startTime);
+
+  // O13: api_latency_recorded — sample 1:10 para endpoints de alta frecuencia
+  if (Math.random() < 0.1) {
+    track("api_latency_recorded", {
+      endpoint: url.split("?")[0],
+      method: method as "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+      status_code: res.status,
+      latency_ms: latencyMs,
+    });
+  }
+
   if (!res.ok) {
+    // O18: api_error_returned
+    track("api_error_returned", {
+      endpoint: url.split("?")[0],
+      method: method as "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+      status_code: res.status,
+      error_detail: `Error ${res.status}`,
+    });
+
     if (res.status === 401) {
       clearToken();
       if (typeof window !== "undefined") {

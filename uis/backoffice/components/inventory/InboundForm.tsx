@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { track } from "@/services/telemetry";
 import type { StockEntryInput, StockEntryResult } from "@/services/api";
 
 interface Props {
@@ -30,6 +31,16 @@ export function InboundForm({ products, onSubmit }: Props) {
         quantity: parseInt(quantity, 10),
         reference,
         warehouse,
+      });
+      // M1: inbound_order_created
+      const product = products.find((p) => p.id === parseInt(skuId, 10));
+      track("inbound_order_created", {
+        warehouse: warehouse || "unknown",
+        client_id: product ? String(product.id) : "unknown",
+        product_id: parseInt(skuId, 10),
+        product_category: "unknown", // Se establecerá en el backend
+        quantity: parseInt(quantity, 10),
+        reference: reference || undefined,
       });
       setSuccess(true);
       setSkuId("");
