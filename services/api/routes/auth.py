@@ -4,10 +4,13 @@ routes/auth.py — Endpoints de autenticación (TrackFlow).
 Gestiona el login (emisión de JWT) y la información del usuario autenticado.
 """
 
+import logging
 from json import JSONDecodeError
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ValidationError
+
+logger = logging.getLogger(__name__)
 
 from auth import (
     create_access_token,
@@ -189,8 +192,10 @@ async def forgot_password(payload: ForgotPasswordRequest):
         try:
             send_reset_email(to_email=email, token=token)
         except Exception:
-            # El email no debe romper el flujo — el usuario ve el mensaje de confirmación igualmente
-            pass
+            logger.exception(
+                "Error al enviar email de restablecimiento a %s", email
+            )
+            # No se interrumpe el flujo — el usuario ve confirmación igualmente
 
     return {
         "message": "Formulario rellenado correctamente, recibirás un enlace en breves",
@@ -233,6 +238,13 @@ async def change_password(
     """
     user_id = current_user["id"]
     user = users_table.get(doc_id=user_id)
+
+    if user is None:
+        logger.warning("Usuario autenticado (id=%s) no encontrado en la tabla users", user_id)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=t("user_not_found"),
+        )
 
     if not verify_password(payload.current_password, user.get("hashed_password", "")):
         raise HTTPException(

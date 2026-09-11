@@ -39,9 +39,9 @@ messages = {
 
     # ─── CSV / Analyze ───
     "csv_extension_required": "The file must have a .csv extension",
-    "csv_read_error": "Error reading file: {}",
+    "csv_read_error": "Error reading file. Please check the file and try again.",
     "csv_empty": "The file is empty.",
-    "csv_parse_error": "Error parsing CSV: {}",
+    "csv_parse_error": "Error parsing CSV. Check the format and try again.",
     "csv_empty_rows": "The CSV file is empty or has only headers.",
     "no_analysis_found": "No previous analysis found. Perform a POST /api/incidents/analyze first.",
 
