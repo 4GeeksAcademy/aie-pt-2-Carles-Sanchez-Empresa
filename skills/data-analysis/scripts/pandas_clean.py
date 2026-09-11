@@ -1,30 +1,49 @@
 """
 Safe snippet for basic pandas cleaning. Copy and adapt for your dataset.
-Run: python pandas_clean.py  (ensure pandas is installed)
+Usage: python pandas_clean.py <path_to_csv>
 """
+import sys
 import pandas as pd
 
-# Load (adjust path and kwargs as needed)
-df = pd.read_csv("data.csv")  # or read_json, read_excel
-print("df_shape", df.shape)
-print("df_dtypes", df.dtypes)
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python pandas_clean.py <path_to_csv>")
+        sys.exit(1)
 
-# Drop fully null columns
-df = df.dropna(axis=1, how="all")
-print("df_shape_after_drop_all_null_cols", df.shape)
+    path = sys.argv[1]
 
-# Fill or drop nulls in key columns (customise columns)
-# df = df.dropna(subset=["required_col"])
-# df["optional_col"] = df["optional_col"].fillna(0)
+    try:
+        df = pd.read_csv(path)
+    except FileNotFoundError:
+        print(f"Error: File not found: {path}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error reading file: {e}")
+        sys.exit(1)
 
-# Normalise column names (optional)
-df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
-print("df_columns", list(df.columns))
+    print("df_shape", df.shape)
+    print("df_dtypes", df.dtypes)
 
-# Deduplicate (optional)
-before = len(df)
-df = df.drop_duplicates()
-print("rows_dropped_duplicates", before - len(df))
+    # Drop fully null columns
+    df = df.dropna(axis=1, how="all")
+    print("df_shape_after_drop_all_null_cols", df.shape)
 
-# Sample output
-print("df_head", df.head())
+    # Fill or drop nulls in key columns (customise columns)
+    # df = df.dropna(subset=["required_col"])
+    # df["optional_col"] = df["optional_col"].fillna(0)
+
+    # Normalise column names (optional)
+    df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+    print("df_columns", list(df.columns))
+
+    # Deduplicate (optional)
+    before = len(df)
+    df = df.drop_duplicates()
+    print("rows_dropped_duplicates", before - len(df))
+
+    # Sample output
+    print("df_head", df.head())
+
+
+if __name__ == "__main__":
+    main()

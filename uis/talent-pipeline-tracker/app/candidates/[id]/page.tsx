@@ -236,9 +236,20 @@ export default function CandidateDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [patching, setPatching] = useState(false);
+  const [deletingNote, setDeletingNote] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [inlineError, setInlineError] = useState<string | null>(null);
   const { t, lang } = useTranslation();
+
+  /* Auto-ocultar SuccessToast tras 4 segundos */
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -261,12 +272,17 @@ export default function CandidateDetailPage() {
   /* Cambio rápido de estado o etapa (PATCH) */
   const handleQuickChange = async (patch: RecordPatch) => {
     if (!record) return;
+    setPatching(true);
+    setInlineError(null);
     try {
       const updated = await patchRecord(record.id, patch);
       setRecord(updated);
       setSuccessMessage(t("detail.success_change_applied"));
     } catch (err) {
-      alert(err instanceof Error ? err.message : t("detail.error_update"));
+      console.error("[candidate] Error en cambio rápido:", err);
+      setInlineError(err instanceof Error ? err.message : t("detail.error_update"));
+    } finally {
+      setPatching(false);
     }
   };
 
@@ -274,6 +290,7 @@ export default function CandidateDetailPage() {
   const handleAddNote = async () => {
     if (!newNote.trim() || !record) return;
     setSavingNote(true);
+    setInlineError(null);
     try {
       await createNote(record.id, { content: newNote.trim() });
       setNewNote("");
@@ -281,7 +298,8 @@ export default function CandidateDetailPage() {
       const nts = await getNotes(record.id);
       setNotes(nts);
     } catch (err) {
-      alert(err instanceof Error ? err.message : t("detail.error_note_add"));
+      console.error("[candidate] Error al añadir nota:", err);
+      setInlineError(err instanceof Error ? err.message : t("detail.error_note_add"));
     } finally {
       setSavingNote(false);
     }
@@ -291,11 +309,16 @@ export default function CandidateDetailPage() {
   const handleDeleteNote = async (noteId: string) => {
     if (!record) return;
     if (!confirm(t("detail.notes_confirm_delete"))) return;
+    setDeletingNote(true);
+    setInlineError(null);
     try {
       await deleteNote(record.id, noteId);
       setNotes((prev) => prev.filter((n) => n.id !== noteId));
     } catch (err) {
-      alert(err instanceof Error ? err.message : t("detail.error_note_delete"));
+      console.error("[candidate] Error al eliminar nota:", err);
+      setInlineError(err instanceof Error ? err.message : t("detail.error_note_delete"));
+    } finally {
+      setDeletingNote(false);
     }
   };
 
@@ -304,11 +327,14 @@ export default function CandidateDetailPage() {
     if (!record) return;
     if (!confirm(t("detail.delete_confirm"))) return;
     setDeleting(true);
+    setInlineError(null);
     try {
       await deleteRecord(record.id);
       router.push("/");
     } catch (err) {
-      alert(err instanceof Error ? err.message : t("detail.error_delete"));
+      console.error("[candidate] Error al eliminar candidatura:", err);
+      setInlineError(err instanceof Error ? err.message : t("detail.error_delete"));
+    } finally {
       setDeleting(false);
     }
   };
@@ -521,6 +547,28 @@ export default function CandidateDetailPage() {
         visible={successMessage !== null}
         onClose={() => setSuccessMessage(null)}
       />
+
+      {/* Mensaje de error inline para operaciones rápidas */}
+      {inlineError && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-md rounded-lg border border-red-300 bg-red-50 p-4 shadow-lg">
+          <div className="flex items-start gap-3">
+            <span className="shrink-0 text-red-500">⚠️</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-red-800">Error</p>
+              <p className="mt-1 text-sm text-red-700">{inlineError}</p>
+            </div>
+            <button
+              onClick={() => setInlineError(null)}
+              className="shrink-0 rounded p-1 text-red-400 hover:text-red-600"
+              aria-label="Cerrar"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

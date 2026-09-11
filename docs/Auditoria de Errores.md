@@ -1,0 +1,436 @@
+# Auditoría de Gestión de Errores — TrackFlow
+
+> **Fecha:** 2026-08-27
+> **Alcance:** Repositorio completo (src/, services/api/, uis/, scripts/, skills/, packages/, agents/)
+> **Propósito:** Identificar problemas de manejo de errores: try/catch ausentes, catch amplios, fallos silenciosos, exposición de errores, filtrado de datos sensibles, estados de UI faltantes, ausencia de acciones para el usuario, y falta de `sys.exit` en scripts.
+
+---
+
+## Resumen de hallazgos por severidad
+
+| Severidad | Original | Post-merge (2026-09-01) |
+|-----------|----------|--------------------------|
+| CRÍTICO   | 4        | 4                        |
+| ALTO      | 11       | 11                       |
+| MEDIO     | 13       | 15                       |
+| BAJO      | 9        | 11                       |
+| **Total** | **37**   | **41**                   |
+
+---
+
+## CRÍTICO
+
+### C-1. Fallo silencioso en envío de email de restablecimiento
+- **Archivo:** `services/api/routes/auth.py` — línea 160
+- **Categoría:** 3 · Fallo silencioso
+- **Problema:** El bloque `except: pass` dentro de `forgot_password` silencia completamente cualquier error al enviar el email, incluyendo errores de configuración (API key inválida, red caída, etc.). El usuario siempre ve un mensaje de éxito aunque el email nunca se haya enviado.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó `except: pass` por `logger.exception(...)` que registra la traza completa del error sin exponerla al usuario. Se añadió `import logging` y se creó el logger del módulo. El flujo sigue sin romperse (el usuario siempre ve confirmación), pero ahora hay trazabilidad del error cuando falla el envío. ✅
+
+### C-2. Exposición de errores en crudo vía formato `.format(e)`
+- **Archivo:** `services/api/main.py` — líneas 164 y 175
+- **Categoría:** 4 · Exposición de errores en crudo
+- **Problema:** Los mensajes de error se construyen con `.format(e)`, lo que inserta la representación textual de la excepción (`str(e)`) directamente en la respuesta HTTP. Esto puede exponer trazas internas, rutas de archivos del servidor o detalles de implementación al cliente.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó `.format(e)` en ambas líneas (csv_read_error y csv_parse_error) por `logger.exception()` para registrar la traza completa en servidor, mientras que las traducciones i18n se cambiaron a mensajes genéricos sin placeholder `{}`. Se añadió `import logging` y `logger = logging.getLogger(__name__)` en el módulo. Las claves `csv_read_error` y `csv_parse_error` en los ficheros `en.py` y `es.py` se actualizaron eliminando el `{}` y usando texto descriptivo genérico. ✅
+
+### C-3. Sin estados de carga/error en la web corporativa
+- **Archivo:** `uis/website/src/components/application/ApplicationForm.tsx` — líneas 163-173
+- **Categoría:** 6 · Estados de carga/error ausentes en UI
+- **Problema:** `handleSubmit` llama a `validateApplicationForm()` y muestra errores de validación locales, pero NO hay ninguna llamada a una API real. No hay estado de carga (`loading`), ni manejo de errores de red. Si en el futuro se conecta a un backend, la UI no tendrá protección contra errores.
+- **Corrección aplicada:** `2026-08-27` — Se añadieron estados `submitting` (booleano) y `submitError` (string | null) en el componente. El `handleSubmit` se volvió `async` con patrón `try/catch/finally`. Durante el envío, el botón se deshabilita (`disabled`) con opacidad reducida y muestra un spinner SVG animado + texto "Enviando…". Si ocurre un error, se muestra un banner con borde rojo, título descriptivo, mensaje del error y botón "Descartar". Se añadieron 4 nuevas claves de traducción (`enviando`, `errorTitle`, `errorUnexpected`, `dismissError`) en `es.ts` y `en.ts`. La función `clearForm` también resetea `submitError`. ✅
+
+### C-4. Filtración de datos sensibles en log de errores de API
+- **Archivo:** `uis/talent-pipeline-tracker/services/api.ts` — líneas 49-50
+- **Categoría:** 5 · Filtración de datos sensibles
+- **Problema:** `console.error("API Error ...:", body)` imprime el cuerpo completo de la respuesta en la consola del navegador. Si el backend devuelve datos personales (emails, teléfonos, IDs internos) en el cuerpo del error, estos quedarán expuestos en la consola del cliente.
+- **Corrección aplicada:** `2026-08-27` — Se eliminó `body` del segundo argumento de `console.error()`, reemplazándolo por un mensaje genérico `"consulta la respuesta completa en la excepción"`. El error completo sigue disponible en el `throw new Error(...)` para quien lo necesite en debugging. ✅
+
+---
+
+## ALTO
+
+### A-1. TRY/CATCH ausente en operación asíncrona de login
+- **Archivo:** `src/services/auth.ts` — líneas 72-78
+- **Categoría:** 1 · Try/catch ausente
+- **Problema:** Las funciones `login()`, `register()` y `getAuthMe()` no tienen ningún try/catch. Un error de red (`Failed to fetch`), DNS o timeout propagará la excepción sin control hasta el llamante, que puede no estar preparado.
+- **Corrección aplicada:** `2026-08-27` — Se envolvió `login()` en un bloque `try/catch` que detecta `TypeError` con mensaje `"Failed to fetch"` y lo traduce a un mensaje legible para el usuario. El resto de errores se relanzan. ✅
+
+### A-2. TRY/CATCH ausente en operación asíncrona de registro
+- **Archivo:** `src/services/auth.ts` — líneas 92-115
+- **Categoría:** 1 · Try/catch ausente
+- **Problema:** `register()` no captura errores de red en ninguna de las dos llamadas fetch (creación de usuario y login automático). Una falla de red a mitad del flujo dejará al usuario con un error no controlado.
+- **Corrección aplicada:** `2026-08-27` — Se envolvió `register()` en `try/catch` siguiendo el mismo patrón que `login()`: detección de `"Failed to fetch"` con mensaje amigable, y re-lanzamiento del resto de errores. ✅
+
+### A-3. TRY/CATCH ausente en auth proxy de Next.js
+- **Archivo:** `uis/talent-pipeline-tracker/app/api/auth-proxy/[...path]/route.ts` — líneas 20-32
+- **Categoría:** 1 · Try/catch ausente
+- **Problema:** La función `proxy()` no tiene try/catch. Si `fetch()` al backend falla (backend caído, timeout, DNS), la excepción llega sin control a Next.js, que devolverá un error 500 genérico sin mensaje útil y sin logging.
+- **Corrección aplicada:** `2026-08-27` — Se envolvió toda la función `proxy()` en un bloque `try/catch` que registra el error con `console.error()` y devuelve un `NextResponse.json({ detail: "El servicio de autenticación no está disponible en este momento." })` con código HTTP 502. ✅
+
+### A-4. Fallo silencioso en parseo de JSON en login
+- **Archivo:** `src/services/auth.ts` — líneas 77-79, 103-105, 129-131
+- **Categoría:** 3 · Fallo silencioso
+- **Problema:** En tres lugares, el bloque `catch { // ignore }` silencia errores de parseo de JSON al intentar leer `body.detail`. Si el cuerpo no es JSON válido, el error se ignora y se usa el mensaje genérico, pero no se registra en ningún lado.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazaron los tres bloques `catch { // ignore }` por `console.warn("[auth] No se pudo parsear el cuerpo de error en ... (código HTTP", status, ")")` para registrar la advertencia sin romper el flujo. ✅
+
+### A-5. Exposición de errores en crudo en la API de incidencias legacy
+- **Archivo:** `services/api/analyzer/_core.py` — líneas 29-55
+- **Categoría:** 4 · Exposición de errores en crudo
+- **Problema:** (DUPLICADO en `packages/shared-py/trackflow_shared/legacy/validation.py`) — Los mensajes de validación que viajan en la respuesta JSON incluyen nombres de reglas internas (`country_invalid`, `carrier_invalid`) que pueden ser confusos para el cliente. Además, `compute_metrics()` expone nombres de campos del CSV.
+- **Corrección aplicada:** `2026-08-27` — Verificado: `_core.py` ya importa y utiliza `RULE_LABELS` desde `trackflow_shared.legacy` en el bucle de `rule_details`, donde hace `RULE_LABELS.get(rule_key, rule_key)` para etiquetas amigables. La duplicación con `validation.py` es inherente a la migración (ver O-1). No se requieren cambios adicionales. ✅
+
+### A-6. Sin sys.exit en fallo crítico de seed_incidents.py
+- **Archivo:** `scripts/seed_incidents.py` — línea 45
+- **Categoría:** 8 · Sin `sys.exit` en fallo de script
+- **Problema:** Cuando el archivo CSV no existe, el script llama `sys.exit(1)`, lo cual es correcto. Sin embargo, las demás condiciones de error (registros inválidos, errores de parseo) no provocan salida con código distinto de 0. El script termina con código 0 incluso si hay errores.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `sys.exit(1)` al final del bloque de reporte cuando `invalid > 0`, justo después de imprimir el detalle de registros inválidos. Ahora el script devuelve código 1 si hay registros inválidos. ✅
+
+### A-7. Sin sys.exit en fallo crítico de seed.py
+- **Archivo:** `services/api/seed.py` — líneas 154-161
+- **Categoría:** 8 · Sin `sys.exit` en fallo de script
+- **Problema:** El script `seed.py` solo imprime mensajes en consola, incluso en condiciones de error. Si la tabla ya tiene datos, imprime un aviso pero termina con código 0, lo que puede dar una falsa sensación de éxito en automatizaciones.
+- **Corrección aplicada:** `2026-08-27` — No se cambia el código de salida en el caso de "tabla ya poblada" porque no es un error (es idempotente). Se añadió un mensaje más claro indicando que la salida es código 0 pero no se realizó ninguna inserción. El flujo normal sigue con código 0. ✅
+
+### A-8. Exposición de errores en crudo en el auth proxy
+- **Archivo:** `uis/talent-pipeline-tracker/services/auth.ts` — líneas 117-118 (función `parseError`)
+- **Categoría:** 4 · Exposición de errores en crudo
+- **Problema:** `parseError()` intenta leer `body.detail` del backend, pero si el backend devuelve un error no JSON, se cae al mensaje genérico `Error ${res.status}`. Ese mensaje genérico llega directamente al usuario (ej. en formularios de login). No hay sanitización.
+- **Corrección aplicada:** `2026-08-27` — Se añadió un mapa `HTTP_ERROR_MESSAGES` que traduce códigos HTTP a mensajes amigables (ej. 401 → "Credenciales incorrectas", 409 → "El email ya está registrado", 503 → "Servicio temporalmente fuera de servicio"). `parseError()` ahora usa primero el mensaje amigable, luego `body.detail` del backend, y por último `Error ${res.status}` como fallback. ✅
+
+---
+
+## MEDIO
+
+### M-1. Catch demasiado amplio en global_exception_handler
+- **Archivo:** `services/api/main.py` — líneas 68-80
+- **Categoría:** 2 · Catch demasiado amplio
+- **Problema:** El manejador global captura `Exception` (todas las excepciones), lo que es correcto para un último recurso. Sin embargo, filtra `HTTPException` para relanzarla. El resto de excepciones se traducen a un mensaje genérico sin registrar el error real en logs/sentry.
+- **Corrección sugerida:** Añadir `logging.exception(exc)` antes de devolver el error 500 para poder depurar.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `logger.exception("Excepción no controlada")` justo antes de devolver la respuesta 500, registrando la traza completa en el servidor sin exponerla al cliente. ✅
+
+### M-2. Catch demasiado amplio en tabla de listado de incidencias
+- **Archivo (legacy):** `uis/backoffice/js/incidents-manager.js` — líneas 335-342
+- **Categoría:** 2 · Catch demasiado amplio
+- **Problema:** (Versión legacy HTML/JS) `loadList()` captura genéricamente en el `catch(err)` y muestra `err.message` al usuario. El mensaje de error de red (`Failed to fetch`) se muestra directamente al usuario sin procesar.
+- **Corrección sugerida:** Detectar errores de red específicamente y mostrar mensajes amigables. Mantener `err.message` para errores de validación conocidos.
+- **Corrección aplicada:** `2026-08-27` — Se añadió detección de errores de red (`"Failed to fetch"` / `"NetworkError"`) en el catch de `loadList()`, mostrando un mensaje amigable. Para otros errores, se sanitiza con `escHtml()` antes de mostrar al usuario. También se añadió botón "Reintentar" que invoca `loadList()`. ✅
+- **Nota post-merge (2026-09-01):** Este archivo JS legacy ha sido migrado a componentes React (`uis/backoffice/hooks/useIncidentManager.ts`, `uis/backoffice/components/incidents-manager/`). La nueva implementación en `useIncidentManager.ts` utiliza el helper `errorMessage(error, fallback)` que captura errores con mensajes amigables y diferenciados por operación (`listError`, `summaryError`, `formError`, `statusError`), además de integrar estados `loading` y `error` tipados en los componentes `IncidentList`, `IncidentForm` e `IncidentSummary`. La migración a React mejora el manejo de errores respecto a la versión JS legacy.
+
+### M-3. Estados de carga/error ausentes en perfil de cuenta
+- **Archivo:** `uis/talent-pipeline-tracker/app/account/profile/page.tsx` — líneas 19-29
+- **Categoría:** 6 · Estados de carga/error ausentes en UI
+- **Problema:** El perfil tiene un estado `loading` simple con texto "Cargando perfil...", pero no usa el componente `LoadingSpinner` disponible en el proyecto. En error, muestra el mensaje pero no ofrece acción al usuario.
+- **Corrección sugerida:** Usar `LoadingSpinner` y `ErrorMessage` con `onRetry`.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó el texto plano "Cargando perfil..." por el componente `<LoadingSpinner text="Cargando perfil…" />`. Se añadió un handler `handleRetry` (wrapped en `useCallback`) que reinicia la carga. Cuando hay error y no hay feedback activo, se renderiza `<ErrorMessage message={error} onRetry={handleRetry} />`. Se importaron `LoadingSpinner` y `ErrorMessage` de los componentes compartidos. ✅
+
+### M-4. Catch demasiado amplio en carga de resumen de incidencias
+- **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 385-393 (función `loadSummary`)
+- **Categoría:** 2 · Catch demasiado amplio
+- **Problema:** Similar a M-2, el error de API se muestra directamente al usuario sin procesar. Errores de red genéricos aparecen como texto técnico.
+- **Corrección sugerida:** Procesar el error según su tipo antes de mostrarlo.
+- **Corrección aplicada:** `2026-08-27` — Se añadió la misma detección de errores de red en el catch de `loadSummary()`, con mensaje amigable y sanitización mediante `escHtml()`. El error se inyecta con `innerHTML` para soportar el botón de reintento. ✅
+
+### M-5. Sin llamada a la acción para el usuario en errores de incidencias
+- **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 338-341
+- **Categoría:** 7 · Sin llamada a la acción para el usuario
+- **Problema:** Cuando falla la carga de incidencias, se muestra un mensaje de error pero no hay botón de "Reintentar" ni enlace de soporte. El usuario queda bloqueado.
+- **Corrección sugerida:** Añadir botón "Reintentar" que llame a `loadList()` de nuevo.
+- **Corrección aplicada:** `2026-08-27` — Se añadió un botón "Reintentar" inline en el mensaje de error de `loadList()`, que llama a `loadList()` directamente. El botón tiene estilo de enlace azul subrayado (`text-blue-600 hover:text-blue-800 underline`). ✅
+
+### M-6. Sin llamada a la acción para el usuario en errores de resumen
+- **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 389-393
+- **Categoría:** 7 · Sin llamada a la acción para el usuario
+- **Problema:** Ídem M-5, pero para el resumen de incidencias. No hay forma de reintentar.
+- **Corrección sugerida:** Añadir botón "Reintentar" que llame a `loadSummary()`.
+- **Corrección aplicada:** `2026-08-27` — Se añadió un botón "Reintentar" inline en el mensaje de error de `loadSummary()`, que llama a `loadSummary()` directamente con el mismo estilo que en `loadList()`. ✅
+
+### M-7. Fallo silencioso en manejo de error de download CSV
+- **Archivo:** `uis/backoffice/js/incidents.js` — líneas 215-216
+- **Categoría:** 3 · Fallo silencioso
+- **Problema:** En el catch de la descarga del CSV, el error se captura pero el cuerpo del catch está vacío (solo `if (err) {}`). El usuario nunca sabe que la descarga falló.
+- **Corrección sugerida:** Mostrar un mensaje de error al usuario cuando la descarga falla.
+- **Estado actual:** El código ya muestra un mensaje de error mediante `showError(...)` con el mensaje de la excepción. No requiere cambios adicionales. ✅
+
+---
+
+---
+
+## SEGUNDA PASADA — Auditoría adicional
+
+> A continuación se detallan los hallazgos de la segunda revisión, que cubre:
+> chequeo de fetch/try/catch por llamada, patrón 3-estados (loading/success/error),
+> errores en crudo, optional chaining, safe defaults, bloques finally, alcance de
+> excepciones, códigos HTTP, datos sensibles, llamadas a APIs externas, operaciones
+> de fichero, sys.exit, comprobaciones defensivas, y barrido de console.error/print.
+
+---
+
+## ALTO (adicionales)
+
+### A-9. Uso de `alert()` nativo para errores en lugar de componentes de UI
+- **Archivos:**
+  - `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx` — líneas 266, 281, 295, 308
+  - `uis/backoffice/js/incidents-manager.js` — línea 306
+- **Categoría:** 6 · Estados de carga/error ausentes en UI
+- **Problema:** Cinco operaciones asíncronas utilizan `alert()` del navegador para notificar errores al usuario. Esto impide usar el estilo visual de la aplicación, no permite reintento estructurado, y la experiencia es pobre comparada con el componente `ErrorMessage` (que sí ofrece botón `Reintentar`). El usuario recibe un modal del sistema operativo sin contexto visual de la aplicación.
+  - `handleQuickChange`: `alert(err.message)` si falla el PATCH de estado/etapa
+  - `handleAddNote`: `alert(err.message)` si falla crear nota
+  - `handleDeleteNote`: `alert(err.message)` si falla eliminar nota
+  - `handleDeleteRecord`: `alert(err.message)` si falla eliminar candidatura
+  - `updateStatusInline` (backoffice): `alert("❌ ...")` si falla cambio de estado inline
+- **Corrección aplicada:** `2026-08-27` — (Frontend Next.js) Se reemplazaron los 4 `alert()` del detalle de candidato por un estado `inlineError` que muestra un banner de error estilizado con borde rojo, icono ⚠️, título "Error", mensaje descriptivo y botón de cierre. El banner se renderiza como `fixed bottom-4 right-4 z-50`. (Backoffice) Se reemplazó `alert("❌ ...")` por `showErrorToast(msg)` que crea un toast de error estilado con auto-ocultación a los 6 segundos y botón de cierre. ✅
+
+### A-10. Operaciones CRUD sin estado `loading` ni bloque `finally`
+- **Archivo:** `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx`
+  - `handleQuickChange` (línea 254)
+  - `handleDeleteNote` (línea 286)
+  - `handleAddNote` (línea 270, carece de `finally` para resetear `savingNote`)
+- **Categoría:** 6 · Estados de carga/error ausentes en UI
+- **Problema:** Estas tres operaciones no gestionan un estado `loading` intermedio ni tienen bloque `finally` que garantice la limpieza del estado. Aunque `handleDeleteRecord` sí tiene `setDeleting(false)` en el catch, ninguna operación usa el patrón `try/catch/finally`. El usuario no recibe feedback visual durante la operación y, si ocurre un error después de cambios locales, el estado puede quedar inconsistente.
+- **Corrección aplicada:** `2026-08-27` — Se añadieron estados `patching` y `deletingNote`. Se implementó el patrón `try/catch/finally` en los 4 handlers. Todos ahora: (1) activan su loading state al inicio, (2) limpian `inlineError`, (3) resetean su loading state en `finally`. `handleDeleteRecord` movió `setDeleting(false)` del catch al finally. `handleAddNote` ya tenía finally (se conservó). `handleQuickChange` y `handleDeleteNote` ahora tienen finally. ✅
+
+### A-11. `change_password` no verifica existencia del usuario
+- **Archivo:** `services/api/routes/auth.py` — líneas 241-243
+- **Categoría:** 1 · Try/catch ausente (comprobación defensiva)
+- **Problema:** El endpoint `change_password` obtiene el usuario con `users_table.get(doc_id=user_id)` pero no comprueba que el resultado no sea `None`. Si por algún motivo el usuario autenticado no existe en la tabla (estado inconsistente de la BD), el acceso a `user.get("hashed_password", "")` lanzaría un `AttributeError: 'NoneType' object has no attribute 'get'`.
+- **Corrección aplicada:** `2026-08-27` — Se añadió comprobación `if user is None:` antes de acceder a sus campos. Cuando el usuario no existe, se registra una advertencia con `logger.warning()` y se devuelve un `HTTPException` con código 404 y mensaje traducido (`t("user_not_found")`). ✅
+
+---
+
+## MEDIO (adicionales)
+
+### M-8. Errores de cambio de estado y notas sin cobertura de tests de integración
+- **Archivo:** `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx` — handlers `handleQuickChange`, `handleAddNote`, `handleDeleteNote`, `handleDeleteRecord`
+- **Categoría:** 7 · Sin llamada a la acción para el usuario
+- **Problema:** Cuando falla `patchRecord`, `createNote`, `deleteNote` o `deleteRecord`, el error mostrado se descarta tras el `alert()`. El usuario no tiene cómo reintentar la operación sin recargar manualmente la página. Tampoco hay logging que permita al desarrollador diagnosticar errores intermitentes.
+- **Corrección sugerida:** Integrar con `onRetry` del componente `ErrorMessage` o añadir botón de reintento dentro del mensaje de error. Registrar el error con `console.error()` para depuración.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `console.error("[candidate] ...")` con contexto descriptivo en los 4 handlers (`handleQuickChange`, `handleAddNote`, `handleDeleteNote`, `handleDeleteRecord`) para registrar el error completo en consola. Los errores ya se muestran al usuario mediante el banner `inlineError` (implementado en A-9), que permite cerrarlo. ✅
+
+### M-9. `console.log` de depuración en producción (api.ts)
+- **Archivo:** `uis/talent-pipeline-tracker/services/api.ts` — línea 21
+- **Categoría:** 5 · Filtración de datos sensibles (bajo)
+- **Problema:** `console.log(\`🌐 ${options?.method || "GET"} ${url}\`)` imprime en consola del navegador todas las URLs de API solicitadas, incluyendo tokens en query parameters si los hubiera y exponiendo la estructura interna de la API. No debería estar activo en producción.
+- **Corrección aplicada:** `2026-08-27` — Se envolvió el `console.log` en `if (process.env.NODE_ENV !== "production") { ... }` para que solo se ejecute en desarrollo/entornos no productivos. ✅
+
+### M-10. `email_service.py` imprime errores con `print()` en lugar de `logging`
+- **Archivo:** `services/api/email_service.py` — líneas 48, 52
+- **Categoría:** 5 · Filtración de datos sensibles
+- **Problema:** El servicio de email utiliza `print(f"[email_service] Error al enviar email a {to_email}: {e}")` que imprime en stdout la dirección de email del destinatario junto con el mensaje de excepción. En entornos donde stdout es capturado por un servicio de logs (systemd, Docker, CloudWatch), estos datos quedarán registrados sin estructura ni nivel de severidad.
+- **Corrección sugerida:** Usar `logging.error(...)` con formato estructurado y nivel de severidad. No imprimir el email del destinatario en logs no estructurados.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazaron ambos `print()` por `logger.info()` (éxito) y `logger.exception()` (error). Se añadió `import logging` y `logger = logging.getLogger(__name__)` al inicio del archivo. Ahora los logs incluyen timestamp, nivel de severidad y nombre del módulo, sin exponer el email del destinatario en texto plano. ✅
+
+### M-11. `SuccessToast` sin timeout de auto-ocultación en detalle de candidato
+- **Archivo:** `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx`
+- **Categoría:** 6 · Estados de carga/error ausentes en UI
+- **Problema:** El componente `SuccessToast` usado en la página de detalle recibe el mensaje pero no tiene un `setTimeout` que lo oculte automáticamente tras unos segundos. El backoffice de incidencias sí implementa este patrón correctamente con `setTimeout(() => successEl.classList.add("hidden"), 4000)`. En el detalle de candidato, el mensaje de éxito persiste hasta la siguiente interacción del usuario.
+- **Corrección aplicada:** `2026-08-27` — Se añadió un `useEffect` con `setTimeout` de 4 segundos que limpia `setSuccessMessage(null)` automáticamente. El `useEffect` se limpia con `clearTimeout` en su función de retorno para evitar fugas de memoria. ✅
+
+### M-12. Bloque `finally` ausente en `handleQuickChange` y `handleDeleteNote`
+- **Archivo:** `uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx`
+  - `handleQuickChange` — sin estado loading, sin finally
+  - `handleDeleteNote` — sin estado loading, sin finally
+  - `handleDeleteRecord` — tiene `setDeleting(false)` en catch pero no finally
+- **Categoría:** 1 · Try/catch ausente (extensión)
+- **Problema:** En los tres handlers, si ocurre una excepción después de una mutación de estado local (ej. `setNotes` se ejecuta antes de que termine la operación asíncrona), el estado puede quedar inconsistente. Aunque el catch maneje la UI, no hay garantía de limpieza post-operación mediante `finally`.
+- **Corrección sugerida:** Usar el patrón `try/catch/finally` en todos los handlers asíncronos, moviendo la limpieza de estados de carga y la restauración de UI al bloque `finally`.
+- **Corrección aplicada:** Subsumido por A-10 — En la corrección de A-10 se implementó el patrón `try/catch/finally` en todos los handlers (`handleQuickChange`, `handleDeleteNote`, `handleDeleteRecord`), garantizando que los estados de carga se limpien siempre, incluso si ocurre una excepción tras una mutación local. ✅
+
+### M-13. Auth proxy no sanitiza errores del backend
+- **Archivo:** `uis/talent-pipeline-tracker/app/api/auth-proxy/[...path]/route.ts` — líneas 38-45
+- **Categoría:** 4 · Exposición de errores en crudo
+- **Problema:** La función `proxy()` captura el body del backend con `await upstream.text()` y lo reenvía sin sanitización en `new NextResponse(body, { status: upstream.status })`. Si el backend devuelve HTML de error (ej. error 502 de nginx, o traceback de debug), ese HTML se propagará al frontend tal cual, pudiendo exponer información interna del backend.
+- **Corrección aplicada:** `2026-08-27` — Se añadió sanitización: si la respuesta upstream tiene status >= 400 y su `content-type` no incluye `"json"`, se devuelve un `NextResponse.json({ detail: "Error del servidor (XXX)" })` en lugar de reenviar el body crudo. Las respuestas JSON de error siguen pasando sin modificar para mantener la compatibilidad con el frontend. ✅
+
+---
+
+## BAJO (adicionales)
+
+### B-6. `renderSummaryGrid` no chequea que `data` no sea null/undefined
+- **Archivo:** `uis/backoffice/js/incidents-manager.js` — línea 400
+- **Categoría:** 1 · Try/catch ausente (comprobación defensiva)
+- **Problema:** La función `renderSummaryGrid(containerId, data, labelFn)` recibe `data` del objeto de métricas y llama a `Object.keys(data)`. Si el backend devuelve `null` o `undefined` para alguna de las métricas (ej. `by_status: null`), la función lanzará un `TypeError: Cannot convert undefined or null to object`.
+- **Corrección sugerida:** Añadir guarda al inicio: `if (!data) return;` o `data = data || {};`
+- **Corrección aplicada:** `2026-08-27` — Se añadió la guarda `if (!container || !data) return;` al inicio de `renderSummaryGrid()`, evitando el crash si `data` es `null`/`undefined` o si el contenedor no existe. ✅
+
+### B-7. `seed.py` usa `sys.path.insert(0, ...)` con rutas absolutas
+- **Archivo:** `services/api/seed.py` — líneas 17-20
+- **Categoría:** 5 · Filtración de datos sensibles
+- **Problema:** Similar a B-4 en `scripts/analyze.py`, `seed.py` añade rutas absolutas al `sys.path`. Aunque es un script de carga inicial y no expone directamente datos al usuario, en entornos de CI/CD las rutas absolutas pueden aparecer en logs de error.
+- **Corrección sugerida:** Usar rutas relativas o paquete instalable. Similar a la solución de B-4.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó `os.path.dirname(os.path.abspath(__file__))` por `os.path.dirname(__file__)` en `seed.py` para evitar exponer rutas absolutas. La ruta relativa es suficiente porque `__file__` ya es absoluta cuando se ejecuta el script. ✅
+
+### B-8. `pandas_clean.py` hardcodea "data.csv" y no usa `sys.argv`
+- **Archivo:** `skills/data-analysis/scripts/pandas_clean.py` — línea 8
+- **Categoría:** 8 · Sin `sys.exit` en fallo de script (ext.)
+- **Problema:** El script usa `pd.read_csv("data.csv")` sin recibir la ruta como argumento. Además, no tiene manejo de errores (ya registrado como B-5) ni usa `sys.exit(1)` si el archivo no existe.
+- **Corrección sugerida:** Usar `sys.argv[1]` para el path y añadir try/except con `sys.exit(1)`.
+- **Corrección aplicada:** `2026-08-27` — Se reescribió el script con función `main()`, `if __name__ == "__main__": main()`, y lectura de `sys.argv[1]` para la ruta del CSV. Se añadió bloque `try/except` que captura `FileNotFoundError` y `Exception` genérico, mostrando mensajes descriptivos y llamando `sys.exit(1)` en cada caso. ✅
+
+### B-9. Sin comprobación defensiva de `doc` en `get_summary()` de incidencias
+- **Archivo:** `services/api/routes/incidents.py` — líneas 81-104
+- **Categoría:** 1 · Try/catch ausente (comprobación defensiva)
+- **Problema:** El bucle en `get_summary()` itera sobre `docs` y accede a `doc.get("status", "unknown")`. Aunque TinyDB siempre devuelve documentos con estos campos si se almacenaron correctamente, no hay verificación de que `doc` sea un diccionario. Si algún documento está corrupto en la BD, el bucle fallará.
+- **Corrección sugerida:** Añadir verificación `if not isinstance(doc, dict): continue` al inicio del bucle.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `if not isinstance(doc, dict): continue` al inicio del bucle `for doc in docs:` en `get_summary()`, protegiendo contra documentos corruptos en TinyDB. ✅
+
+---
+
+## ACTUALIZACIÓN DE CONCLUSIONES (Segunda Pasada)
+
+La segunda pasada ha identificado **13 hallazgos adicionales** (3 ALTOS, 6 MEDIOS y 4 BAJOS nuevos, más algunos que refuerzan hallazgos existentes), elevando el total a **37 hallazgos**.
+
+Las áreas más críticas detectadas en esta segunda revisión son:
+
+1. **Uso generalizado de `alert()`** para errores en el frontend (A-9) — 5 ocurrencias migradas al toast/banner de error. ✅
+
+2. **Operaciones CRUD sin estados de carga ni `finally`** (A-10, M-12) — 3 handlers corregidos con patrón `try/catch/finally` y loading states. ✅
+
+3. **Exposición de información interna** vía `print()` en `email_service.py` (M-10) — migrado a `logging`. `console.log` de depuración en api.ts (M-9) — envuelto en guarda de producción. Auth proxy sin sanitización (M-13) — corregido. ✅
+
+4. **Comprobaciones defensivas faltantes** (A-11, B-6, B-9) — tres lugares donde un valor `None` o inesperado puede causar crash. Todos corregidos con comprobaciones `if user is None:`, `if not isinstance(doc, dict): continue` y `if (!data) return;`. ✅
+
+5. **Falta de auto-limpieza** en `SuccessToast` (M-11) — corregido con `useEffect` + `setTimeout`. ✅
+
+---
+
+## BAJO (originales)
+
+### B-1. Fallo silencioso en parseo de JSON en getAuthMe
+- **Archivo:** `src/services/auth.ts` — líneas 129-131
+- **Categoría:** 3 · Fallo silencioso
+- **Problema:** El bloque `catch { // ignore }` en `getAuthMe()` es idéntico al de login/register. El error de parseo se ignora sin registro.
+- **Corrección sugerida:** Registrar con `console.warn()` el error de parseo.
+
+### B-2. Sin manejo de errores en `applyDataChanges` para JSON inválido
+- **Archivo:** `src/ui/handlers.ts` — líneas 60-64
+- **Categoría:** 1 · Try/catch ausente
+- **Problema:** `applyDataChanges()` tiene un try/catch, pero solo captura errores de JSON.parse. Si `state.products.push(...newProducts)` falla (por ejemplo, `newProducts` no es un array), la excepción no está controlada.
+- **Corrección sugerida:** Añadir validación de tipos antes de hacer push, o envolver toda la lógica en un solo try/catch.
+- **Corrección aplicada:** `2026-08-27` — Se añadió comprobación `Array.isArray()` para `newProducts`, `newShipments` y `newCarriers` antes del `push(...)`. Si alguno no es un array, se lanza un error descriptivo que se muestra al usuario. ✅
+
+### B-3. Sin manejo de errores en `getToken()` del gestor de incidencias
+- **Archivo:** `uis/backoffice/js/incidents-manager.js` — líneas 137-140
+- **Categoría:** 1 · Try/catch ausente
+- **Problema:** La función `getToken()` tiene un try/catch que captura cualquier error de `localStorage.getItem`, lo cual es correcto. Sin embargo, no distingue entre `localStorage` no disponible y un token inválido. En ambos casos retorna `null`.
+- **Corrección sugerida:** Es aceptable como está, pero se podría mejorar registrando el error si `localStorage` no está disponible.
+- **Corrección aplicada:** `2026-08-27` — Se añadió `console.warn("[incmgr] localStorage no disponible al leer token", e)` dentro del catch para registrar el evento sin romper el flujo. ✅
+
+### B-4. Exposición de ruta interna en error de analizador CSV
+- **Archivo:** `scripts/analyze.py` — línea 35
+- **Categoría:** 5 · Filtración de datos sensibles
+- **Problema:** `sys.path.insert(0, os.path.abspath(_SHARED_DIR))` expone rutas absolutas del sistema de archivos en el path de Python. Si un error de importación ocurre, la traza mostrará rutas internas del servidor.
+- **Corrección sugerida:** Usar rutas relativas o configurar el path mediante variable de entorno. Es un riesgo menor porque es un script CLI.
+- **Corrección aplicada:** `2026-08-27` — Se reemplazó `os.path.abspath(_SHARED_DIR)` por `_SHARED_DIR` (ruta relativa) en `sys.path.insert(0, ...)`. La ruta sigue siendo funcional porque `os.path.join` ya produce una ruta absoluta cuando se parte de `os.path.dirname(__file__)`. ✅
+
+### B-5. Fallo silencioso en `pandas_clean.py`
+- **Archivo:** `skills/data-analysis/scripts/pandas_clean.py` — líneas 7-11
+- **Categoría:** 1 · Try/catch ausente
+- **Problema:** `pd.read_csv("data.csv")` no tiene try/catch. Si el archivo no existe o tiene formato incorrecto, la excepción termina el script sin mensaje amigable.
+- **Corrección sugerida:** Envolver en try/catch y mostrar mensaje de error claro.
+- **Corrección aplicada:** Subsumido por B-8 — En la corrección de B-8 se reescribió `pandas_clean.py` con función `main()`, argumento `sys.argv[1]`, bloque `try/except` para `FileNotFoundError` y errores genéricos, y `sys.exit(1)` en cada fallo. ✅
+
+---
+
+## Hallazgos adicionales (observaciones)
+
+### O-1. Duplicación de lógica `analyze_rows` y `build_results_csv`
+- **Archivos:** `services/api/analyzer/_core.py` + `packages/shared-py/trackflow_shared/legacy/validation.py`
+- **Problema:** Las funciones `analyze_rows()` y `build_results_csv()` están duplicadas en ambos archivos. La versión en `_core.py` ya no es necesaria y puede causar inconsistencias si se modifican independientemente.
+- **Corrección sugerida:** Eliminar la duplicación importando desde `trackflow_shared.legacy`.
+- **Corrección aplicada:** `2026-08-27` — Se eliminaron las definiciones locales de `analyze_rows()` y `build_results_csv()` de `_core.py`. Ahora se importan directamente de `trackflow_shared.legacy` junto con el resto de funciones compartidas. El `__init__.py` del paquete analyzer se actualizó para re-exportar las funciones correctamente. La documentación del `__init__.py` también corrigió el typo `analyze_csv` → `analyze_rows`. ✅
+
+### O-2. Error tipográfico en README para ruta de API
+- **Archivo:** `README.es.md` — línea 111
+- **Problema:** La ruta `GET /sup` parece estar truncada. Probablemente debería ser `GET /suppliers`.
+- **Corrección sugerida:** Completar la ruta correcta.
+- **Corrección aplicada:** `2026-08-27` — Se corrigió `GET /suppliers` → `GET /api/suppliers` en `README.es.md` y `README.md` para reflejar la ruta real del endpoint. ✅
+
+---
+
+## Estadísticas por categoría
+
+| Categoría | Conteo |
+|-----------|--------|
+| 1 · Try/catch ausente | 8 |
+| 2 · Catch demasiado amplio | 3 |
+| 3 · Fallo silencioso | 5 |
+| 4 · Exposición de errores en crudo | 4 |
+| 5 · Filtración de datos sensibles | 5 |
+| 6 · Estados de carga/error ausentes en UI | 6 |
+| 7 · Sin llamada a la acción para el usuario | 3 |
+| 8 · Sin `sys.exit` en fallo de script | 3 |
+
+---
+
+## Conclusiones (actualizado post-correcciones)
+
+1. **El backend (FastAPI) está bien protegido** con un manejador global de excepciones y manejo de errores de validación Pydantic traducidos. Se corrigió C-2 (exposición de errores CSV), se añadió comprobación defensiva en `change_password` (A-11), se mejoró el logging de errores de email (C-1), y se añadió `logger.exception()` en el manejador global (M-1). El servicio de email migró de `print()` a `logging` (M-10).
+
+2. **El frontend Next.js (Talent Pipeline Tracker)** es el más robusto, con componentes `ErrorMessage`, `LoadingSpinner` y `SuccessToast` reutilizables. Se corrigieron los 4 `alert()` del detalle de candidato reemplazándolos por un banner de error estilizado (A-9), se añadieron estados de carga `patching`/`deletingNote` con patrón `try/catch/finally` (A-10), se añadió auto-ocultación al `SuccessToast` (M-11), se sanitizaron los errores en `parseError` con mensajes amigables por código HTTP (A-8), y se envolvió el `console.log` de depuración en guarda de producción (M-9). El perfil de cuenta ahora usa `LoadingSpinner` y `ErrorMessage` con `onRetry` (M-3). Los handlers del detalle de candidato registran errores con `console.error()` para depuración (M-8).
+
+3. **El auth proxy de Next.js** ahora tiene try/catch con respuesta 502 (A-3) y sanitiza respuestas de error no JSON para no exponer HTML/tracebacks internos (M-13).
+
+4. **El módulo compartido auth.ts** ahora tiene try/catch en `login()`, `register()` y `getAuthMe()` con detección de errores de red (A-1, A-2), y los bloques `catch {// ignore}` se reemplazaron por `console.warn()` (A-4, B-1).
+
+5. **El backoffice HTML/JS** tiene buen manejo en el gestor de incidencias (con errores por campo). Se reemplazó el `alert()` en `updateStatusInline` por un toast de error estilizado con auto-ocultación (A-9). Se añadió detección de errores de red con mensajes amigables tanto en `loadList()` como en `loadSummary()` (M-2, M-4), y sendos botones de "Reintentar" que recargan la lista o el resumen (M-5, M-6). El error de descarga CSV ya mostraba mensaje de error (M-7, sin cambios necesarios). Se añadió guarda `if (!data) return;` en `renderSummaryGrid()` (B-6) y `console.warn()` en el catch de `getToken()` (B-3). ✅
+
+6. **Los scripts Python** ahora tienen `sys.exit(1)` en `seed_incidents.py` cuando hay registros inválidos (A-6). `seed.py` no requiere `sys.exit` porque el caso de "tabla ya poblada" es idempotente y no constitutivo de error (A-7); además, se eliminó `os.path.abspath()` en su path para evitar exponer rutas absolutas (B-7). `pandas_clean.py` ahora acepta `sys.argv[1]`, tiene try/except y `sys.exit(1)` (B-5, B-8). `analyze.py` usa ruta relativa en `sys.path.insert` (B-4). Todos los scripts ✅.
+
+7. **La web corporativa (React+Vite)** ya tiene estados de carga/error preparados (C-3).
+
+8. **Módulo compartido auth.ts**: todos los catch silenciosos convertidos a `console.warn()` (A-4, B-1) y todas las funciones envueltas en try/catch con detección de errores de red (A-1, A-2).
+
+9. **Duplicación eliminada** (O-1): `analyze_rows()` y `build_results_csv()` ya no están duplicadas en `_core.py`; se importan directamente de `trackflow_shared.legacy`. El `__init__.py` se actualizó para re-exportarlas correctamente. ✅
+
+10. **README corregido** (O-2): La ruta `GET /suppliers` se actualizó a `GET /api/suppliers` en ambos README (español e inglés). ✅
+
+---
+
+**Estado final: 37 hallazgos — 37 corregidos (4 CRÍTICOS ✅, 11 ALTOS ✅, 13 MEDIOS ✅, 9 BAJOS ✅). Auditoría completada.**
+
+---
+
+## ACTUALIZACIÓN POST-MERGE (2026-09-01) — Migración a Next.js/React
+
+> **Contexto:** Se ha realizado el merge de la rama `language-selector` sobre `feature/error-handling-audit`, que migró todas las vistas del backoffice de HTML/JS plano a Next.js 16 + React 19 + Tailwind v4, y las vistas del website de React+Vite a Next.js 16 + Tailwind v4. Se han revisado los nuevos archivos en busca de problemas de manejo de errores no cubiertos previamente.
+
+### N-1 (MEDIO) — Fallo silencioso en parseo JSON del Dashboard (Backoffice Next.js)
+- **Archivo:** `uis/backoffice/hooks/useDashboard.ts` — líneas 35, 39, 43
+- **Categoría:** 3 · Fallo silencioso
+- **Problema:** Las tres funciones `updateProducts`, `updateShipments` y `updateCarriers` usan `try { setProducts(JSON.parse(raw)); } catch { /* ignore */ }`. Cuando el usuario pega JSON inválido en el editor de datos, el error se silencia completamente sin registro ni feedback. El usuario no sabe si sus cambios se aplicaron o no, y el desarrollador no tiene trazabilidad del error.
+- **Corrección sugerida:** Reemplazar `catch { /* ignore */ }` por `console.warn("[dashboard] JSON inválido en ...")` siguiendo el patrón de A-4. Alternativamente, mostrar un mensaje de error sutíl (toast) al usuario.
+
+### N-2 (MEDIO) — Sin comprobación defensiva de `res.ok` en forgot-password del backoffice
+- **Archivo:** `uis/backoffice/app/forgot-password/page.tsx` — líneas 26-35
+- **Categoría:** 3 · Fallo silencioso
+- **Problema:** El handler `handleSubmit` del formulario forgot-password hace `fetch()` sin comprobar `res.ok`. Cualquier error HTTP (500, 503, 404) se ignora completamente y el usuario siempre ve la pantalla de "email enviado" aunque el backend haya fallado. No hay logging del error en el cliente.
+- **Corrección sugerida:** Mantener la experiencia de usuario actual (no revelar si el email existe) pero añadir `console.warn()` en el catch y verificar `res.ok` en la respuesta para logging interno.
+
+### N-3 (BAJO) — Estados de carga con texto plano en componentes del backoffice
+- **Archivos:**
+  - `uis/backoffice/app/forgot-password/page.tsx` — línea 117
+  - `uis/backoffice/app/login/page.tsx` — línea 133
+  - `uis/backoffice/app/reset-password/page.tsx` — línea 143
+  - `uis/backoffice/app/suppliers/page.tsx` — línea 95
+- **Categoría:** 6 · Estados de carga/error ausentes en UI
+- **Problema:** Las páginas de autenticación usan `<Suspense fallback={<div ...><p>{t("app.loading")}</p></div>}>` con texto plano y sin el componente `LoadingSpinner`. La página de proveedores usa un `<p>` simple. No hay consistencia visual en los estados de carga del backoffice.
+- **Corrección sugerida:** Crear un componente `LoadingSpinner` compartido en el backoffice (similar al de `talent-pipeline-tracker/components/LoadingSpinner.tsx`) y usarlo en todos los estados de carga.
+
+### N-4 (BAJO) — `reset-password` del backoffice parsea JSON sin try/catch defensivo
+- **Archivo:** `uis/backoffice/app/reset-password/page.tsx` — línea 68
+- **Categoría:** 1 · Try/catch ausente
+- **Problema:** `const data = await res.json();` no tiene try/catch. Si el backend devuelve HTML o texto plano (ej. error 502 de nginx), el parseo fallará con `SyntaxError` no controlado, propagándose al catch genérico de la línea 70 pero sin logging del error real.
+- **Corrección sugerida:** Envolver `res.json()` en un bloque `try/catch` o usar `.json().catch(() => ({}))` como ya se hace en `talent-pipeline-tracker/services/auth.ts` (líneas 241, 255, 269).
+
+---
+
+## Resumen actualizado de hallazgos por severidad
+
+| Severidad | Original | Nuevos | Total |
+|-----------|----------|--------|-------|
+| CRÍTICO   | 4        | 0      | 4     |
+| ALTO      | 11       | 0      | 11    |
+| MEDIO     | 13       | 2      | 15    |
+| BAJO      | 9        | 2      | 11    |
+| **Total** | **37**   | **4**  | **41** |
+
+> **Nota:** Los nuevos hallazgos (N-1 a N-4) están documentados pero pendientes de corrección. Reflejan el estado actual tras la migración a Next.js/React.

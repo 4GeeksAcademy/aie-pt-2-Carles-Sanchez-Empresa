@@ -14,7 +14,10 @@ Módulos:
 
 import csv
 import io
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -68,6 +71,8 @@ async def global_exception_handler(request: Request, exc: Exception):
             content={"detail": exc.detail},
         )
 
+    logger.exception("Excepción no controlada")
+
     return JSONResponse(
         status_code=500,
         content={"detail": "Error interno del servidor. Contacte al administrador."},
@@ -111,7 +116,8 @@ async def post_analyze(
         raw = await file.read()
         content = raw.decode("utf-8-sig")  # tolera BOM
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al leer el fichero: {e}")
+        logger.exception("Error al leer fichero CSV")
+        raise HTTPException(status_code=400, detail="Error al leer el fichero.")
 
     if not content.strip():
         raise HTTPException(status_code=400, detail="El fichero está vacío.")
@@ -122,7 +128,8 @@ async def post_analyze(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error al parsear el CSV: {e}")
+        logger.exception("Error al parsear CSV")
+        raise HTTPException(status_code=400, detail="Error al parsear el archivo CSV.")
 
     # ── Análisis ──
     result = analyze_rows(rows)

@@ -1,8 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { changePassword, getAuthMe, updateProfile } from "@/services/auth";
 import { isValidPhone } from "@/lib/validation";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { ErrorMessage } from "@/components/ErrorMessage";
 import { useTranslation } from "@/lib/i18n";
 
 export default function AccountProfilePage() {
@@ -39,7 +41,26 @@ export default function AccountProfilePage() {
       }
     };
 
-    void load();
+    load();
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    const load = async () => {
+      try {
+        const me = await getAuthMe();
+        setEmail(me.email);
+        setName(me.profile?.name || "");
+        setPhone(me.profile?.phone || "");
+        setAddress(me.profile?.address || "");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error al cargar perfil.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -105,11 +126,11 @@ export default function AccountProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="mx-auto w-full max-w-4xl px-4 py-10 text-center text-sm text-[#2f4a62]">
-        {t("profile.loading")}
-      </div>
-    );
+    return <LoadingSpinner text={t("profile.loading")} />;
+  }
+
+  if (error && !feedback) {
+    return <ErrorMessage message={error} onRetry={handleRetry} />;
   }
 
   return (

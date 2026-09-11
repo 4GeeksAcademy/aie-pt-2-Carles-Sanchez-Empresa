@@ -107,6 +107,7 @@ function getToken() {
   try {
     return localStorage.getItem("trackflow_token");
   } catch (e) {
+    console.warn("[incmgr] localStorage no disponible al leer token", e);
     return null;
   }
 }
@@ -303,8 +304,36 @@ async function updateStatusInline(id, newStatus, rowEl) {
     } else if (err.data && err.data.detail) {
       msg = err.data.detail;
     }
-    alert(`❌ ${msg}`);
+    showErrorToast(msg);
   }
+}
+
+/** Muestra un toast de error con auto-ocultación */
+function showErrorToast(message) {
+  let toast = document.getElementById("errorToast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "errorToast";
+    toast.className = "fixed bottom-4 right-4 z-50 max-w-md rounded-lg border border-red-300 bg-red-50 p-4 shadow-lg";
+    toast.style.cssText = "position:fixed;bottom:1rem;right:1rem;z-index:9999;max-width:24rem;border-radius:0.5rem;border:1px solid #fca5a5;background:#fef2f2;padding:1rem;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);";
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<div style="display:flex;align-items:flex-start;gap:0.75rem;">
+    <span style="flex-shrink:0;color:#ef4444;">❌</span>
+    <div style="flex:1;min-width:0;">
+      <p style="margin:0;font-size:0.875rem;font-weight:600;color:#991b1b;">Error</p>
+      <p style="margin:0.25rem 0 0;font-size:0.875rem;color:#b91c1c;">${message}</p>
+    </div>
+    <button onclick="this.closest('#errorToast').style.display='none'" style="flex-shrink:0;border:none;background:transparent;color:#f87171;cursor:pointer;" aria-label="Cerrar">✕</button>
+  </div>`;
+  toast.style.display = "block";
+
+  // Auto-ocultar tras 6 segundos
+  if (window._errorToastTimer) clearTimeout(window._errorToastTimer);
+  window._errorToastTimer = setTimeout(() => {
+    toast.style.display = "none";
+  }, 6000);
+}
 }
 
 async function loadList() {
@@ -379,7 +408,16 @@ async function loadList() {
 
     wrapper.classList.remove("hidden");
   } catch (err) {
-    errorEl.textContent = `❌ Error al cargar incidencias: ${err.message}`;
+    let friendlyMsg = err.message;
+    if (friendlyMsg === "Failed to fetch" || friendlyMsg.includes("NetworkError")) {
+      friendlyMsg = window.__ ? window.__('incmgr.error_network') : "No se pudo conectar con el servidor. Verifica tu conexión.";
+    }
+    errorEl.innerHTML = `
+      ❌ Error al cargar incidencias: ${escHtml(friendlyMsg)}
+      <button onclick="loadList()" class="ml-3 text-sm font-medium text-blue-600 hover:text-blue-800 underline">
+        Reintentar
+      </button>
+    `;
     errorEl.classList.remove("hidden");
   } finally {
     loadingEl.classList.add("hidden");
@@ -422,7 +460,15 @@ async function loadSummary() {
 
     content.classList.remove("hidden");
   } catch (err) {
-    errorEl.textContent = `❌ ${window.__ ? window.__('incmgr.error_load_summary') : 'Error al cargar resumen'}: ${err.message}`;
+    let friendlyMsg = err.message;
+    if (friendlyMsg === "Failed to fetch" || friendlyMsg.includes("NetworkError")) {
+      friendlyMsg = window.__ ? window.__('incmgr.error_network') : "No se pudo conectar con el servidor. Verifica tu conexión.";
+    }
+    errorEl.innerHTML = `❌ ${window.__ ? window.__('incmgr.error_load_summary') : 'Error al cargar resumen'}: ${escHtml(friendlyMsg)}
+      <button onclick="loadSummary()" class="ml-3 text-sm font-medium text-blue-600 hover:text-blue-800 underline">
+        Reintentar
+      </button>
+    `;
     errorEl.classList.remove("hidden");
   } finally {
     loadingEl.classList.add("hidden");
@@ -432,6 +478,7 @@ window.loadSummary = loadSummary;
 
 function renderSummaryGrid(containerId, data, labelFn) {
   const container = document.getElementById(containerId);
+  if (!container || !data) return;
   const keys = Object.keys(data);
 
   if (keys.length === 0) {
