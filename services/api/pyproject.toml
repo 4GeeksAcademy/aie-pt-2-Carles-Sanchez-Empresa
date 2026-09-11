@@ -18,7 +18,8 @@ dependencies = [
 ]
 
 [tool.setuptools]
-py-modules = ["seed"]
+py-modules = ["seed", "seed_inventory"]
 
 [project.scripts]
 seed = "seed:seed"
+seed-inventory = "seed_inventory:seed"

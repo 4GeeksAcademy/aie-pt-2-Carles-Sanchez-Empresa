@@ -71,29 +71,21 @@
 
   <header class="bg-gradient-to-r from-blue-600 to-emerald-500 text-white p-6 shadow-lg">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
-        <p class="text-blue-100 mt-1" data-i18n="index.header_subtitle">Verificador manual de utilidades — TypeScript → JavaScript</p>
+      <div class="flex items-center gap-3">
+        <button id="sidebarToggle">☰</button>
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight">🚚 TrackFlow</h1>
+          <p class="text-blue-100 mt-1" data-i18n="index.header_subtitle">Verificador manual de utilidades — TypeScript → JavaScript</p>
+        </div>
       </div>
       <div class="flex items-center gap-3" id="headerNav">
-        <!-- Enlaces que requieren auth se muestran/ocultan con JS -->
-        <a href="suppliers.html"
-           class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          📋 <span data-i18n="index.nav_suppliers">Proveedores</span>
-        </a>
-        <a href="incidents.html"
-           class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          📊 <span data-i18n="index.nav_incidents">Analizar incidencias</span>
-        </a>
-        <a href="incidents-manager.html"
-           class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-          🚨 <span data-i18n="index.nav_incmgr">Gestor incidencias</span>
-        </a>
         <button onclick="window.__toggleLang()" id="langToggle"
                 class="bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded text-xs font-semibold font-mono tracking-wider transition">
           ES | EN
         </button>
       </div>
+    </div>
+  </header>
     </div>
   </header>
 
@@ -449,5 +441,6 @@
     };
   </script>
   <script src="/js/i18n.js"></script>
+  <script src="/js/sidebar.js"></script>
 </body>
 </html>
