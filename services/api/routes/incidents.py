@@ -10,7 +10,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 
 from database import incidents_table, IncidentQuery
-from models import (
+from pydantic_models import (
     IncidentCreate,
     IncidentResponse,
     IncidentStatusUpdate,

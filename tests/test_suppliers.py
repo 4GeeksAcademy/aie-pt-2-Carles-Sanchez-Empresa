@@ -29,7 +29,7 @@ class TestCreateSupplier:
         Datos válidos → 201, proveedor creado con todos los campos e ID
         """
         from routes.suppliers import create_supplier, SupplierCreate
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         payload = SupplierCreate(
             name="New Carrier",
@@ -54,7 +54,7 @@ class TestCreateSupplier:
         S-F1: create_supplier_rate_zero
         Tarifa <= 0 → ValidationError de Pydantic
         """
-        from models import SupplierCreate, SupplierStatus
+        from pydantic_models import SupplierCreate, SupplierStatus
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
@@ -72,7 +72,7 @@ class TestCreateSupplier:
         S-F2: create_supplier_invalid_country
         País no soportado → ValidationError en model_validator
         """
-        from models import SupplierCreate, SupplierStatus
+        from pydantic_models import SupplierCreate, SupplierStatus
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
@@ -90,7 +90,7 @@ class TestCreateSupplier:
         S-F3: create_supplier_currency_mismatch
         USA + EUR → ValidationError (validación cruzada)
         """
-        from models import SupplierCreate, SupplierStatus
+        from pydantic_models import SupplierCreate, SupplierStatus
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
@@ -117,7 +117,7 @@ class TestListSuppliers:
         Sin filtros → todos los proveedores
         """
         from routes.suppliers import create_supplier, SupplierCreate, list_suppliers
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         await create_supplier(SupplierCreate(
             name="Test Carrier Inc.", country="USA",
@@ -143,7 +143,7 @@ class TestListSuppliers:
         ?country=Spain → solo proveedores españoles
         """
         from routes.suppliers import create_supplier, SupplierCreate, list_suppliers
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         await create_supplier(SupplierCreate(
             name="Carrier USA", country="USA",
@@ -167,7 +167,7 @@ class TestListSuppliers:
         ?category=carrier_international → solo los que tienen esa categoría
         """
         from routes.suppliers import create_supplier, SupplierCreate, list_suppliers
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         await create_supplier(SupplierCreate(
             name="Last Mile Co", country="USA",
@@ -201,7 +201,7 @@ class TestListSuppliers:
         ?country=USA&category=carrier_last_mile → 1 resultado
         """
         from routes.suppliers import create_supplier, SupplierCreate, list_suppliers
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         await create_supplier(SupplierCreate(
             name="USA Last Mile", country="USA",
@@ -232,7 +232,7 @@ class TestGetSupplier:
         ID existente → 200, datos correctos
         """
         from routes.suppliers import create_supplier, SupplierCreate, get_supplier
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         created = await create_supplier(SupplierCreate(
             name="Test Carrier Inc.", country="USA",
@@ -270,7 +270,7 @@ class TestUpdateRate:
         ID existente + nueva tarifa válida → tarifa actualizada
         """
         from routes.suppliers import create_supplier, SupplierCreate, update_supplier_rate, SupplierUpdateRate
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         created = await create_supplier(SupplierCreate(
             name="Test Carrier", country="USA",
@@ -292,7 +292,7 @@ class TestUpdateRate:
         S-F5: update_rate_negative
         Tarifa <= 0 → ValidationError de Pydantic
         """
-        from models import SupplierUpdateRate
+        from pydantic_models import SupplierUpdateRate
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
@@ -324,7 +324,7 @@ class TestUpdateStatus:
         ID existente + estado válido → estado actualizado
         """
         from routes.suppliers import create_supplier, SupplierCreate, update_supplier_status, SupplierUpdateStatus
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         created = await create_supplier(SupplierCreate(
             name="Test Carrier", country="USA",
@@ -348,7 +348,7 @@ class TestUpdateStatus:
         ID inexistente → 404
         """
         from routes.suppliers import update_supplier_status, SupplierUpdateStatus
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         payload = SupplierUpdateStatus(status=SupplierStatus.SUSPENDED)
         with pytest.raises(HTTPException) as exc:
@@ -369,7 +369,7 @@ class TestDeleteSupplier:
         ID existente → 200, mensaje de confirmación, registro eliminado
         """
         from routes.suppliers import create_supplier, SupplierCreate, delete_supplier, get_supplier
-        from models import SupplierStatus
+        from pydantic_models import SupplierStatus
 
         created = await create_supplier(SupplierCreate(
             name="Test Carrier", country="USA",
