@@ -226,3 +226,22 @@ class TestResetPassword:
         assert user["email"] == "test@trackflow.com"
         assert user["role"] == "user"
         assert user["is_active"] is True
+
+    @pytest.mark.asyncio
+    async def test_reset_password_same_as_old(self, sample_user, mock_db):
+        """
+        R-E1: reset_password_same_as_old
+        Nueva contraseña igual a la anterior → 400
+        """
+        from routes.auth import reset_password, ResetPasswordRequest
+        from auth import create_reset_token
+
+        token = create_reset_token(user_id=sample_user)
+        # La contraseña original del usuario de prueba es "SecurePass123!"
+        payload = ResetPasswordRequest(token=token, new_password="SecurePass123!")
+
+        with pytest.raises(HTTPException) as exc:
+            await reset_password(payload)
+
+        assert exc.value.status_code == 400
+        assert "igual" in exc.value.detail.lower()
