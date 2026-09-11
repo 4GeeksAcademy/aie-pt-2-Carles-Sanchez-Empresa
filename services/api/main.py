@@ -16,9 +16,11 @@ Módulos:
 import csv
 import io
 import logging
+import time
 from typing import Optional
 
 logger = logging.getLogger(__name__)
+timing_logger = logging.getLogger("api.timing")
 
 from contextlib import asynccontextmanager
 
@@ -46,6 +48,12 @@ from routes import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Inicializa las tablas de SQLModel en Supabase al arrancar la aplicación."""
+    # Configurar logging para visibilidad del timing middleware
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
     SQLModel.metadata.create_all(engine)
     logger.info("Tablas SQLModel creadas/verificadas en Supabase")
     yield
@@ -80,6 +88,30 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     return response
+
+
+# ── Timing Middleware (medición de latencia) ──
+@app.middleware("http")
+async def timing_middleware(request: Request, call_next):
+    """
+    Mide la duración de cada petición HTTP y la registra en api.timing.
+
+    Formato:  METHOD /path → STATUS | XXXX.Xms
+    Usar para identificar candidatos a caching: latencia alta + alta frecuencia.
+    """
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration = (time.perf_counter() - start) * 1000  # ms
+
+    timing_logger.info(
+        "%s %s → %d | %.1fms",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration,
+    )
+    return response
+
 
 # Almacén en memoria del último resultado (para la exportación CSV)
 _last_result: dict | None = None
