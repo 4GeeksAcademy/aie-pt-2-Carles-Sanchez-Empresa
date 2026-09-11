@@ -7,3 +7,4 @@ venv/
 .next/
 *.egg-info/
 build/
+node_modules

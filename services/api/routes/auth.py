@@ -10,6 +10,8 @@ from json import JSONDecodeError
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ValidationError
 
+from i18n import get_translator
+
 logger = logging.getLogger(__name__)
 
 from auth import (
@@ -24,6 +26,8 @@ from auth import (
 from database import users_table, UserQuery
 from email_service import send_reset_email
 from services import get_user_by_email, get_profile_by_user_id, update_user
+
+t = get_translator("es")
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
