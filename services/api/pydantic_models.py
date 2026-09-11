@@ -207,6 +207,61 @@ class IncidentCreate(BaseModel):
         return v
 
 
+# ═══════════════════════════════════════════════════════════════════
+# MODELOS DE TELEMETRÍA
+# ═══════════════════════════════════════════════════════════════════
+
+class TelemetryEvent(BaseModel):
+    """
+    Envelope estándar de un evento de telemetría.
+
+    Todo evento debe incluir estos campos. Los componentes que llaman a
+    track() desde el frontend NO pasan eventId, timestamp, sessionId, etc.
+    manualmente — el TelemetryService los genera automáticamente.
+
+    Este modelo se reutilizará sin cambios en la Fase 3 (persistencia).
+    """
+
+    eventId: str = Field(
+        ..., description="UUID v4 único del evento. Generado en el punto de emisión."
+    )
+    timestamp: str = Field(
+        ..., description="ISO 8601 del momento exacto del evento. Formato: 2026-09-10T14:30:00.000Z"
+    )
+    sessionId: str = Field(
+        ..., description="UUID v4 de la sesión del usuario. Agrupa eventos de una misma interacción."
+    )
+    userId: str = Field(
+        ..., description="ID del usuario autenticado. 'anonymous' si no hay sesión activa."
+    )
+    event_type: str = Field(
+        ..., pattern=r"^[a-z]+_[a-z]+$",
+        description="Tipo de evento en taxonomía entidad_acción. Ej: inbound_order_created."
+    )
+    schemaVersion: str = Field(
+        ..., pattern=r"^\d+\.\d+$",
+        description="Versión del esquema del evento. Este plan usa '1.0'."
+    )
+    requestId: str = Field(
+        ..., description="UUID v4 de correlación extremo a extremo. Une frontend ↔ backend ↔ base de datos."
+    )
+    properties: dict[str, Any] = Field(
+        ..., description="Payload específico del evento. Solo claves definidas en el allowlist de cada event_type."
+    )
+
+
+class TelemetryBatchRequest(BaseModel):
+    """
+    Body del endpoint POST /telemetry/events.
+
+    Contiene un arreglo de eventos para envío por lotes.
+    """
+
+    events: list[TelemetryEvent] = Field(
+        ..., min_length=1, description="Arreglo de eventos de telemetría a procesar."
+    )
+
+
 class IncidentResponse(BaseModel):
     """Esquema de respuesta completa de una incidencia."""
 

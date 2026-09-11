@@ -460,6 +460,25 @@
         "additionalProperties": false
       }
     },
+    "web_vital_measured": {
+      "description": "Se dispara cuando el navegador reporta una métrica Core Web Vital (LCP, FID, CLS, INP, TTFB) vía PerformanceObserver. Incluye la ruta de la página como contexto.",
+      "mandatory": false,
+      "category": "performance",
+      "containsPII": false,
+      "processing": "stream",
+      "properties": {
+        "type": "object",
+        "required": ["metric_name", "metric_value", "metric_delta", "metric_id"],
+        "properties": {
+          "metric_name": { "type": "string", "enum": ["LCP", "FID", "CLS", "INP", "TTFB"], "description": "Nombre de la métrica Core Web Vital medida." },
+          "metric_value": { "type": "integer", "minimum": 0, "description": "Valor de la métrica. Para CLS se multiplica ×1000 (entero)." },
+          "metric_delta": { "type": "integer", "description": "Cambio respecto a la medición anterior." },
+          "metric_id": { "type": "string", "description": "ID único de la medición para deduplicación." },
+          "page": { "type": "string", "description": "Ruta de la página donde se midió (ej: /inventory)." }
+        },
+        "additionalProperties": false
+      }
+    },
     "frontend_error_captured": {
       "description": "Se dispara cuando el frontend captura un error JS no manejado. Mensaje sanitizado (máx 200 chars, emails/teléfonos enmascarados). Deduplicación 5m.",
       "mandatory": false,

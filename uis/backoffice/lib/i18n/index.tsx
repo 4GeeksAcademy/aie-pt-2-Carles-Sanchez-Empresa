@@ -62,7 +62,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   langRef.current = lang;
 
   useEffect(() => {
-    if (lang === "es") return;
     loadMessages(lang).then(setMessages);
   }, [lang]);
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { track } from "@/services/telemetry";
 import type { StockExitInput, StockExitResult } from "@/services/api";
 
 interface Props {
@@ -33,6 +34,17 @@ export function OutboundForm({ products, onSubmit }: Props) {
         tracking_number: exitType === "dispatch" ? tracking : undefined,
         warehouse,
       });
+      // M2: outbound_order_created
+      const product = products.find((p) => p.id === parseInt(skuId, 10));
+      track("outbound_order_created", {
+        warehouse: warehouse || "unknown",
+        client_id: product ? String(product.id) : "unknown",
+        product_id: parseInt(skuId, 10),
+        product_category: "unknown", // Se establecerá en el backend
+        quantity: parseInt(quantity, 10),
+        exit_type: exitType,
+        tracking_number: exitType === "dispatch" && tracking ? tracking : undefined,
+      });
       setSuccess(true);
       setSkuId("");
       setQuantity("");
@@ -40,7 +52,19 @@ export function OutboundForm({ products, onSubmit }: Props) {
       setTracking("");
       setWarehouse("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
+      const errorMsg = err instanceof Error ? err.message : "Error";
+      setError(errorMsg);
+      // O3: stock_validation_failed — detectar errores de stock insuficiente
+      if (errorMsg.toLowerCase().includes("stock") || errorMsg.toLowerCase().includes("insuficiente")) {
+        track("stock_validation_failed", {
+          warehouse: warehouse || "unknown",
+          client_id: "unknown",
+          product_id: parseInt(skuId, 10),
+          product_category: "unknown",
+          requested_quantity: parseInt(quantity, 10),
+          available_stock: 0, // No tenemos el dato exacto del frontend
+        });
+      }
     } finally {
       setSubmitting(false);
     }

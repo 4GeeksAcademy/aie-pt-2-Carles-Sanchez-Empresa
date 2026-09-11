@@ -11,6 +11,8 @@ from .auth import router as auth_router
 from .incidents import router as incidents_router
 from .inventory import router as inventory_router
 
+from .telemetry import router as telemetry_router
+
 __all__ = [
     "suppliers_router",
     "users_router",
@@ -18,4 +20,5 @@ __all__ = [
     "auth_router",
     "incidents_router",
     "inventory_router",
+    "telemetry_router",
 ]

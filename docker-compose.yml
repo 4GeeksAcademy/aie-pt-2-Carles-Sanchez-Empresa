@@ -31,6 +31,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_HOST=api
       - NEXT_PUBLIC_API_PORT=8000
+      - NEXT_PUBLIC_TELEMETRY_ENDPOINT=http://api:8000/telemetry/events
     networks:
       - trackflow-net
 
@@ -48,6 +49,8 @@ services:
       - ./packages/shared-py:/app/packages/shared-py
     env_file:
       - .env
+    environment:
+      - TELEMETRY_ENDPOINT=/telemetry/events
     networks:
       - trackflow-net
 
