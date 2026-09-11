@@ -7,5 +7,10 @@
     "uis/website",
     "uis/backoffice",
     "uis/talent-pipeline-tracker"
-  ]
+  ],
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.12"
+  }
 }

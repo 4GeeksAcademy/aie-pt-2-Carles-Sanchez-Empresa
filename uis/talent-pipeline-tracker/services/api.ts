@@ -50,7 +50,7 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
-function buildQueryString(params: RecordsQuery): string {
+export function buildQueryString(params: RecordsQuery): string {
   const search = new URLSearchParams();
   if (params.status) search.set("status", params.status);
   if (params.stage) search.set("stage", params.stage);
