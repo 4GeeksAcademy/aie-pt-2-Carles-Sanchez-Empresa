@@ -1,0 +1,9 @@
+[project]
+name = "trackflow-shared"
+version = "0.1.0"
+description = "TrackFlow — Shared validation logic, enums and transforms for incidents"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]

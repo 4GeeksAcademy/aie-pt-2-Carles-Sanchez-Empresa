@@ -1,98 +1,130 @@
-# TrackFlow Backoffice (HTML + TypeScript bundle)
+# TrackFlow Backoffice (Next.js 16 + React 19 + Tailwind v4)
 
-This project contains the manual TrackFlow backoffice panel served as static HTML and powered by a browser bundle generated from the monorepo TypeScript source.
+Next.js application that serves the TrackFlow operational backoffice.  
+Replaces the legacy static HTML pages with a modern App Router structure using React Server Components and Client Components.
+
+All shared domain logic is imported from `@trackflow/core` (located in `src/` at the monorepo root) — no code duplication.
+
+---
 
 ## Requirements
 
-- Node.js 20 or newer
-- npm 10 or newer
-- Python 3.10+ with `uv` installed
-
-Quick check:
-
-```bash
-node -v
-npm -v
-uv --version
-```
-
-## Relevant structure
-
-- `index.html` — static backoffice UI
-- `js/app.js` — browser bundle consumed by the page
-- `package.json` — build and watch scripts for the UI bundle
-- `../../src/` — source of truth for business logic, sample data, and UI handlers
-
-## Source of truth
-
-The business logic is not maintained inside `uis/backoffice/`.
-
-- `src/utils/` contains the business logic
-- `src/types/` contains the domain types
-- `src/data/sampleData.ts` contains sample data
-- `src/ui/handlers.ts` is the browser entrypoint bundled for the backoffice
+- Node.js 20+
+- npm 10+
+- FastAPI backend running on port 8000 (`services/api`)
 
 ---
 
-## Step-by-step setup (with FastAPI server) — RECOMMENDED
-
-This is the recommended way, as the backoffice is served through the same FastAPI server.
-
-### 1. Build the TypeScript bundle
+## Running
 
 ```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
+# From the repo root, install all workspace deps once
 npm install
-npm run build
+
+# Start dev server (port 3001)
+cd uis/backoffice
+npm run dev
 ```
 
-### 2. Start the FastAPI server (with uv)
+The `dev` script uses port 3001. FastAPI must be running on port 8000 or proxied data requests will fail with `ECONNREFUSED`.
 
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/services/api
-uv sync          # if you haven't already
-uv run seed      # optional: seed example suppliers
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
+## Languages
 
-### 3. Open in the browser
-
-[http://localhost:8000](http://localhost:8000)
-
-The FastAPI server serves:
-- `/` → `index.html`
-- `/incidents.html` → incident analyzer
-- `/suppliers.html` → supplier directory
-- `/js/app.js` → compiled TypeScript bundle
+The `EN | ES` control in the navbar changes the complete interface immediately. The selected language is stored in `localStorage` under `lang`, so it persists across routes and browser reloads.
 
 ---
 
-## Alternative: static HTTP server
+## API proxy (rewrites)
 
-If you only want to view the static HTML (no API connection), use a simple HTTP server:
+The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls to the FastAPI backend, keeping all requests same-origin from the browser:
 
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build
-python3 -m http.server 8126
+```
+/api/*       → http://localhost:8000/* (strips /api prefix)
+/auth/*      → http://localhost:8000/auth/*
+/users/*     → http://localhost:8000/users/*
+/profiles/*  → http://localhost:8000/profiles/*
 ```
 
-[http://127.0.0.1:8126](http://127.0.0.1:8126)
-
-> ⚠️ With this option, the suppliers (`suppliers.html`) and incidents pages will NOT connect to the API.
+> 💡 The frontend uses `API_BASE = "/api"` in `lib/constants.ts`. All fetch calls (e.g. `fetch("/api/suppliers")`) are proxied to the backend without the `/api` prefix. Routes called directly by `@trackflow/core` (login, register) use `/auth/*` and `/users/*` rewrites directly.
 
 ---
 
-## Development: auto-rebuild on changes
+## Routes
 
-Keep this running in a terminal while editing `src/`:
+| Route | Auth | Description |
+|---|---|---|
+| `/login` | No | Login form (email + password → JWT) |
+| `/register` | No | Registration form |
+| `/` | JWT | Dashboard — inventory, shipments & carriers |
+| `/suppliers` | JWT | Supplier directory CRUD |
+| `/incidents` | JWT | CSV incident analyzer |
+| `/account/profile` | JWT | User profile management |
+
+> Protected routes require a valid JWT stored in `localStorage` (`trackflow_token`).
+
+---
+
+## How to launch (full stack)
+
+### 1. FastAPI Backend (port 8000)
 
 ```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build:watch
+cd services/api
+source venv/bin/activate
+uv run seed                # optional: sample suppliers
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-This regenerates `js/app.js` whenever TypeScript source files change.
+### 2. Backoffice (port 3001)
+
+```bash
+cd uis/backoffice
+npm run dev
+```
+
+### 3. Open in browser
+
+```
+http://localhost:3001
+```
+
+- **Login**: `http://localhost:3001/login`
+- **Register**: `http://localhost:3001/register`
+- **Dashboard**: `http://localhost:3001/` (after login)
+
+---
+
+## Architecture
+
+```
+uis/backoffice/
+├── app/                    # Next.js App Router pages
+│   ├── login/page.tsx      # Login (Suspense-wrapped)
+│   ├── register/page.tsx   # Registration
+│   ├── page.tsx            # Dashboard (protected)
+│   ├── suppliers/page.tsx  # Supplier CRUD (protected)
+│   ├── incidents/page.tsx  # Incident analyzer (protected)
+│   └── account/profile/page.tsx  # User profile (protected)
+├── components/             # Shared UI components
+├── hooks/                  # Custom hooks (useDashboard, useSuppliers, useIncidentAnalyzer)
+├── services/api.ts         # API fetch wrapper (uses API_BASE + rewrites)
+├── lib/constants.ts        # Config (API_BASE, categories, etc.)
+├── next.config.ts          # Rewrites + transpilePackages
+└── tsconfig.json           # Path aliases
+```
+
+## Shared package (`@trackflow/core`)
+
+The backoffice imports all shared logic from the monorepo `src/` barrel:
+
+```ts
+import { login, register, getToken, getAuthMe, getProfile, updateProfile }
+  from "@trackflow/core";
+import { filterProductsByWarehouse, sortCarriersByReliability, selectBestCarrier, ... }
+  from "@trackflow/core";
+import type { Product, Shipment, Carrier, User, ... }
+  from "@trackflow/core";
+```
 
 ---
 
@@ -100,65 +132,31 @@ This regenerates `js/app.js` whenever TypeScript source files change.
 
 | Command | Description |
 |---|---|
-| `npm run build` | Bundles `../../src/ui/handlers.ts` into `js/app.js` |
-| `npm run build:watch` | Rebuilds the bundle automatically on changes |
-
----
-
-## Expected status
-
-If everything is correct:
-
-- `npm run build` finishes without errors
-- `js/app.js` is generated successfully
-- The FastAPI server starts without errors
-- The backoffice pages load correctly at `http://localhost:8000`
-- Business logic results are visible in the UI, not only in the console
+| `npm run dev` | Start dev server (port 3001) |
+| `npm run build` | Build for production |
+| `npm run start` | Start production server |
 
 ---
 
 ## Troubleshooting
 
-### The page opens but buttons do nothing
+### `another next dev server is already running`
 
-Usually `js/app.js` has not been generated yet.
-
-```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build
-```
-
-Refresh the browser.
-
-### Error `sh: esbuild: not found`
-
-Local dependencies are missing.
+Kill the existing server:
 
 ```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm install
+lsof -ti:3001 | xargs kill
+npm run dev
 ```
 
-### Changes in `src/` are not reflected
+### API requests return 404
 
-Rebuild the bundle:
+Ensure FastAPI is running on port 8000 and the rewrites in `next.config.ts` are pointing to the correct URL. Check with:
 
 ```bash
-cd /workspaces/aie-pt-2-Carles-Sanchez-Empresa/uis/backoffice
-npm run build
+curl http://localhost:8000/api/health
 ```
 
-Or keep the watcher running: `npm run build:watch`
+### Login fails with "Email o contraseña incorrectos"
 
-### Error `bash: uv: command not found`
-
-```bash
-pip install uv
-```
-
-### Server won't start because port is in use
-
-```bash
-# Change the port on the FastAPI server
-uv run uvicorn main:app --host 0.0.0.0 --port 8001 --reload
-```
+Make sure you registered first. The FastAPI backend must be running on port 8000.

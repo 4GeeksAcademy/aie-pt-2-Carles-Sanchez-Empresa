@@ -1,5 +1,6 @@
 import type { StageValue } from "@/types";
-import { STAGE_LABELS } from "@/lib/constants";
+import { STAGE_KEYS } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n";
 
 const BADGE_CLASSES: Record<StageValue, string> = {
   pending: "bg-slate-100 text-slate-700 border-slate-300",
@@ -10,11 +11,12 @@ const BADGE_CLASSES: Record<StageValue, string> = {
 };
 
 export function StageBadge({ stage }: { stage: StageValue }) {
+  const { t } = useTranslation();
   return (
     <span
       className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${BADGE_CLASSES[stage]}`}
     >
-      {STAGE_LABELS[stage]}
+      {t(STAGE_KEYS[stage])}
     </span>
   );
 }

@@ -10,6 +10,7 @@ import {
   getRemainingCharacters,
   validateApplicationForm,
 } from "../../utils/applicationValidation";
+import { useTranslation } from "@/lib/i18n";
 import { FormField } from "./FormField";
 
 const baseInputClass =
@@ -36,14 +37,15 @@ function withValidationClass(hasError: boolean): string {
 }
 
 export function ApplicationForm() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<ApplicationFormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [successVisible, setSuccessVisible] = useState(false);
 
   const remainingComments = useMemo(() => getRemainingCharacters(formData.comentarios), [formData.comentarios]);
   const productWarning = useMemo(
-    () => getProductVolumeWarning(formData.producto, formData.volumen),
-    [formData.producto, formData.volumen]
+    () => getProductVolumeWarning(formData.producto, formData.volumen, t),
+    [formData.producto, formData.volumen, t]
   );
 
   const handleTextChange = (
@@ -84,7 +86,7 @@ export function ApplicationForm() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
-    const nextErrors = validateApplicationForm(formData);
+    const nextErrors = validateApplicationForm(formData, t);
     const hasErrors = Object.keys(nextErrors).length > 0;
 
     setErrors(nextErrors);
@@ -100,7 +102,7 @@ export function ApplicationForm() {
   return (
     <form noValidate className="mt-8 space-y-6 rounded-2xl bg-[#ffffff] p-6 shadow-sm" onSubmit={handleSubmit}>
       <div className="grid gap-6 sm:grid-cols-2">
-        <FormField htmlFor="empresa" label="Nombre de la empresa" error={errors.empresa}>
+        <FormField htmlFor="empresa" label={t("form.label.empresa")} error={errors.empresa}>
           <input
             id="empresa"
             type="text"
@@ -108,11 +110,11 @@ export function ApplicationForm() {
             value={formData.empresa}
             onChange={handleTextChange}
             className={withValidationClass(Boolean(errors.empresa))}
-            placeholder="Ej. ModaExpress"
+            placeholder={t("form.placeholder.empresa")}
           />
         </FormField>
 
-        <FormField htmlFor="contacto" label="Persona de contacto" error={errors.contacto}>
+        <FormField htmlFor="contacto" label={t("form.label.contacto")} error={errors.contacto}>
           <input
             id="contacto"
             type="text"
@@ -120,11 +122,11 @@ export function ApplicationForm() {
             value={formData.contacto}
             onChange={handleTextChange}
             className={withValidationClass(Boolean(errors.contacto))}
-            placeholder="Ej. Laura García"
+            placeholder={t("form.placeholder.contacto")}
           />
         </FormField>
 
-        <FormField htmlFor="email" label="Email corporativo" error={errors.email}>
+        <FormField htmlFor="email" label={t("form.label.email")} error={errors.email}>
           <input
             id="email"
             type="email"
@@ -132,11 +134,11 @@ export function ApplicationForm() {
             value={formData.email}
             onChange={handleTextChange}
             className={withValidationClass(Boolean(errors.email))}
-            placeholder="contacto@empresa.com"
+            placeholder={t("form.placeholder.email")}
           />
         </FormField>
 
-        <FormField htmlFor="telefono" label="Teléfono" error={errors.telefono}>
+        <FormField htmlFor="telefono" label={t("form.label.telefono")} error={errors.telefono}>
           <input
             id="telefono"
             type="tel"
@@ -144,13 +146,13 @@ export function ApplicationForm() {
             value={formData.telefono}
             onChange={handleTextChange}
             className={withValidationClass(Boolean(errors.telefono))}
-            placeholder="+34 612 345 678"
+            placeholder={t("form.placeholder.telefono")}
           />
         </FormField>
 
         <FormField
           htmlFor="web"
-          label="Sitio web de la empresa"
+          label={t("form.label.web")}
           error={errors.web}
           className="sm:col-span-2"
         >
@@ -162,11 +164,11 @@ export function ApplicationForm() {
             value={formData.web}
             onChange={handleTextChange}
             className={withValidationClass(Boolean(errors.web))}
-            placeholder="https://www.empresa.com"
+            placeholder={t("form.placeholder.web")}
           />
         </FormField>
 
-        <FormField htmlFor="pais" label="País de operación principal" error={errors.pais}>
+        <FormField htmlFor="pais" label={t("form.label.pais")} error={errors.pais}>
           <select
             id="pais"
             name="pais"
@@ -174,15 +176,15 @@ export function ApplicationForm() {
             onChange={handleTextChange}
             className={withValidationClass(Boolean(errors.pais))}
           >
-            <option value="">Selecciona una opción</option>
-            <option value="Estados Unidos">Estados Unidos</option>
-            <option value="España">España</option>
-            <option value="Ambos">Ambos</option>
-            <option value="Otro">Otro</option>
+            <option value="">{t("form.select.default")}</option>
+            <option value="Estados Unidos">{t("form.select.pais.us")}</option>
+            <option value="España">{t("form.select.pais.es")}</option>
+            <option value="Ambos">{t("form.select.pais.ambos")}</option>
+            <option value="Otro">{t("form.select.pais.otro")}</option>
           </select>
         </FormField>
 
-        <FormField htmlFor="producto" label="Tipo de producto" error={errors.producto}>
+        <FormField htmlFor="producto" label={t("form.label.producto")} error={errors.producto}>
           <select
             id="producto"
             name="producto"
@@ -190,16 +192,16 @@ export function ApplicationForm() {
             onChange={handleTextChange}
             className={withValidationClass(Boolean(errors.producto))}
           >
-            <option value="">Selecciona una opción</option>
-            <option value="Moda">Moda</option>
-            <option value="Electrónica">Electrónica</option>
-            <option value="Cosmética">Cosmética</option>
-            <option value="Alimentación">Alimentación</option>
-            <option value="Otro">Otro</option>
+            <option value="">{t("form.select.default")}</option>
+            <option value="Moda">{t("form.select.producto.moda")}</option>
+            <option value="Electrónica">{t("form.select.producto.electronica")}</option>
+            <option value="Cosmética">{t("form.select.producto.cosmetica")}</option>
+            <option value="Alimentación">{t("form.select.producto.alimentacion")}</option>
+            <option value="Otro">{t("form.select.producto.otro")}</option>
           </select>
         </FormField>
 
-        <FormField htmlFor="volumen" label="Volumen mensual estimado de envíos" error={errors.volumen}>
+        <FormField htmlFor="volumen" label={t("form.label.volumen")} error={errors.volumen}>
           <select
             id="volumen"
             name="volumen"
@@ -207,44 +209,52 @@ export function ApplicationForm() {
             onChange={handleTextChange}
             className={withValidationClass(Boolean(errors.volumen))}
           >
-            <option value="">Selecciona una opción</option>
-            <option value="0-100">0-100</option>
-            <option value="101-500">101-500</option>
-            <option value="501-2000">501-2000</option>
-            <option value="2000+">2000+</option>
-            <option value="No estoy seguro">No estoy seguro</option>
+            <option value="">{t("form.select.default")}</option>
+            <option value="0-100">{t("form.select.volumen.0-100")}</option>
+            <option value="101-500">{t("form.select.volumen.101-500")}</option>
+            <option value="501-2000">{t("form.select.volumen.501-2000")}</option>
+            <option value="2000+">{t("form.select.volumen.2000+")}</option>
+            <option value="No estoy seguro">{t("form.select.volumen.no_seguro")}</option>
           </select>
         </FormField>
       </div>
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <p className="mb-2 text-sm font-semibold text-[#14263a]">Servicios de interés</p>
+          <p className="mb-2 text-sm font-semibold text-[#14263a]">{t("form.label.servicios")}</p>
           <div
             className={`rounded-2xl border bg-[#f3ddba] p-5 ${
               errors.servicios ? "border-red-600 ring-2 ring-red-500/40" : "border-[#c89d66]"
             }`}
           >
             <div className="grid gap-3 sm:grid-cols-2">
-              {(["Almacenaje", "Última milla", "Logística inversa"] as ServiceType[]).map((service) => (
-                <label key={service} className="inline-flex items-center gap-3 rounded-xl border border-[#c89d66] bg-white px-4 py-3">
-                  <input
-                    type="checkbox"
-                    value={service}
-                    checked={formData.servicios.includes(service)}
-                    onChange={handleServiceChange}
-                    className="h-4 w-4 text-[#14263a] accent-[#14263a]"
-                  />
-                  <span className="text-sm text-[#2f4a62]">{service}</span>
-                </label>
-              ))}
+              {(["Almacenaje", "Última milla", "Logística inversa"] as ServiceType[]).map((service) => {
+                const serviceKey =
+                  service === "Almacenaje"
+                    ? "form.option.almacenaje"
+                    : service === "Última milla"
+                      ? "form.option.ultima_milla"
+                      : "form.option.logistica_inversa";
+                return (
+                  <label key={service} className="inline-flex items-center gap-3 rounded-xl border border-[#c89d66] bg-white px-4 py-3">
+                    <input
+                      type="checkbox"
+                      value={service}
+                      checked={formData.servicios.includes(service)}
+                      onChange={handleServiceChange}
+                      className="h-4 w-4 text-[#14263a] accent-[#14263a]"
+                    />
+                    <span className="text-sm text-[#2f4a62]">{t(serviceKey)}</span>
+                  </label>
+                );
+              })}
             </div>
           </div>
           <p className={`mt-2 text-sm text-red-600 ${errors.servicios ? "" : "hidden"}`}>{errors.servicios || ""}</p>
         </div>
 
         <div className="space-y-2">
-          <p className="mb-2 text-sm font-semibold text-[#14263a]">¿Actualmente trabajas con otro 3PL?</p>
+          <p className="mb-2 text-sm font-semibold text-[#14263a]">{t("form.label.otro_3pl")}</p>
           <div
             className={`rounded-2xl border bg-[#f3ddba] p-5 ${
               errors.otro_3pl ? "border-red-600 ring-2 ring-red-500/40" : "border-[#c89d66]"
@@ -253,28 +263,36 @@ export function ApplicationForm() {
             <div className="space-y-3">
               {(["Sí", "No", "Estoy evaluando opciones"] as Other3plType[])
                 .filter((value) => value !== "")
-                .map((option) => (
-                  <label
-                    key={option}
-                    className="inline-flex w-full items-center gap-3 rounded-xl border border-[#c89d66] bg-white px-4 py-3"
-                  >
-                    <input
-                      type="radio"
-                      name="otro_3pl"
-                      value={option}
-                      checked={formData.otro_3pl === option}
-                      onChange={handleOther3plChange}
-                      className="h-4 w-4 text-[#14263a] accent-[#14263a]"
-                    />
-                    <span className="text-sm text-[#2f4a62]">{option}</span>
-                  </label>
-                ))}
+                .map((option) => {
+                  const optionKey =
+                    option === "Sí"
+                      ? "form.option.otro_3pl.si"
+                      : option === "No"
+                        ? "form.option.otro_3pl.no"
+                        : "form.option.otro_3pl.evaluando";
+                  return (
+                    <label
+                      key={option}
+                      className="inline-flex w-full items-center gap-3 rounded-xl border border-[#c89d66] bg-white px-4 py-3"
+                    >
+                      <input
+                        type="radio"
+                        name="otro_3pl"
+                        value={option}
+                        checked={formData.otro_3pl === option}
+                        onChange={handleOther3plChange}
+                        className="h-4 w-4 text-[#14263a] accent-[#14263a]"
+                      />
+                      <span className="text-sm text-[#2f4a62]">{t(optionKey)}</span>
+                    </label>
+                  );
+                })}
             </div>
           </div>
           <p className={`mt-2 text-sm text-red-600 ${errors.otro_3pl ? "" : "hidden"}`}>{errors.otro_3pl || ""}</p>
         </div>
 
-        <FormField htmlFor="comentarios" label="Comentarios o necesidades específicas" error={errors.comentarios}>
+        <FormField htmlFor="comentarios" label={t("form.label.comentarios")} error={errors.comentarios}>
           <div className="rounded-2xl border border-[#c89d66] bg-[#f3ddba] p-5">
             <textarea
               id="comentarios"
@@ -285,13 +303,13 @@ export function ApplicationForm() {
               className={`w-full rounded-2xl border border-[#c89d66] bg-white px-4 py-3 text-sm text-[#14263a] outline-none transition focus:border-[#14263a] focus:ring-2 focus:ring-[#14263a]/20 ${
                 errors.comentarios ? invalidInputClass : ""
               }`.trim()}
-              placeholder="Cuéntanos cualquier requisito especial o detalle adicional"
+              placeholder={t("form.placeholder.comentarios")}
             />
             <div className="mt-2 flex items-center justify-between gap-4">
               <p className={`text-sm text-red-600 ${errors.comentarios ? "" : "hidden"}`} role="alert">
                 {errors.comentarios || ""}
               </p>
-              <p className="text-sm text-[#2f4a62]">{remainingComments} caracteres restantes</p>
+              <p className="text-sm text-[#2f4a62]">{t("form.char_remaining", { count: remainingComments })}</p>
             </div>
           </div>
         </FormField>
@@ -310,7 +328,7 @@ export function ApplicationForm() {
           onChange={handlePolicyChange}
           className="mt-1 h-4 w-4 text-[#14263a] accent-[#14263a]"
         />
-        <span className="text-sm text-[#2f4a62]">Acepto la política de privacidad</span>
+        <span className="text-sm text-[#2f4a62]">{t("form.label.politica_privacidad")}</span>
       </label>
       <p className={`mt-2 text-sm text-red-600 ${errors.politica_privacidad ? "" : "hidden"}`}>
         {errors.politica_privacidad || ""}
@@ -327,20 +345,20 @@ export function ApplicationForm() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-[#2f4a62]">Revisa todos los datos antes de enviar tu solicitud.</p>
+        <p className="text-sm text-[#2f4a62]">{t("form.review_text")}</p>
         <div className="flex gap-3">
           <button
             type="button"
             onClick={clearForm}
             className="inline-flex items-center justify-center rounded-xl border border-[#14263a] bg-transparent px-5 py-3 text-sm font-semibold text-[#14263a] transition hover:bg-[#f3ddba]"
           >
-            Limpiar
+            {t("form.clear_btn")}
           </button>
           <button
             type="submit"
             className="inline-flex items-center justify-center rounded-xl bg-[#14263a] px-5 py-3 text-sm font-semibold text-[#f8fbff] transition hover:bg-[#1d4f7a]"
           >
-            Enviar solicitud
+            {t("form.submit_btn")}
           </button>
         </div>
       </div>
@@ -352,14 +370,12 @@ export function ApplicationForm() {
           successVisible ? "" : "hidden"
         }`}
       >
-        <p className="mb-3 font-semibold">¡Gracias por tu interés en TrackFlow!</p>
+        <p className="mb-3 font-semibold">{t("form.success.title")}</p>
         <p className="mb-3">
-          Hemos recibido tu solicitud. Nuestro equipo comercial revisará tu información y te contactará en las próximas
-          24-48 horas para agendar una llamada y conocer tus necesidades logísticas en detalle.
+          {t("form.success.message")}
         </p>
         <p>
-          Si tienes alguna consulta urgente, escríbenos directamente a {" "}
-          <a href="mailto:comercial@trackflow.com" className="font-semibold underline">
+          {t("form.success.urgent")}<a href="mailto:comercial@trackflow.com" className="font-semibold underline">
             comercial@trackflow.com
           </a>
         </p>

@@ -6,12 +6,13 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { getRecords, createRecord } from "@/services/api";
 import type { RecordOut, RecordCreate, StatusValue, StageValue } from "@/types";
 import { STATUS_OPTIONS, STAGE_OPTIONS } from "@/lib/constants";
-import { isValidPhone, PHONE_ERROR } from "@/lib/validation";
+import { isValidPhone } from "@/lib/validation";
 import { StatusBadge } from "@/components/StatusBadge";
 import { StageBadge } from "@/components/StageBadge";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { SuccessToast } from "@/components/SuccessToast";
+import { useTranslation } from "@/lib/i18n";
 
 /* ───────────────────────────────────────────────
    Modal de nueva candidatura
@@ -37,6 +38,7 @@ function NewRecordModal({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -51,17 +53,17 @@ function NewRecordModal({
 
     // Validación unificada
     const campos = [];
-    if (!form.full_name.trim()) campos.push("nombre");
-    if (!form.email.trim()) campos.push("email");
-    if (!form.phone.trim()) campos.push("teléfono");
-    if (!form.position.trim()) campos.push("puesto");
+    if (!form.full_name.trim()) campos.push(t("candidates.form.name"));
+    if (!form.email.trim()) campos.push(t("candidates.form.email"));
+    if (!form.phone.trim()) campos.push(t("candidates.form.phone"));
+    if (!form.position.trim()) campos.push(t("candidates.form.position"));
 
     if (campos.length > 0) {
-      setError(`Los siguientes campos son obligatorios: ${campos.join(", ")}.`);
+      setError(t("candidates.error_required_fields", { campos: campos.join(", ") }));
       return;
     }
     if (!isValidPhone(form.phone)) {
-      setError(PHONE_ERROR);
+      setError(t("candidates.error_phone"));
       return;
     }
 
@@ -82,7 +84,7 @@ function NewRecordModal({
         cv_url: "",
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error al crear candidatura";
+      const msg = err instanceof Error ? err.message : t("candidates.error_create");
       console.error("❌ Error al crear candidatura:", err);
       setError(msg);
     } finally {
@@ -95,13 +97,13 @@ function NewRecordModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-lg rounded-xl border border-[#c89d66] bg-[#f3ddba] p-6 shadow-lg">
-        <h2 className="text-lg font-semibold text-[#14263a]">Nueva candidatura</h2>
+        <h2 className="text-lg font-semibold text-[#14263a]">{t("candidates.modal_title")}</h2>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-[#2f4a62]">
-                Nombre completo <span className="text-red-500">*</span>
+                {t("candidates.form.name")} <span className="text-red-500">*</span>
               </label>
               <input
                 name="full_name"
@@ -109,12 +111,12 @@ function NewRecordModal({
                 onChange={handleChange}
                 required
                 className="mt-1 w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62] placeholder:text-[#9ab0c4] focus:outline-none focus:ring-2 focus:ring-[#c89d66]"
-                placeholder="María García"
+                placeholder={t("candidates.form.name_placeholder")}
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-[#2f4a62]">
-                Email <span className="text-red-500">*</span>
+                {t("candidates.form.email")} <span className="text-red-500">*</span>
               </label>
               <input
                 name="email"
@@ -123,23 +125,23 @@ function NewRecordModal({
                 onChange={handleChange}
                 required
                 className="mt-1 w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62] placeholder:text-[#9ab0c4] focus:outline-none focus:ring-2 focus:ring-[#c89d66]"
-                placeholder="maria@ejemplo.com"
+                placeholder={t("candidates.form.email_placeholder")}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#2f4a62]">Teléfono <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-medium text-[#2f4a62]">{t("candidates.form.phone")} <span className="text-red-500">*</span></label>
               <input
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
                 required
                 className="mt-1 w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62] placeholder:text-[#9ab0c4] focus:outline-none focus:ring-2 focus:ring-[#c89d66]"
-                placeholder="+34 600 000 000"
+                placeholder={t("candidates.form.phone_placeholder")}
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-[#2f4a62]">
-                Puesto <span className="text-red-500">*</span>
+                {t("candidates.form.position")} <span className="text-red-500">*</span>
               </label>
               <input
                 name="position"
@@ -147,11 +149,11 @@ function NewRecordModal({
                 onChange={handleChange}
                 required
                 className="mt-1 w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62] placeholder:text-[#9ab0c4] focus:outline-none focus:ring-2 focus:ring-[#c89d66]"
-                placeholder="Asistente de Dirección"
+                placeholder={t("candidates.form.position_placeholder")}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#2f4a62]">Años de experiencia</label>
+              <label className="block text-xs font-medium text-[#2f4a62]">{t("candidates.form.experience")}</label>
               <input
                 name="experience_years"
                 type="number"
@@ -162,23 +164,23 @@ function NewRecordModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#2f4a62]">LinkedIn</label>
+              <label className="block text-xs font-medium text-[#2f4a62]">{t("candidates.form.linkedin")}</label>
               <input
                 name="linkedin_url"
                 value={form.linkedin_url}
                 onChange={handleChange}
                 className="mt-1 w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62] placeholder:text-[#9ab0c4] focus:outline-none focus:ring-2 focus:ring-[#c89d66]"
-                placeholder="https://linkedin.com/in/..."
+                placeholder={t("candidates.form.linkedin_placeholder")}
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-[#2f4a62]">Enlace al CV</label>
+              <label className="block text-xs font-medium text-[#2f4a62]">{t("candidates.form.cv")}</label>
               <input
                 name="cv_url"
                 value={form.cv_url}
                 onChange={handleChange}
                 className="mt-1 w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62] placeholder:text-[#9ab0c4] focus:outline-none focus:ring-2 focus:ring-[#c89d66]"
-                placeholder="https://..."
+                placeholder={t("candidates.form.cv_placeholder")}
               />
             </div>
           </div>
@@ -191,14 +193,14 @@ function NewRecordModal({
               onClick={onClose}
               className="rounded-lg border border-[#c89d66] bg-white px-4 py-2 text-sm font-medium text-[#2f4a62] hover:bg-[#e5be83]"
             >
-              Cancelar
+              {t("app.cancel")}
             </button>
             <button
               type="submit"
               disabled={saving}
               className="rounded-lg border border-[#c89d66] bg-[#14263a] px-4 py-2 text-sm font-medium text-[#f8fbff] transition hover:bg-[#1d4f7a] disabled:opacity-50"
             >
-              {saving ? "Guardando…" : "Crear candidatura"}
+              {saving ? t("app.saving") : t("candidates.form.submit")}
             </button>
           </div>
         </form>
@@ -225,6 +227,7 @@ function CandidatesList() {
   const [localSearch, setLocalSearch] = useState(searchParam);
   const [modalOpen, setModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -237,7 +240,7 @@ function CandidatesList() {
       });
       setRecords(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al obtener candidaturas");
+      setError(err instanceof Error ? err.message : t("candidates.error_fetch"));
     } finally {
       setLoading(false);
     }
@@ -276,9 +279,9 @@ function CandidatesList() {
       {/* Título y acción */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[#14263a]">Candidaturas</h1>
+          <h1 className="text-2xl font-semibold text-[#14263a]">{t("candidates.title")}</h1>
           <p className="mt-1 text-sm text-[#2f4a62]">
-            Gestiona las candidaturas del proceso de selección
+            {t("candidates.subtitle")}
           </p>
         </div>
         <button
@@ -288,50 +291,50 @@ function CandidatesList() {
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          Nueva candidatura
+          {t("candidates.new")}
         </button>
       </div>
 
       {/* Filtros */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4">
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs font-medium text-[#2f4a62] mb-1">Buscar</label>
+          <label className="block text-xs font-medium text-[#2f4a62] mb-1">{t("candidates.filter_search")}</label>
           <input
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             onKeyDown={handleSearchKeyDown}
-            placeholder="Nombre o email…"
+            placeholder={t("candidates.filter_search")}
             className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62] placeholder:text-[#9ab0c4] focus:outline-none focus:ring-2 focus:ring-[#c89d66]"
           />
         </div>
 
         <div className="w-full sm:w-auto">
-          <label className="block text-xs font-medium text-[#2f4a62] mb-1">Estado</label>
+          <label className="block text-xs font-medium text-[#2f4a62] mb-1">{t("candidates.filter_status")}</label>
           <select
             value={statusParam}
             onChange={(e) => updateFilter("status", e.target.value)}
             className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62] focus:outline-none focus:ring-2 focus:ring-[#c89d66]"
           >
-            <option value="">Todos los estados</option>
+            <option value="">{t("candidates.all_statuses")}</option>
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </option>
             ))}
           </select>
         </div>
 
         <div className="w-full sm:w-auto">
-          <label className="block text-xs font-medium text-[#2f4a62] mb-1">Etapa</label>
+          <label className="block text-xs font-medium text-[#2f4a62] mb-1">{t("candidates.filter_stage")}</label>
           <select
             value={stageParam}
             onChange={(e) => updateFilter("stage", e.target.value)}
             className="w-full rounded-lg border border-[#c89d66] bg-[#f8fbff] px-3 py-2 text-sm text-[#2f4a62] focus:outline-none focus:ring-2 focus:ring-[#c89d66]"
           >
-            <option value="">Todas las etapas</option>
+            <option value="">{t("candidates.all_stages")}</option>
             {STAGE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {t(opt.labelKey)}
               </option>
             ))}
           </select>
@@ -342,13 +345,13 @@ function CandidatesList() {
             onClick={clearFilters}
             className="self-end rounded-lg border border-[#c89d66] bg-white px-3 py-2 text-sm font-medium text-[#2f4a62] hover:bg-[#e5be83]"
           >
-            Limpiar filtros
+            {t("app.clear_filters")}
           </button>
         )}
       </div>
 
       {/* Estados de carga / error / vacío */}
-      {loading && <LoadingSpinner text="Cargando candidaturas…" />}
+      {loading && <LoadingSpinner text={t("candidates.loading")} />}
 
       {error && <ErrorMessage message={error} onRetry={fetchRecords} />}
 
@@ -356,8 +359,8 @@ function CandidatesList() {
         <div className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-8 text-center">
           <p className="text-sm text-[#2f4a62]">
             {hasFilters
-              ? "No se encontraron candidaturas con los filtros actuales."
-              : "Aún no hay candidaturas registradas."}
+              ? t("candidates.empty_with_filters")
+              : t("candidates.empty_no_filters")}
           </p>
         </div>
       )}
@@ -368,13 +371,13 @@ function CandidatesList() {
           <table className="w-full text-sm text-[#2f4a62]">
             <thead>
               <tr className="border-b border-[#c89d66] bg-[#e5be83]/50 text-left text-xs uppercase tracking-wider text-[#14263a]">
-                <th className="px-4 py-3 font-semibold whitespace-nowrap">Nombre</th>
-                <th className="px-4 py-3 font-semibold whitespace-nowrap hidden sm:table-cell">Email</th>
-                <th className="px-4 py-3 font-semibold whitespace-nowrap">Puesto</th>
-                <th className="px-4 py-3 font-semibold whitespace-nowrap">Estado</th>
-                <th className="px-4 py-3 font-semibold whitespace-nowrap hidden md:table-cell">Etapa</th>
+                <th className="px-4 py-3 font-semibold whitespace-nowrap">{t("candidates.table_name")}</th>
+                <th className="px-4 py-3 font-semibold whitespace-nowrap hidden sm:table-cell">{t("candidates.table_email")}</th>
+                <th className="px-4 py-3 font-semibold whitespace-nowrap">{t("candidates.table_position")}</th>
+                <th className="px-4 py-3 font-semibold whitespace-nowrap">{t("candidates.table_status")}</th>
+                <th className="px-4 py-3 font-semibold whitespace-nowrap hidden md:table-cell">{t("candidates.table_stage")}</th>
                 <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">
-                  <span className="sr-only">Acciones</span>
+                  <span className="sr-only">{t("app.actions")}</span>
                 </th>
               </tr>
             </thead>
@@ -399,7 +402,7 @@ function CandidatesList() {
                       href={`/candidates/${rec.id}`}
                       className="inline-block rounded-lg border border-[#c89d66] bg-white px-3 py-1.5 text-xs font-medium text-[#14263a] hover:bg-[#e5be83] transition"
                     >
-                      Ver detalle
+                      {t("candidates.table_view")}
                     </Link>
                   </td>
                 </tr>
@@ -415,7 +418,7 @@ function CandidatesList() {
         onClose={() => setModalOpen(false)}
         onCreated={() => {
           // Mostrar toast de éxito
-          setSuccessMessage("Candidatura creada con éxito");
+          setSuccessMessage(t("candidates.success_created"));
           // Ir a la raíz sin filtros para que el nuevo registro sea visible
           if (hasFilters) {
             setLocalSearch("");
@@ -442,7 +445,7 @@ function CandidatesList() {
 
 export default function CandidatesPage() {
   return (
-    <Suspense fallback={<LoadingSpinner text="Cargando candidaturas…" />}>
+    <Suspense fallback={<LoadingSpinner />}>
       <CandidatesList />
     </Suspense>
   );

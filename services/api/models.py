@@ -139,3 +139,104 @@ class SupplierUpdateStatus(BaseModel):
 def generate_timestamp() -> str:
     """Genera un timestamp ISO 8601 en UTC."""
     return datetime.now(timezone.utc).isoformat()
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MODELOS DEL GESTOR DE INCIDENCIAS
+# ═══════════════════════════════════════════════════════════════════
+
+class IncidentCreate(BaseModel):
+    """Esquema para crear una nueva incidencia. id, created_at y updated_at se generan automáticamente."""
+
+    title: str = Field(..., min_length=1, description="Título breve de la incidencia")
+    description: str = Field(..., min_length=5, description="Descripción detallada")
+    category: str = Field(..., description="Categoría de la incidencia")
+    status: str = Field(default="open", description="Estado del ciclo de vida")
+    origin: str = Field(..., description="Origen del reporte")
+    branch: str = Field(..., description="Sede que gestiona o reporta la incidencia")
+
+    @field_validator("description")
+    @classmethod
+    def validate_description_length(cls, v: str) -> str:
+        if len(v.strip()) < 5:
+            raise ValueError("La descripción debe tener al menos 5 caracteres")
+        return v.strip()
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, v: str) -> str:
+        from trackflow_shared import IncidentCategory
+        valid = set(IncidentCategory._value2member_map_.keys())
+        if v not in valid:
+            raise ValueError(
+                f"Categoría no válida. Debe ser una de: {', '.join(sorted(valid))}"
+            )
+        return v
+
+    @field_validator("origin")
+    @classmethod
+    def validate_origin(cls, v: str) -> str:
+        from trackflow_shared import IncidentOrigin
+        valid = set(IncidentOrigin._value2member_map_.keys())
+        if v not in valid:
+            raise ValueError(
+                f"Origen no válido. Debe ser uno de: {', '.join(sorted(valid))}"
+            )
+        return v
+
+    @field_validator("branch")
+    @classmethod
+    def validate_branch(cls, v: str) -> str:
+        from trackflow_shared import IncidentBranch
+        valid = set(IncidentBranch._value2member_map_.keys())
+        if v not in valid:
+            raise ValueError(
+                f"Sede no válida. Debe ser una de: {', '.join(sorted(valid))}"
+            )
+        return v
+
+
+class IncidentResponse(BaseModel):
+    """Esquema de respuesta completa de una incidencia."""
+
+    id: int = Field(..., description="Identificador único de la incidencia")
+    title: str = Field(..., description="Título breve de la incidencia")
+    description: str = Field(..., description="Descripción detallada")
+    category: str = Field(..., description="Categoría de la incidencia")
+    status: str = Field(..., description="Estado del ciclo de vida")
+    origin: str = Field(..., description="Origen del reporte")
+    branch: str = Field(..., description="Sede que gestiona o reporta la incidencia")
+    created_at: str = Field(..., description="Fecha y hora de creación (ISO 8601)")
+    updated_at: str = Field(..., description="Fecha y hora de última modificación (ISO 8601)")
+
+
+class IncidentStatusUpdate(BaseModel):
+    """Esquema para actualizar únicamente el estado de una incidencia."""
+
+    status: str = Field(..., description="Nuevo estado de la incidencia")
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        from trackflow_shared import IncidentStatus
+        valid = set(IncidentStatus._value2member_map_.keys())
+        if v not in valid:
+            raise ValueError(
+                f"Estado no válido. Debe ser uno de: {', '.join(sorted(valid))}"
+            )
+        return v
+
+
+def doc_to_response(doc: dict, doc_id: int) -> dict:
+    """Convierte un documento TinyDB al formato esperado por IncidentResponse."""
+    return {
+        "id": doc_id,
+        "title": doc.get("title", ""),
+        "description": doc.get("description", ""),
+        "category": doc.get("category", ""),
+        "status": doc.get("status", "open"),
+        "origin": doc.get("origin", ""),
+        "branch": doc.get("branch", ""),
+        "created_at": doc.get("created_at", ""),
+        "updated_at": doc.get("updated_at", ""),
+    }

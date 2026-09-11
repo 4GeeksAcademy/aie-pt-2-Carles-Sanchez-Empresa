@@ -115,6 +115,22 @@ async def get_supplier(supplier_id: int):
     return SupplierResponse(**doc_dict)
 
 
+@router.put("/{supplier_id}", response_model=SupplierResponse)
+async def update_supplier(supplier_id: int, payload: SupplierCreate):
+    """Actualiza todos los datos editables de un proveedor."""
+    if suppliers_table.get(doc_id=supplier_id) is None:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+
+    updated_data = payload.model_dump()
+    updated_data["updated_at"] = generate_timestamp()
+    suppliers_table.update(updated_data, doc_ids=[supplier_id])
+
+    updated = suppliers_table.get(doc_id=supplier_id)
+    updated_dict = dict(updated)
+    updated_dict["id"] = supplier_id
+    return SupplierResponse(**updated_dict)
+
+
 @router.patch("/{supplier_id}/rate", response_model=SupplierResponse)
 async def update_supplier_rate(supplier_id: int, payload: SupplierUpdateRate):
     """
