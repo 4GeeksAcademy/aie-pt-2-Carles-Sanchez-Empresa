@@ -11,15 +11,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Leer token SÍNCRONAMENTE para evitar loading flash y CLS.
-  // En SSR (window=undefined) devuelve null; en hidratación cliente
-  // devuelve el token real si existe.
-  const [canRender] = useState(() => {
-    if (typeof window === "undefined") return "loading";
-    const token = getToken();
-    if (!token) return "redirect";
-    return "ok";
-  });
+  // Estado inicial siempre "loading" para coincidir con SSR (evita hydration mismatch).
+  // Se resuelve en useEffect justo después de la hidratación.
+  const [canRender, setCanRender] = useState<"loading" | "ok">("loading");
 
   const redirectsWhenAuthenticated = pathname === "/login" || pathname === "/register";
   const isPublicAuthPage =
@@ -32,6 +26,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       if (token && redirectsWhenAuthenticated) {
         router.replace("/");
       }
+      setCanRender("ok");
       return;
     }
 
@@ -39,18 +34,21 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       // O9: session_expired — detectar cuando el token no existe
       track("session_expired", {
         expired_at: new Date().toISOString(),
-        token_age_minutes: 0, // No tenemos acceso al token expirado
+        token_age_minutes: 0,
         operation_attempted: pathname || "unknown",
       });
       const redirect = encodeURIComponent(pathname || "/");
       router.replace(`/login?redirect=${redirect}`);
+      return;
     }
+
+    setCanRender("ok");
   }, [isPublicAuthPage, pathname, redirectsWhenAuthenticated, router]);
 
   // En páginas protegidas con token → renderizar AL INSTANTE (sin CLS)
   if (!isPublicAuthPage) {
     if (canRender === "ok") return <>{children}</>;
-    // SSR o sin token: mostrar loading (raro porque useEffect redirige rápido)
+    // SSR o hidratación: mostrar loading breve hasta resolver auth
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#c6dced] p-6">
         <p className="text-sm font-medium text-[#2f4a62]">{t("app.loading")}</p>
