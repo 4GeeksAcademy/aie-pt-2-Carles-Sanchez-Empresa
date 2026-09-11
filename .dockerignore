@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────────────────────
+# .dockerignore — Raíz del monorepo
+# Excluye archivos innecesarios para el build Docker.
+# Cada servicio construye desde context: . con su propio
+# Dockerfile (services/Dockerfile, uis/Dockerfile).
+# ─────────────────────────────────────────────────────────────
+
+# Dependencias
+node_modules/
+
+# Build / caché
+.next/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+build/
+dist/
+
+# Entorno
+.env*
+venv/
+.venv/
+
+# Control de versiones
+.git/
+
+# Logs
+*.log
+
+# Test
+tests/
+.pytest_cache/
+
+# Documentación
+README*
+AGENTS*
+CONTEXT*
+TESTING*
+CLAUDE*
+LICENSE*
+company-choice*.md

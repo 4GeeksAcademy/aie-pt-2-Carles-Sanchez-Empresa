@@ -20,7 +20,7 @@ load_dotenv(dotenv_path)
 
 RESEND_API_TOKEN = os.getenv("RESEND_API_TOKEN", "")
 RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "onboarding@resend.dev")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8000")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3001")
 
 resend.api_key = RESEND_API_TOKEN
 

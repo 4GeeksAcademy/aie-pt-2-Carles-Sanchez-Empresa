@@ -1,0 +1,9 @@
+node_modules/
+.next/
+.env*
+*.log
+__pycache__/
+*.pyc
+.git
+.gitignore
+README*
