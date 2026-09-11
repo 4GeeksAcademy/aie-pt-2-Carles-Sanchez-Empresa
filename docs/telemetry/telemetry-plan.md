@@ -716,5 +716,5 @@ Los siguientes dominios quedan fuera del alcance de este plan de telemetría:
 - **Logística inversa (devoluciones):** Aunque es una operación relevante, las devoluciones siguen un flujo diferente con sus propias entidades (returns, RMA). Se abordará en un plan de telemetría específico para ese dominio.
 - **Website corporativo:** La landing page y el formulario de solicitud (`uis/website/`) son páginas públicas sin autenticación. La telemetría en ese frontend requeriría consentimiento explícito (GDPR en España, CCPA en California). Se excluye deliberadamente.
 
----
+----
 
