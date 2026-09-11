@@ -116,6 +116,7 @@ Identificados tras analizar `routes/auth.py`, `routes/users.py` y los mecanismos
 | **O14** | `page_load_timed` | Oportunidad | Rendimiento / UX | Necesitamos saber qué páginas del backoffice cargan más lento para los operadores | Priorizar optimizaciones de frontend donde más impacto tengan |
 | **O15** | `slow_query_detected` | Oportunidad | Rendimiento / Técnico | Necesitamos saber qué consultas a Supabase superan los 500ms | Añadir índices o reescribir queries antes de que degraden el rendimiento general |
 | **O16** | `api_dependency_failed` | Oportunidad | Rendimiento / Técnico | Necesitamos saber si Supabase, el servicio de email o alguna dependencia externa falla | Alertar al equipo técnico antes de que los operadores reporten el problema por WhatsApp |
+| **O23** | `web_vital_measured` | Oportunidad | Rendimiento / UX | Necesitamos saber qué métricas Core Web Vitals (LCP, CLS, INP, FID, TTFB) impactan la experiencia de los operadores en el backoffice | Priorizar optimizaciones de frontend que mejoren las métricas percibidas por los usuarios |
 
 ---
 
@@ -523,6 +524,21 @@ Todo evento de telemetría en TrackFlow debe incluir obligatoriamente los siguie
 
 ---
 
+#### O23 — `web_vital_measured`
+
+- **Descripción:** Se dispara cuando el navegador reporta una métrica Core Web Vital (LCP, FID, CLS, INP, TTFB) a través de `PerformanceObserver`. Permite monitorizar la calidad de la experiencia de los operadores en el backoffice.
+- **Contiene PII:** No.
+
+| Property | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `metric_name` | `string` | Sí | Nombre de la métrica. Valores: `"LCP"`, `"FID"`, `"CLS"`, `"INP"`, `"TTFB"`. |
+| `metric_value` | `integer` | Sí | Valor de la métrica. Para CLS se multiplica ×1000 para expresar como entero. |
+| `metric_delta` | `integer` | Sí | Cambio respecto a la medición anterior (para detectar regresiones). |
+| `metric_id` | `string` | Sí | ID único de la medición, usado para deduplicación. |
+| `page` | `string` | No | Ruta de la página donde se midió (ej. `"/inventory"`). |
+
+---
+
 ### 3.6 Esquemas de eventos — Errores
 
 #### O17 — `frontend_error_captured`
@@ -661,6 +677,7 @@ Para cada evento, se decide si debe procesarse en **stream** (tiempo real, segun
 | O20 | `unauthorized_access_attempted` | **Stream** | Intentos de acceso no autorizado pueden ser un indicador de ataque interno o externo. Se necesita monitorización en tiempo real. |
 | O21 | `page_viewed` | **Batch** (horario) | Es un evento de alta frecuencia. Las decisiones sobre qué secciones mejorar se basan en tendencias, no en visitas individuales. |
 | O22 | `flow_abandoned` | **Batch** (diario) | Las mejoras de UX se basan en datos agregados. No hay urgencia en detectar abandonos individuales. |
+| O23 | `web_vital_measured` | **Stream** | Las métricas de Core Web Vitals cambian en tiempo real. Un deterioro repentino debe detectarse rápidamente para afectar a los operadores. |
 
 **Resumen:**
 

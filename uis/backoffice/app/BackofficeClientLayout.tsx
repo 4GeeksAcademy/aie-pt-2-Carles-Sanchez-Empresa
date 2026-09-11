@@ -22,6 +22,7 @@ function onWebVital(metric: WebVitalMetric) {
     metric_value: Math.round(metric.name === "CLS" ? metric.value * 1000 : metric.value),
     metric_delta: Math.round(metric.delta),
     metric_id: metric.id,
+    page: typeof window !== "undefined" ? window.location.pathname : "unknown",
   });
 }
 
