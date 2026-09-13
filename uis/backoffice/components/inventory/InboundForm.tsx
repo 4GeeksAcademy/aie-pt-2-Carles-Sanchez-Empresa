@@ -6,7 +6,7 @@ import { track } from "@/services/telemetry";
 import type { StockEntryInput, StockEntryResult } from "@/services/api";
 
 interface Props {
-  products: { id: number; name: string; warehouse: string }[];
+  products: { id: number; name: string; warehouse: string; client_name: string; category: string }[];
   onSubmit: (data: StockEntryInput) => Promise<StockEntryResult>;
 }
 
@@ -34,11 +34,12 @@ export function InboundForm({ products, onSubmit }: Props) {
       });
       // M1: inbound_order_created
       const product = products.find((p) => p.id === parseInt(skuId, 10));
+      const warehouseMap: Record<string, string> = { LA: "los_angeles", ZGZ: "zaragoza" };
       track("inbound_order_created", {
-        warehouse: warehouse || "unknown",
-        client_id: product ? String(product.id) : "unknown",
+        warehouse: warehouseMap[warehouse] || warehouse || "unknown",
+        client_id: product?.client_name || "unknown",
         product_id: parseInt(skuId, 10),
-        product_category: "unknown", // Se establecerá en el backend
+        product_category: product?.category || "unknown",
         quantity: parseInt(quantity, 10),
         reference: reference || undefined,
       });

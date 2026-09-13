@@ -7,7 +7,7 @@ con validaciones estrictas según las reglas de negocio.
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -235,8 +235,8 @@ class TelemetryEvent(BaseModel):
         ..., description="ID del usuario autenticado. 'anonymous' si no hay sesión activa."
     )
     event_type: str = Field(
-        ..., pattern=r"^[a-z]+_[a-z]+$",
-        description="Tipo de evento en taxonomía entidad_acción. Ej: inbound_order_created."
+        ..., pattern=r"^[a-z]+(_[a-z]+)+$",
+        description="Tipo de evento en taxonomía entidad_acción. Ej: inbound_order_created, page_viewed.",
     )
     schemaVersion: str = Field(
         ..., pattern=r"^\d+\.\d+$",

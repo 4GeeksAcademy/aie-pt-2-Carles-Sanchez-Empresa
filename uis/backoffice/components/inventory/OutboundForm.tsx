@@ -6,7 +6,7 @@ import { track } from "@/services/telemetry";
 import type { StockExitInput, StockExitResult } from "@/services/api";
 
 interface Props {
-  products: { id: number; name: string; warehouse: string }[];
+  products: { id: number; name: string; warehouse: string; client_name: string; category: string }[];
   onSubmit: (data: StockExitInput) => Promise<StockExitResult>;
 }
 
@@ -36,11 +36,12 @@ export function OutboundForm({ products, onSubmit }: Props) {
       });
       // M2: outbound_order_created
       const product = products.find((p) => p.id === parseInt(skuId, 10));
+      const warehouseMap: Record<string, string> = { LA: "los_angeles", ZGZ: "zaragoza" };
       track("outbound_order_created", {
-        warehouse: warehouse || "unknown",
-        client_id: product ? String(product.id) : "unknown",
+        warehouse: warehouseMap[warehouse] || warehouse || "unknown",
+        client_id: product?.client_name || "unknown",
         product_id: parseInt(skuId, 10),
-        product_category: "unknown", // Se establecerá en el backend
+        product_category: product?.category || "unknown",
         quantity: parseInt(quantity, 10),
         exit_type: exitType,
         tracking_number: exitType === "dispatch" && tracking ? tracking : undefined,
@@ -56,11 +57,13 @@ export function OutboundForm({ products, onSubmit }: Props) {
       setError(errorMsg);
       // O3: stock_validation_failed — detectar errores de stock insuficiente
       if (errorMsg.toLowerCase().includes("stock") || errorMsg.toLowerCase().includes("insuficiente")) {
+        const errProduct = products.find((p) => p.id === parseInt(skuId, 10));
+        const errWarehouseMap: Record<string, string> = { LA: "los_angeles", ZGZ: "zaragoza" };
         track("stock_validation_failed", {
-          warehouse: warehouse || "unknown",
-          client_id: "unknown",
+          warehouse: errWarehouseMap[warehouse] || warehouse || "unknown",
+          client_id: errProduct?.client_name || "unknown",
           product_id: parseInt(skuId, 10),
-          product_category: "unknown",
+          product_category: errProduct?.category || "unknown",
           requested_quantity: parseInt(quantity, 10),
           available_stock: 0, // No tenemos el dato exacto del frontend
         });
