@@ -29,17 +29,17 @@ from sqlmodel import select
 
 SKUS = [
     # Warehouse LA (Los Ángeles) — 5 SKUs
-    {"name": "Classic T-Shirt", "sku_code": "TSH-LA-001", "client_name": "FashionCorp", "category": "fashion", "warehouse": "LA"},
-    {"name": "Denim Jacket", "sku_code": "DNM-LA-002", "client_name": "FashionCorp", "category": "fashion", "warehouse": "LA"},
-    {"name": "Running Sneakers", "sku_code": "SNK-LA-003", "client_name": "SportGear", "category": "fashion", "warehouse": "LA"},
-    {"name": "Wireless Earbuds", "sku_code": "WLS-LA-004", "client_name": "TechWorld", "category": "electronics", "warehouse": "LA"},
-    {"name": "Foundation Palette", "sku_code": "FDN-LA-005", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "LA"},
+    {"name": "Classic T-Shirt", "sku_code": "TSH-LA-001", "client_name": "FashionCorp", "category": "fashion", "warehouse": "LA", "threshold_min": 10},
+    {"name": "Denim Jacket", "sku_code": "DNM-LA-002", "client_name": "FashionCorp", "category": "fashion", "warehouse": "LA", "threshold_min": 10},
+    {"name": "Running Sneakers", "sku_code": "SNK-LA-003", "client_name": "SportGear", "category": "fashion", "warehouse": "LA", "threshold_min": 10},
+    {"name": "Wireless Earbuds", "sku_code": "WLS-LA-004", "client_name": "TechWorld", "category": "electronics", "warehouse": "LA", "threshold_min": 10},
+    {"name": "Foundation Palette", "sku_code": "FDN-LA-005", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "LA", "threshold_min": 10},
     # Warehouse ZGZ (Zaragoza) — 5 SKUs
-    {"name": "Smartphone Case", "sku_code": "SPH-ZGZ-001", "client_name": "TechWorld", "category": "electronics", "warehouse": "ZGZ"},
-    {"name": "Bluetooth Speaker", "sku_code": "SPK-ZGZ-002", "client_name": "TechWorld", "category": "electronics", "warehouse": "ZGZ"},
-    {"name": "Lipstick Set", "sku_code": "LPS-ZGZ-003", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "ZGZ"},
-    {"name": "Moisturizer Cream", "sku_code": "MST-ZGZ-004", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "ZGZ"},
-    {"name": "Slim Fit Jeans", "sku_code": "JNS-ZGZ-005", "client_name": "FashionCorp", "category": "fashion", "warehouse": "ZGZ"},
+    {"name": "Smartphone Case", "sku_code": "SPH-ZGZ-001", "client_name": "TechWorld", "category": "electronics", "warehouse": "ZGZ", "threshold_min": 10},
+    {"name": "Bluetooth Speaker", "sku_code": "SPK-ZGZ-002", "client_name": "TechWorld", "category": "electronics", "warehouse": "ZGZ", "threshold_min": 10},
+    {"name": "Lipstick Set", "sku_code": "LPS-ZGZ-003", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "ZGZ", "threshold_min": 10},
+    {"name": "Moisturizer Cream", "sku_code": "MST-ZGZ-004", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "ZGZ", "threshold_min": 10},
+    {"name": "Slim Fit Jeans", "sku_code": "JNS-ZGZ-005", "client_name": "FashionCorp", "category": "fashion", "warehouse": "ZGZ", "threshold_min": 10},
 ]
 
 # Cada entrada: (sku_code, quantity, reference, warehouse)
@@ -96,18 +96,15 @@ EXITS = [
 # ── Casos especiales para telemetría ──
 #
 # M3 (stock_threshold_triggered):
-#   Requiere configuración de threshold_min en backend (no implementado aún).
-#   Cuando se implemente,以下 SKUs con stock bajo serían candidatos ideales:
-#     - DNM-LA-002 (LA): stock restante = 90 (80+40-30), podría bajarse con más salidas.
-#     - JNS-ZGZ-005 (ZGZ): stock restante = 50 (100-30-20), umbral cercano.
-#   Para activar M3: configurar threshold_min > stock_actual y crear una salida que lo cruce.
+#   ✅ Implementado: threshold_min = 10 para todos los SKUs.
+#   Se dispara automáticamente en el frontend cuando una salida deja el stock < threshold_min.
+#   Con los datos actuales del seed, M3 se disparará para cualquier SKU cuyo stock caiga por debajo de 10.
+#   Ejemplo: FDN-LA-005 tiene stock final de 75 (120-30-15) → no se dispara (75 > 10).
+#   Para forzar M3: crear una salida que deje el stock por debajo de 10 uds.
 #
 # M5 (inventory_discrepancy_detected):
-#   Requiere función de auditoría física (no implementada aún).
-#   Cuando se implemente,以下 serían candidatos:
-#     - TSH-LA-001: pérdida de 20 uds → podría generar discrepancia en conteo físico.
-#     - MST-ZGZ-004: pérdida de 25 uds → caso similar en ZGZ.
-#   Para activar M5: ejecutar auditoría física con conteo diferente al stock del sistema.
+#   ❌ Requiere función de auditoría física (no implementado aún).
+#   Candidatos: TSH-LA-001 (pérdida de 20 uds), MST-ZGZ-004 (pérdida de 25 uds).
 
 
 def _get_sku_by_code(db, sku_code: str):

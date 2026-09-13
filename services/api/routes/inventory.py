@@ -118,6 +118,7 @@ def _sku_to_response(sku: SKU, current_stock: int) -> SKUResponse:
         client_name=sku.client_name,
         category=sku.category,
         warehouse=sku.warehouse,
+        threshold_min=sku.threshold_min,
         current_stock=current_stock,
         created_at=sku.created_at,
     )
@@ -187,6 +188,7 @@ async def create_product(
         client_name=payload.client_name,
         category=payload.category,
         warehouse=payload.warehouse,
+        threshold_min=payload.threshold_min,
     )
     db.add(sku)
     db.commit()

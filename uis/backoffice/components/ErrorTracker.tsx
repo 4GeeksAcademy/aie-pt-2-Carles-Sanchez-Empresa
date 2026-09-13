@@ -108,25 +108,6 @@ function GlobalErrorListeners() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// WebVitalsReporter — reportWebVitals para métricas de Core Web Vitals
-// ═══════════════════════════════════════════════════════════
-
-export function reportWebVitals(metric: {
-  name: string;
-  value: number;
-  rating?: string;
-  id?: string;
-}): void {
-  track("web_vital_measured", {
-    name: metric.name,
-    value: Math.round(metric.value),
-    rating: metric.rating || "unknown",
-    page: typeof window !== "undefined" ? window.location.pathname : "unknown",
-    metric_id: metric.id,
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
 // ErrorTracker — Componente combinado que envuelve la app
 // ═══════════════════════════════════════════════════════════
 

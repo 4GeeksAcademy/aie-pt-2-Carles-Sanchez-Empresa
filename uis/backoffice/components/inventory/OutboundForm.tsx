@@ -6,7 +6,7 @@ import { track } from "@/services/telemetry";
 import type { StockExitInput, StockExitResult } from "@/services/api";
 
 interface Props {
-  products: { id: number; name: string; warehouse: string; client_name: string; category: string }[];
+  products: { id: number; name: string; warehouse: string; client_name: string; category: string; threshold_min: number; current_stock: number }[];
   onSubmit: (data: StockExitInput) => Promise<StockExitResult>;
 }
 
@@ -46,6 +46,23 @@ export function OutboundForm({ products, onSubmit }: Props) {
         exit_type: exitType,
         tracking_number: exitType === "dispatch" && tracking ? tracking : undefined,
       });
+
+      // M3: stock_threshold_triggered — disparar si el stock resultante cruza threshold_min
+      if (product) {
+        const remainingStock = product.current_stock - parseInt(quantity, 10);
+        if (remainingStock < product.threshold_min) {
+          track("stock_threshold_triggered", {
+            warehouse: warehouseMap[warehouse] || warehouse || "unknown",
+            client_id: product.client_name,
+            product_id: product.id,
+            product_category: product.category,
+            current_stock: remainingStock,
+            threshold_min: product.threshold_min,
+            quantity_sold: parseInt(quantity, 10),
+          });
+        }
+      }
+
       setSuccess(true);
       setSkuId("");
       setQuantity("");

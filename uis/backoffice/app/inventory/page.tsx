@@ -32,7 +32,7 @@ export default function InventoryPage() {
     { key: "orders", label: t("inventory.tab.orders") },
   ];
 
-  const productOptions = products.map((p) => ({ id: p.id, name: p.name, warehouse: p.warehouse, client_name: p.client_name, category: p.category }));
+  const productOptions = products.map((p) => ({ id: p.id, name: p.name, warehouse: p.warehouse, client_name: p.client_name, category: p.category, threshold_min: p.threshold_min, current_stock: p.current_stock }));
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">

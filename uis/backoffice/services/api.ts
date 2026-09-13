@@ -263,6 +263,7 @@ export interface SKUItem {
   client_name: string;
   category: string;
   warehouse: string;
+  threshold_min: number;
   current_stock: number;
   created_at: string;
 }
