@@ -13,6 +13,8 @@ Archivos relacionados:
 from datetime import datetime, timezone
 from typing import Optional
 
+from sqlalchemy import Column, Index, JSON
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import SQLModel, Field, Relationship
 
 
@@ -86,3 +88,35 @@ class StockExit(SQLModel, table=True):
     )
 
     sku: Optional[SKU] = Relationship(back_populates="exits")
+
+
+# ════════════════════════════════════════════════════════════
+#  TelemetryEventRegistro (Telemetry Events)
+# ════════════════════════════════════════════════════════════
+
+class TelemetryEventRecord(SQLModel, table=True):
+    """
+    Evento de telemetría persistido. Tabla append-only.
+    
+    Las columnas fijas (event_type, timestamp, service) sostienen
+    las consultas analíticas. La columna tags (JSONB) guarda el
+    objeto properties filtrado por allowlist.
+    
+    Los eventos son inmutables — nunca se actualizan ni eliminan.
+    """
+    __tablename__ = "telemetry_events"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    event_id: str = Field(unique=True, nullable=False, index=True)  # UUID v4 del envelope
+    timestamp: str = Field(nullable=False)  # ISO 8601 del envelope
+    event_type: str = Field(nullable=False)  # Taxonomía entity_action
+    session_id: str = Field(nullable=False)  # UUID v4 de sesión
+    user_id: str = Field(nullable=False)  # UUID o "anonymous"
+    service: str = Field(nullable=False)  # Derivado de event_type (category)
+    tags: dict = Field(sa_column=Column(JSONB, nullable=False))  # Properties filtradas por allowlist
+    
+    __table_args__ = (
+        Index("ix_telemetry_timestamp", "timestamp"),
+        Index("ix_telemetry_event_type", "event_type"),
+        Index("ix_telemetry_tags_gin", "tags", postgresql_using="gin"),
+    )
