@@ -30,6 +30,7 @@ class SKUCreate(BaseModel):
     client_name: str = Field(..., min_length=1, description="Marca propietaria del SKU")
     category: str = Field(..., description="Categoría: fashion, electronics, cosmetics")
     warehouse: str = Field(..., description="Almacén: LA (Los Ángeles) o ZGZ (Zaragoza)")
+    threshold_min: Optional[int] = Field(default=10, ge=0, description="Stock mínimo seguro — por debajo se dispara alerta de reabastecimiento (M3)")
 
     @field_validator("category")
     @classmethod
@@ -55,6 +56,7 @@ class SKUResponse(BaseModel):
     client_name: str = Field(..., description="Marca propietaria del SKU")
     category: str = Field(..., description="Categoría del producto")
     warehouse: str = Field(..., description="Almacén donde se ubica")
+    threshold_min: Optional[int] = Field(default=10, description="Stock mínimo seguro (M3)")
     current_stock: int = Field(..., description="Stock actual calculado (entradas - salidas)")
     created_at: str = Field(..., description="Timestamp ISO 8601 de creación")
 

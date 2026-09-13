@@ -111,6 +111,54 @@ aie-pt-2-Carles-Sanchez-Empresa/
 
 ---
 
+### 2.4. Sistema de Telemetría (Frontend + Backend)
+
+**Arquitectura de recopilación:**
+
+```
+Frontend (TelemetryService)          Backend (FastAPI)
+┌──────────────────────┐             ┌─────────────────────────┐
+│  track(eventType,    │  POST /telemetry/events   │  TelemetryBatchRequest  │
+│    properties)       │ ─────────────────────────→ │  TelemetryEvent[]       │
+│                      │             │  Log event_type list    │
+│  - Cola local (mem)  │             │  200 { received: N }    │
+│  - Batch + debounce  │             └─────────────────────────┘
+│  - sendBeacon flush  │
+│  - Backoff (3 retries)│
+└──────────────────────┘
+```
+
+**Variables de entorno:**
+
+| Variable | Lugar | Ejemplo | Descripción |
+|---|---|---|---|
+| `NEXT_PUBLIC_TELEMETRY_ENDPOINT` | Frontend (backoffice) | `http://localhost:8000/telemetry/events` | URL del endpoint de telemetría para el navegador |
+| `TELEMETRY_ENDPOINT` | Backend (api) | `/telemetry/events` | Ruta interna del endpoint en el backend |
+
+**Envelope estándar de cada evento (8 campos obligatorios):**
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `eventId` | string (UUID v4) | Identificador único del evento |
+| `timestamp` | string (ISO 8601) | Fecha/hora del evento |
+| `sessionId` | string (UUID v4) | ID de sesión del usuario (persistido en sessionStorage) |
+| `userId` | string | ID del usuario (extraído del JWT) |
+| `event_type` | string | Nombre del evento (formato `entidad_acción`) |
+| `schemaVersion` | string | Versión del esquema (actualmente `1.0`) |
+| `requestId` | string (UUID v4) | ID de correlación por lote |
+| `properties` | object | Datos específicos del evento (conformes a event-schemas.json) |
+
+**Codificación de eventos (28 eventos definidos):**
+- **Métricas obligatorias (M1-M5)**: `inbound_order_created`, `outbound_order_created`, `stock_threshold_triggered`, `direct_stock_edit_rejected`, `inventory_discrepancy_detected`
+- **Piso técnico (O3-O4, O13, O17-O18, O21, O23)**: `stock_validation_failed`, `product_stock_queried`, `api_latency_recorded`, `frontend_error_captured`, `api_error_returned`, `page_viewed`, `page_load_timed`, `web_vital_measured`
+- **Autenticación (O6-O11)**: `login_attempted`, `login_succeeded`, `login_failed`, `session_expired`, `password_reset_requested`, `password_changed`
+
+**Documentación de referencia:**
+- Plan de telemetría: `docs/telemetry/telemetry-plan.md`
+- Esquemas JSON de eventos: `docs/telemetry/event-schemas.json`
+
+---
+
 ## Decisiones de Arquitectura
 
 ### 1. Monorepo con separación por dominios

@@ -56,15 +56,22 @@ async function loadMessages(lang: string): Promise<Messages> {
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<string>(getBrowserLanguage);
+  // Siempre inicializar con "es" para que SSR y cliente coincidan durante hidratación.
+  // La preferencia real del usuario se sincroniza en el useEffect inferior.
+  const [lang, setLangState] = useState<string>("es");
   const [messages, setMessages] = useState<Messages>(esMessages);
   const langRef = useRef(lang);
   langRef.current = lang;
 
+  // Sincronizar idioma del navegador en el cliente tras la hidratación.
   useEffect(() => {
-    if (lang === "es") return;
-    loadMessages(lang).then(setMessages);
-  }, [lang]);
+    const browserLang = getBrowserLanguage();
+    if (browserLang !== lang) {
+      setLangState(browserLang);
+    }
+    loadMessages(browserLang).then(setMessages);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setLang = useCallback((newLang: string) => {
     if (newLang !== "es" && newLang !== "en") return;

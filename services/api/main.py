@@ -40,6 +40,7 @@ from routes import (
     inventory_router,
     profiles_router,
     suppliers_router,
+    telemetry_router,
     users_router,
 )
 
@@ -235,6 +236,7 @@ app.include_router(inventory_router, dependencies=[Depends(get_current_user)])
 app.include_router(users_router)
 app.include_router(profiles_router)
 app.include_router(auth_router)
+app.include_router(telemetry_router)  # Stub — sin autenticación, sin persistencia (Fase 2)
 
 
 # ──────────────────────────── Root health-check ────────────────────────────
