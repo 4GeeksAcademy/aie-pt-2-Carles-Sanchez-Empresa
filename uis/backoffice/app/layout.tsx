@@ -1,5 +1,6 @@
 import "./globals.css";
 import BackofficeClientLayout from "./BackofficeClientLayout";
+import ErrorTracker from "@/components/ErrorTracker";
 
 export { metadata } from "./layout.server";
 
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="robots" content="index, follow" />
       </head>
       <body className="flex min-h-full flex-col bg-[#c6dced] text-[#2f4a62]">
-        <BackofficeClientLayout>{children}</BackofficeClientLayout>
+        <ErrorTracker>
+          <BackofficeClientLayout>{children}</BackofficeClientLayout>
+        </ErrorTracker>
       </body>
     </html>
   );
