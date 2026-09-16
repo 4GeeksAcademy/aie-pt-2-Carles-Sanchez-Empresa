@@ -21,7 +21,7 @@ from sqlmodel import Session
 from database import engine
 from models import TelemetryEventRecord
 from pydantic_models import TelemetryEvent
-from services.telemetry.analysis import (
+from telemetry.analysis import (
     api_latency_stats,
     auth_failure_rate,
     error_events_by_type,
