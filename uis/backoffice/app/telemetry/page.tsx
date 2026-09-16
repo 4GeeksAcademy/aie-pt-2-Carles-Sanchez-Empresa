@@ -14,6 +14,7 @@ import {
   Line,
 } from "recharts";
 import { API_BASE } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -77,6 +78,7 @@ const CHART_COLORS = [
 // ── Componente principal ───────────────────────────────────────────────────
 
 export default function TelemetryPage() {
+  const { t, lang } = useTranslation();
   const [report, setReport] = useState<TelemetryReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +110,7 @@ export default function TelemetryPage() {
     return (
       <div className="mx-auto max-w-7xl p-6">
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-[#2f4a62]">Cargando reporte...</div>
+          <div className="text-lg text-[#2f4a62]">{t("telemetry.loading")}</div>
         </div>
       </div>
     );
@@ -118,13 +120,13 @@ export default function TelemetryPage() {
     return (
       <div className="mx-auto max-w-7xl p-6">
         <div className="rounded-lg border border-red-300 bg-red-100 p-4 text-red-700">
-          <p className="font-semibold">Error al cargar el reporte</p>
+          <p className="font-semibold">{t("telemetry.error")}</p>
           <p className="text-sm">{error}</p>
           <button
             onClick={fetchReport}
             className="mt-2 text-sm underline hover:text-red-900"
           >
-            Reintentar
+            {t("telemetry.retry")}
           </button>
         </div>
       </div>
@@ -140,41 +142,41 @@ export default function TelemetryPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-[#14263a]">
-          Reporte de Telemetría
+          {t("telemetry.title")}
         </h1>
         <p className="text-sm text-[#2f4a62]">
-          Métricas operacionales del sistema
+          {t("telemetry.subtitle")}
         </p>
       </div>
 
       {/* Período */}
       <div className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm">
         <p className="text-sm text-[#2f4a62]">
-          <span className="font-semibold text-[#14263a]">Período:</span>{" "}
-          {formatDate(report.period.from)} — {formatDate(report.period.to)}
+          <span className="font-semibold text-[#14263a]">{t("telemetry.period")}:</span>{" "}
+          {formatDate(report.period.from, lang)} — {formatDate(report.period.to, lang)}
         </p>
       </div>
 
       {/* Métricas */}
       <div className="grid gap-6">
         {/* 1. Eventos por día */}
-        <ChartCard title="Volumen de Eventos por Día">
-          <EventsPerDayChart data={report.metrics.events_per_day} />
+        <ChartCard title={t("telemetry.chart.events_per_day")}>
+          <EventsPerDayChart data={report.metrics.events_per_day} t={t} />
         </ChartCard>
 
         {/* 2. Errores por tipo */}
-        <ChartCard title="Errores por Tipo">
-          <ErrorEventsChart data={report.metrics.error_events_by_type} />
+        <ChartCard title={t("telemetry.chart.errors_by_type")}>
+          <ErrorEventsChart data={report.metrics.error_events_by_type} t={t} />
         </ChartCard>
 
         {/* 3. Latencia de API */}
-        <ChartCard title="Estadísticas de Latencia por Endpoint">
-          <LatencyTable data={report.metrics.api_latency_stats} />
+        <ChartCard title={t("telemetry.chart.latency")}>
+          <LatencyTable data={report.metrics.api_latency_stats} t={t} />
         </ChartCard>
 
         {/* 4. Tasa de fallos de login */}
-        <ChartCard title="Tasa Diaria de Fallos de Login">
-          <AuthFailureChart data={report.metrics.auth_failure_rate} />
+        <ChartCard title={t("telemetry.chart.auth_failures")}>
+          <AuthFailureChart data={report.metrics.auth_failure_rate} t={t} />
         </ChartCard>
       </div>
     </div>
@@ -191,7 +193,7 @@ function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-[#c89d66] bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[#14263a]">{title}</h2>
       {children}
     </div>
@@ -200,9 +202,9 @@ function ChartCard({
 
 // ── Gráfico: Eventos por día ───────────────────────────────────────────────
 
-function EventsPerDayChart({ data }: { data: EventsPerDay[] }) {
+function EventsPerDayChart({ data, t }: { data: EventsPerDay[]; t: (key: string) => string }) {
   if (data.length === 0) {
-    return <EmptyState message="No hay datos de eventos para este período" />;
+    return <EmptyState message={t("telemetry.empty.events")} />;
   }
 
   // Agrupar por fecha y agregar counts por event_type
@@ -249,9 +251,9 @@ function EventsPerDayChart({ data }: { data: EventsPerDay[] }) {
 
 // ── Gráfico: Errores por tipo ──────────────────────────────────────────────
 
-function ErrorEventsChart({ data }: { data: ErrorEventsByType[] }) {
+function ErrorEventsChart({ data, t }: { data: ErrorEventsByType[]; t: (key: string) => string }) {
   if (data.length === 0) {
-    return <EmptyState message="No hay errores registrados para este período" />;
+    return <EmptyState message={t("telemetry.empty.errors")} />;
   }
 
   // Agrupar por event_type y sumar counts
@@ -271,7 +273,7 @@ function ErrorEventsChart({ data }: { data: ErrorEventsByType[] }) {
         <XAxis type="number" tick={{ fontSize: 12 }} />
         <YAxis type="category" dataKey="event_type" tick={{ fontSize: 12 }} width={180} />
         <Tooltip />
-        <Bar dataKey="count" fill="#ef4444" name="Cantidad" />
+        <Bar dataKey="count" fill="#ef4444" name={t("telemetry.chart.quantity")} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -279,10 +281,10 @@ function ErrorEventsChart({ data }: { data: ErrorEventsByType[] }) {
 
 // ── Tabla: Latencia de API ─────────────────────────────────────────────────
 
-function LatencyTable({ data }: { data: ApiLatencyStats[] }) {
+function LatencyTable({ data, t }: { data: ApiLatencyStats[]; t: (key: string) => string }) {
   if (data.length === 0) {
     return (
-      <EmptyState message="No hay datos de latencia para este período" />
+      <EmptyState message={t("telemetry.empty.latency")} />
     );
   }
 
@@ -291,12 +293,12 @@ function LatencyTable({ data }: { data: ApiLatencyStats[] }) {
       <table className="w-full text-left text-sm">
         <thead className="bg-[#14263a] text-[#f8fbff]">
           <tr>
-            <th className="px-4 py-3">Endpoint</th>
-            <th className="px-4 py-3 text-right">Promedio (ms)</th>
-            <th className="px-4 py-3 text-right">P50 (ms)</th>
-            <th className="px-4 py-3 text-right">P95 (ms)</th>
-            <th className="px-4 py-3 text-right">P99 (ms)</th>
-            <th className="px-4 py-3 text-right">Requests</th>
+            <th className="px-4 py-3">{t("telemetry.table.endpoint")}</th>
+            <th className="px-4 py-3 text-right">{t("telemetry.table.avg")}</th>
+            <th className="px-4 py-3 text-right">{t("telemetry.table.p50")}</th>
+            <th className="px-4 py-3 text-right">{t("telemetry.table.p95")}</th>
+            <th className="px-4 py-3 text-right">{t("telemetry.table.p99")}</th>
+            <th className="px-4 py-3 text-right">{t("telemetry.table.requests")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#c89d66] bg-[#f3ddba]">
@@ -330,10 +332,10 @@ function LatencyTable({ data }: { data: ApiLatencyStats[] }) {
 
 // ── Gráfico: Tasa de fallos de login ───────────────────────────────────────
 
-function AuthFailureChart({ data }: { data: AuthFailureRate[] }) {
+function AuthFailureChart({ data, t }: { data: AuthFailureRate[]; t: (key: string) => string }) {
   if (data.length === 0) {
     return (
-      <EmptyState message="No hay datos de autenticación para este período" />
+      <EmptyState message={t("telemetry.empty.auth")} />
     );
   }
 
@@ -352,7 +354,7 @@ function AuthFailureChart({ data }: { data: AuthFailureRate[] }) {
         <YAxis tick={{ fontSize: 12 }} />
         <Tooltip
           formatter={(value: string, name: string) => {
-            if (name === "tasa_fallos") return [`${value}%`, "Tasa de Fallos"];
+            if (name === "tasa_fallos") return [`${value}%`, t("telemetry.chart.failure_rate")];
             return [value, name];
           }}
         />
@@ -361,7 +363,7 @@ function AuthFailureChart({ data }: { data: AuthFailureRate[] }) {
           type="monotone"
           dataKey="tasa_fallos"
           stroke="#ef4444"
-          name="Tasa de Fallos (%)"
+          name={t("telemetry.chart.failure_rate")}
           strokeWidth={2}
         />
       </LineChart>
@@ -381,10 +383,10 @@ function EmptyState({ message }: { message: string }) {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function formatDate(isoString: string): string {
+function formatDate(isoString: string, lang: string = "es-ES"): string {
   try {
     const date = new Date(isoString);
-    return date.toLocaleDateString("es-ES", {
+    return date.toLocaleDateString(lang, {
       year: "numeric",
       month: "long",
       day: "numeric",

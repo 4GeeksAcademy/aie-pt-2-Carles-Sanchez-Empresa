@@ -393,6 +393,30 @@ const en: Record<string, string> = {
   "inventory.order.empty": "No movements registered",
   "inventory.order.filter_all_types": "All types",
   "inventory.order.filter_all_warehouses": "All warehouses",
+
+  // ─── Telemetry ───
+  "telemetry.title": "Telemetry Report",
+  "telemetry.subtitle": "System operational metrics",
+  "telemetry.loading": "Loading report...",
+  "telemetry.error": "Error loading report",
+  "telemetry.retry": "Retry",
+  "telemetry.period": "Period",
+  "telemetry.chart.events_per_day": "Daily Event Volume",
+  "telemetry.chart.errors_by_type": "Errors by Type",
+  "telemetry.chart.latency": "API Latency Stats by Endpoint",
+  "telemetry.chart.auth_failures": "Daily Login Failure Rate",
+  "telemetry.table.endpoint": "Endpoint",
+  "telemetry.table.avg": "Avg (ms)",
+  "telemetry.table.p50": "P50 (ms)",
+  "telemetry.table.p95": "P95 (ms)",
+  "telemetry.table.p99": "P99 (ms)",
+  "telemetry.table.requests": "Requests",
+  "telemetry.empty.events": "No event data for this period",
+  "telemetry.empty.errors": "No errors recorded for this period",
+  "telemetry.empty.latency": "No latency data for this period",
+  "telemetry.empty.auth": "No authentication data for this period",
+  "telemetry.chart.quantity": "Count",
+  "telemetry.chart.failure_rate": "Failure Rate (%)",
 };
 
 export default en;

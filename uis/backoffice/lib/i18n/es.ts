@@ -393,6 +393,30 @@ const es: Record<string, string> = {
   "inventory.order.empty": "No hay movimientos registrados",
   "inventory.order.filter_all_types": "Todos los tipos",
   "inventory.order.filter_all_warehouses": "Todos los almacenes",
+
+  // ─── Telemetry ───
+  "telemetry.title": "Reporte de Telemetría",
+  "telemetry.subtitle": "Métricas operacionales del sistema",
+  "telemetry.loading": "Cargando reporte...",
+  "telemetry.error": "Error al cargar el reporte",
+  "telemetry.retry": "Reintentar",
+  "telemetry.period": "Período",
+  "telemetry.chart.events_per_day": "Volumen de Eventos por Día",
+  "telemetry.chart.errors_by_type": "Errores por Tipo",
+  "telemetry.chart.latency": "Estadísticas de Latencia por Endpoint",
+  "telemetry.chart.auth_failures": "Tasa Diaria de Fallos de Login",
+  "telemetry.table.endpoint": "Endpoint",
+  "telemetry.table.avg": "Promedio (ms)",
+  "telemetry.table.p50": "P50 (ms)",
+  "telemetry.table.p95": "P95 (ms)",
+  "telemetry.table.p99": "P99 (ms)",
+  "telemetry.table.requests": "Requests",
+  "telemetry.empty.events": "No hay datos de eventos para este período",
+  "telemetry.empty.errors": "No hay errores registrados para este período",
+  "telemetry.empty.latency": "No hay datos de latencia para este período",
+  "telemetry.empty.auth": "No hay datos de autenticación para este período",
+  "telemetry.chart.quantity": "Cantidad",
+  "telemetry.chart.failure_rate": "Tasa de Fallos (%)",
 };
 
 export default es;
