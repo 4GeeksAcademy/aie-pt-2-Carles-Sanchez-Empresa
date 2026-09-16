@@ -330,3 +330,13 @@ function hideError() {
     // Silencio — si falla no pasa nada, lo detectará al intentar analizar
   }
 })();
+// ─────────────────────────────────────────────
+//  LANGUAGE CHANGE — re-renderizar resultados dinámicos
+// ─────────────────────────────────────────────
+
+window.__onLangChange = function () {
+  if (_lastResult) {
+    renderResults(_lastResult);
+    renderMetrics(_lastResult.metrics, _lastResult.valid);
+  }
+};

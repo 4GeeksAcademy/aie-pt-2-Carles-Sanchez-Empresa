@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { API_BASE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n";
+import { track } from "@/services/telemetry";
 
 function ForgotPasswordForm() {
   const { t } = useTranslation();
@@ -28,6 +29,10 @@ function ForgotPasswordForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
+      });
+      // O10: password_reset_requested
+      track("password_reset_requested", {
+        ip_hash: "not_available", // IP hash no disponible en frontend
       });
     } catch {
       // Ignoramos errores para no filtrar información

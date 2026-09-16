@@ -755,6 +755,23 @@ function init() {
   }
 }
 
+/**
+ * __onLangChange — Handler invocado por i18n.js al cambiar de idioma.
+ * Re-renderiza el contenido dinámico del tab activo (tablas, selects, etc.)
+ * porque el contenido generado por JS no tiene atributos data-i18n.
+ */
+window.__onLangChange = function () {
+  // Determinar qué tab está activo
+  const activeBtn = document.querySelector(".tab-btn.active");
+  if (activeBtn) {
+    const tab = activeBtn.dataset.tab || "stock";
+    // Limpiar caché de productos para que se re-rendericen con el nuevo idioma
+    _allProducts = [];
+    // Forzar recarga del tab activo
+    switchTab(tab);
+  }
+};
+
 // Safe init: check if DOM is already ready before adding listener
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init);

@@ -62,6 +62,9 @@
 | **python-dotenv** | ^1.2.2 | Carga de variables de entorno desde `.env` (SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES) |
 | **uv** | — | Gestor de proyectos Python (alternativa a pip/poetry) |
 | **Caching propio** | — | Módulo `caching.py`: `TTLCache` thread-safe, decorador `@cached(ttl=N)` e `invalidate(pattern)` sin dependencias externas |
+| **pandas** | >=2.2.0 | Análisis de datos: DataFrame, groupby, aggregate, merge para pipeline de métricas de telemetría |
+| **cachetools** | >=5.3.0 | `TTLCache` para cache de reportes de telemetría (maxsize=128, ttl=60s) |
+| **SQLAlchemy** | — | Consultas SQL con `text()` para métricas de telemetría (ya existente para inventario con SQLModel) |
 
 ### Paquete compartido Python — `packages/shared-py/`
 
@@ -108,6 +111,91 @@ aie-pt-2-Carles-Sanchez-Empresa/
 ├── internal/               # Documentación interna
 └── media/                  # Recursos multimedia (logos, imágenes)
 ```
+
+---
+
+### 2.4. Sistema de Telemetría (Frontend + Backend)
+
+**Arquitectura de recopilación:**
+
+```
+Frontend (TelemetryService)          Backend (FastAPI)
+┌──────────────────────┐             ┌─────────────────────────┐
+│  track(eventType,    │  POST /telemetry/events   │  TelemetryBatchRequest  │
+│    properties)       │ ─────────────────────────→ │  TelemetryEvent[]       │
+│                      │             │  Log event_type list    │
+│  - Cola local (mem)  │             │  200 { received: N }    │
+│  - Batch + debounce  │             └─────────────────────────┘
+│  - sendBeacon flush  │
+│  - Backoff (3 retries)│
+└──────────────────────┘
+```
+
+**Variables de entorno:**
+
+| Variable | Lugar | Ejemplo | Descripción |
+|---|---|---|---|
+| `NEXT_PUBLIC_TELEMETRY_ENDPOINT` | Frontend (backoffice) | `http://localhost:8000/telemetry/events` | URL del endpoint de telemetría para el navegador |
+| `TELEMETRY_ENDPOINT` | Backend (api) | `/telemetry/events` | Ruta interna del endpoint en el backend |
+
+**Envelope estándar de cada evento (8 campos obligatorios):**
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `eventId` | string (UUID v4) | Identificador único del evento |
+| `timestamp` | string (ISO 8601) | Fecha/hora del evento |
+| `sessionId` | string (UUID v4) | ID de sesión del usuario (persistido en sessionStorage) |
+| `userId` | string | ID del usuario (extraído del JWT) |
+| `event_type` | string | Nombre del evento (formato `entidad_acción`) |
+| `schemaVersion` | string | Versión del esquema (actualmente `1.0`) |
+| `requestId` | string (UUID v4) | ID de correlación por lote |
+| `properties` | object | Datos específicos del evento (conformes a event-schemas.json) |
+
+**Codificación de eventos (28 eventos definidos):**
+- **Métricas obligatorias (M1-M5)**: `inbound_order_created`, `outbound_order_created`, `stock_threshold_triggered`, `direct_stock_edit_rejected`, `inventory_discrepancy_detected`
+- **Piso técnico (O3-O4, O13, O17-O18, O21, O23)**: `stock_validation_failed`, `product_stock_queried`, `api_latency_recorded`, `frontend_error_captured`, `api_error_returned`, `page_viewed`, `page_load_timed`, `web_vital_measured`
+- **Autenticación (O6-O11)**: `login_attempted`, `login_succeeded`, `login_failed`, `session_expired`, `password_reset_requested`, `password_changed`
+
+**Documentación de referencia:**
+- Plan de telemetría: `docs/telemetry/telemetry-plan.md`
+- Esquemas JSON de eventos: `docs/telemetry/event-schemas.json`
+
+### 2.5. Dashboard de Telemetría — Pipeline + Endpoint + UI
+
+**Arquitectura completa:**
+
+```
+Frontend (Recharts)              Backend (FastAPI)               Database (Supabase)
+┌──────────────────────┐        ┌─────────────────────────┐     ┌──────────────────────┐
+│  TelemetryPage       │  GET   │  /telemetry/report       │ SQL │  telemetry_events     │
+│  ├─ EventsPerDay     │ ←──── │  ├─ TTLCache (60s)       │ ←── │  ├─ event_type (idx)  │
+│  ├─ ErrorEvents      │        │  ├─ analysis.py (Pandas) │     │  ├─ timestamp (idx)   │
+│  ├─ LatencyTable     │        │  └─ _fetch_dataframe()   │     │  └─ tags (JSONB, GIN) │
+│  └─ AuthFailureChart │        └─────────────────────────┘     └──────────────────────┘
+└──────────────────────┘
+```
+
+**Módulo `services/telemetry/analysis.py`:**
+- Funciones de métricas: `events_per_day()`, `error_events_by_type()`, `api_latency_stats()`, `auth_failure_rate()`
+- Patrón: SQL load (SQLAlchemy `text()`) → Pandas DataFrame → `pd.to_datetime(utc=True)` → groupby → aggregate → `.to_dict(orient='records')`
+- Helper: `_fetch_dataframe(query, params) → pd.DataFrame`
+
+**Endpoint `GET /telemetry/report`:**
+- Query params: `start_date`, `end_date` (ISO format, opcionales)
+- Default: últimos 7 días UTC
+- Cache: `TTLCache` (cachetools), maxsize=128, ttl=60s
+- Response: `{ period: {from, to}, metrics: {events_per_day, error_events_by_type, api_latency_stats, auth_failure_rate} }`
+
+**UI `uis/backoffice/app/telemetry/page.tsx`:**
+- Componentes: `EventsPerDayChart` (BarChart), `ErrorEventsChart` (horizontal BarChart), `LatencyTable`, `AuthFailureChart` (LineChart)
+- i18n completo: 22 claves de traducción (ES + EN)
+- Paleta de colores unificada con el resto del backoffice (`#c89d66`, `#14263a`, `#f3ddba`, `#2f4a62`)
+
+**Resolución de importación:**
+- Problema: `services.py` en `/app/api/` sombrea el paquete `services`
+- Solución: copiar `services/telemetry/` a `/app/telemetry/` en Dockerfile
+- Import: `from telemetry.analysis import ...` (no `from services.telemetry...`)
+- `PYTHONPATH=/app` en Docker
 
 ---
 
