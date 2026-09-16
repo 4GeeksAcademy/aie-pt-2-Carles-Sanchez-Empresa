@@ -79,6 +79,7 @@ const en: Record<string, string> = {
   "nav.suppliers": "Supplier Manager",
   "nav.analyzer": "Incident Analyzer",
   "nav.manager": "Incident Manager",
+  "nav.telemetry": "Telemetry",
   "nav.profile": "My Profile",
   "nav.logout": "Log Out",
 

@@ -148,9 +148,9 @@ export default function TelemetryPage() {
       </div>
 
       {/* Período */}
-      <div className="rounded-lg border border-[#d1d5db] bg-[#f9fafb] p-4">
+      <div className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm">
         <p className="text-sm text-[#2f4a62]">
-          <span className="font-semibold">Período:</span>{" "}
+          <span className="font-semibold text-[#14263a]">Período:</span>{" "}
           {formatDate(report.period.from)} — {formatDate(report.period.to)}
         </p>
       </div>
@@ -191,7 +191,7 @@ function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-[#d1d5db] bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-[#c89d66] bg-white p-4 shadow-sm">
       <h2 className="mb-4 text-lg font-semibold text-[#14263a]">{title}</h2>
       {children}
     </div>
@@ -287,49 +287,37 @@ function LatencyTable({ data }: { data: ApiLatencyStats[] }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-[#d1d5db]">
-        <thead className="bg-[#f3f4f6]">
+    <div className="overflow-hidden rounded-xl border border-[#c89d66] shadow-sm">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-[#14263a] text-[#f8fbff]">
           <tr>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-[#14263a]">
-              Endpoint
-            </th>
-            <th className="px-4 py-3 text-right text-sm font-semibold text-[#14263a]">
-              Promedio (ms)
-            </th>
-            <th className="px-4 py-3 text-right text-sm font-semibold text-[#14263a]">
-              P50 (ms)
-            </th>
-            <th className="px-4 py-3 text-right text-sm font-semibold text-[#14263a]">
-              P95 (ms)
-            </th>
-            <th className="px-4 py-3 text-right text-sm font-semibold text-[#14263a]">
-              P99 (ms)
-            </th>
-            <th className="px-4 py-3 text-right text-sm font-semibold text-[#14263a]">
-              Requests
-            </th>
+            <th className="px-4 py-3">Endpoint</th>
+            <th className="px-4 py-3 text-right">Promedio (ms)</th>
+            <th className="px-4 py-3 text-right">P50 (ms)</th>
+            <th className="px-4 py-3 text-right">P95 (ms)</th>
+            <th className="px-4 py-3 text-right">P99 (ms)</th>
+            <th className="px-4 py-3 text-right">Requests</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#e5e7eb]">
+        <tbody className="divide-y divide-[#c89d66] bg-[#f3ddba]">
           {data.map((row) => (
-            <tr key={row.endpoint} className="hover:bg-[#f9fafb]">
-              <td className="px-4 py-3 text-sm text-[#14263a] font-mono">
+            <tr key={row.endpoint} className="transition-colors hover:bg-[#f8fbff]">
+              <td className="px-4 py-3 font-medium text-[#14263a] font-mono">
                 {row.endpoint}
               </td>
-              <td className="px-4 py-3 text-sm text-[#2f4a62] text-right">
+              <td className="px-4 py-3 text-[#2f4a62] text-right">
                 {row.avg_ms.toFixed(2)}
               </td>
-              <td className="px-4 py-3 text-sm text-[#2f4a62] text-right">
+              <td className="px-4 py-3 text-[#2f4a62] text-right">
                 {row.p50_ms.toFixed(2)}
               </td>
-              <td className="px-4 py-3 text-sm text-[#2f4a62] text-right">
+              <td className="px-4 py-3 text-[#2f4a62] text-right">
                 {row.p95_ms.toFixed(2)}
               </td>
-              <td className="px-4 py-3 text-sm text-[#2f4a62] text-right">
+              <td className="px-4 py-3 text-[#2f4a62] text-right">
                 {row.p99_ms.toFixed(2)}
               </td>
-              <td className="px-4 py-3 text-sm text-[#2f4a62] text-right">
+              <td className="px-4 py-3 text-[#2f4a62] text-right">
                 {row.count}
               </td>
             </tr>
@@ -385,7 +373,7 @@ function AuthFailureChart({ data }: { data: AuthFailureRate[] }) {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex items-center justify-center h-32 text-[#6b7280] text-sm">
+    <div className="flex items-center justify-center h-32 text-[#2f4a62] text-sm">
       {message}
     </div>
   );

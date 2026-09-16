@@ -79,6 +79,7 @@ const es: Record<string, string> = {
   "nav.suppliers": "Gestor de Proveedores",
   "nav.analyzer": "Analizador de Incidencias",
   "nav.manager": "Gestor de Incidencias",
+  "nav.telemetry": "Telemetría",
   "nav.profile": "Mi Perfil",
   "nav.logout": "Cerrar Sesión",
 
