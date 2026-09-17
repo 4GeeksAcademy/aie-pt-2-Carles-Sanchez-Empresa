@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { track } from "@/services/telemetry";
 import type { SKUItem } from "@/services/api";
 
 const STOCK_THRESHOLDS = { OUT: 0, LOW: 10 };
@@ -28,6 +29,21 @@ export function StockTable({
   onRefresh,
 }: Props) {
   const { t } = useTranslation();
+  const lastFilterRef = useRef<string>("");
+
+  // O4: product_stock_queried — track filter changes (debounced via ref)
+  useEffect(() => {
+    const filterKey = `${categoryFilter}|${warehouseFilter}`;
+    if (filterKey !== lastFilterRef.current) {
+      lastFilterRef.current = filterKey;
+      track("product_stock_queried", {
+        query_type: "list",
+        warehouse: warehouseFilter || undefined,
+        product_category: categoryFilter || undefined,
+        results_count: filtered.length,
+      });
+    }
+  }, [categoryFilter, warehouseFilter, products.length]);
 
   // Memoized filter: solo se recalcula cuando cambian products o los filtros
   const filtered = useMemo(() => {

@@ -19,10 +19,17 @@ RUN uv pip install --system ./packages/shared-py/
 RUN uv pip install --system -r ./api/requirements.txt
 
 # ─── Copiar código fuente ──────────────────────────────────
+# Copiar el módulo de telemetría (analysis.py) a /app/telemetry/
+# NOTA: No se copia a /app/services/ porque services.py en api/ lo sombrea
+COPY services/telemetry/__init__.py ./telemetry/__init__.py
+COPY services/telemetry/analysis.py ./telemetry/analysis.py
+
+# Copiar el código de la API
 COPY services/api/ ./api/
 
 # ─── Variable de entorno por defecto ───────────────────────
-ENV PYTHONPATH=/app/api
+# PYTHONPATH=/app permite importar tanto `routes` como `telemetry.analysis`
+ENV PYTHONPATH=/app
 
 # ─── Exponer puerto ────────────────────────────────────────
 EXPOSE 8000
