@@ -16,8 +16,16 @@ Módulos:
 import csv
 import io
 import logging
+import sys
 import time
+from pathlib import Path
 from typing import Optional
+
+# Permite conservar los imports históricos (`telemetry.analysis`) cuando la API
+# se ejecuta desde tests, uvicorn o el contenedor.
+_services_dir = Path(__file__).resolve().parent.parent
+if str(_services_dir) not in sys.path:
+    sys.path.insert(0, str(_services_dir))
 
 logger = logging.getLogger(__name__)
 timing_logger = logging.getLogger("api.timing")
@@ -39,6 +47,7 @@ from routes import (
     incidents_router,
     inventory_router,
     profiles_router,
+    reporting_router,
     suppliers_router,
     telemetry_router,
     users_router,
@@ -237,6 +246,7 @@ app.include_router(users_router)
 app.include_router(profiles_router)
 app.include_router(auth_router)
 app.include_router(telemetry_router)  # Stub — sin autenticación, sin persistencia (Fase 2)
+app.include_router(reporting_router, dependencies=[Depends(get_current_user)])
 
 
 # ──────────────────────────── Root health-check ────────────────────────────
