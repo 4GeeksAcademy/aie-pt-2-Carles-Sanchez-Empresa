@@ -80,6 +80,7 @@ const es: Record<string, string> = {
   "nav.analyzer": "Analizador de Incidencias",
   "nav.manager": "Gestor de Incidencias",
   "nav.telemetry": "Telemetría",
+  "nav.reporting": "Reporte de Desempeño",
   "nav.profile": "Mi Perfil",
   "nav.logout": "Cerrar Sesión",
 
@@ -417,6 +418,29 @@ const es: Record<string, string> = {
   "telemetry.empty.auth": "No hay datos de autenticación para este período",
   "telemetry.chart.quantity": "Cantidad",
   "telemetry.chart.failure_rate": "Tasa de Fallos (%)",
+
+  // ─── Reporting de negocio ───
+  "reporting.title": "Desempeño Semanal por Almacén y Cliente",
+  "reporting.subtitle": "KPIs de negocio por almacén y cliente",
+  "reporting.loading": "Cargando reporte de desempeño...",
+  "reporting.error": "Error al cargar el reporte de desempeño",
+  "reporting.retry": "Reintentar",
+  "reporting.week": "Semana",
+  "reporting.no_week": "No hay una semana calculada",
+  "reporting.empty": "No hay datos de desempeño para la semana seleccionada.",
+  "reporting.kpi.inbound": "Unidades entrantes",
+  "reporting.kpi.outbound": "Pedidos salientes",
+  "reporting.kpi.stockouts": "Eventos de rotura de stock",
+  "reporting.kpi.discrepancies": "Eventos de discrepancia",
+  "reporting.kpi.rate": "Tasa de discrepancia",
+  "reporting.chart.title": "Unidades entrantes y pedidos salientes",
+  "reporting.table.warehouse": "Almacén",
+  "reporting.table.client": "Cliente",
+  "reporting.table.inbound": "Unidades entrantes",
+  "reporting.table.outbound": "Pedidos salientes",
+  "reporting.table.stockouts": "Roturas de stock",
+  "reporting.table.discrepancies": "Discrepancias",
+  "reporting.table.rate": "Tasa de discrepancia",
 };
 
 export default es;

@@ -21,7 +21,7 @@ router = APIRouter(prefix="/reporting", tags=["Reporting"])
 
 
 @router.get("/weekly-warehouse-client-performance")
-def weekly_performance(week_start: Optional[date] = Query(default=None)):
+def weekly_performance(week_start: Optional[date] = None):
     return consultar_desempeno_semanal(week_start)
 
 
@@ -31,5 +31,5 @@ def latest_pipeline_run():
 
 
 @router.post("/pipeline-runs")
-def run_pipeline(week_start: Optional[date] = Query(default=None)):
+def run_pipeline(week_start: Optional[date] = None):
     return {"run_id": disparar_corrida_semanal(week_start), "status": "completed"}

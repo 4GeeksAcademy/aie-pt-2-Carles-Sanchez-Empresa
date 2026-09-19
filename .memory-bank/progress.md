@@ -295,6 +295,28 @@
 
 ---
 
+## ✅ Pipeline semanal de desempeño de negocio
+
+- [x] Separación explícita entre telemetría operativa y reporting de negocio.
+- [x] Pipeline Prefect en `data/pipelines/pipeline.py` con subflows para preparar tablas, extraer eventos, transformar KPI con Pandas, publicar mediante upsert idempotente, generar snapshot y registrar la ejecución.
+- [x] Eventos fuente: `inbound_order_created`, `outbound_order_created`, `stock_threshold_triggered` e `inventory_discrepancy_detected`.
+- [x] Grano: `warehouse + client_id + ISO week_start` (semana iniciada en lunes).
+- [x] KPI en `reporting.weekly_warehouse_client_performance`: `inbound_units_count`, `outbound_orders_count`, `stockout_events_count`, `discrepancy_events_count` y `discrepancy_rate`.
+- [x] La tasa de discrepancia es discrepancias/salidas y vale `0` cuando no hay salidas.
+- [x] API en `services/reporting/routes.py`: listado, resumen y export CSV.
+- [x] Backoffice en `uis/backoffice/app/reporting/page.tsx` con cinco tarjetas KPI, gráfico y tabla por almacén/cliente.
+- [x] Seed reproducible en `scripts/seed_reporting_telemetry.py`, idempotente y con reset controlado por defecto. `--no-reset` conserva datos existentes.
+- [x] Seed validado para `2026-09-07`: 4200 unidades entrantes, 980 pedidos salientes, 3 alertas, 2 discrepancias y tasa `0.0020408163`.
+- [x] Docker actualizado para empaquetar `data/`, `reporting/` y `scripts/` y resolver imports del pipeline.
+- [x] `CONTEXT.md` actualizado con las reglas de negocio de TrackFlow.
+- [x] Suite validada: `130 passed, 5 warnings`.
+
+### Incidencia corregida durante la validación
+
+El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eventos adicionales se generaban el `2026-09-14`, fuera de la semana ISO `2026-09-07`–`2026-09-13`, por lo que el extractor los descartaba correctamente. Se corrigieron los volúmenes y las fechas del seed.
+
+---
+
 ## ✅ Hitos Completados (continuación)
 
 ### 📊 Dashboard de Telemetría — Pipeline + Endpoint + UI Visual

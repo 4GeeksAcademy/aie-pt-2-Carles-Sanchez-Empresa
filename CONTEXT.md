@@ -1,13 +1,34 @@
-# Your company context
+# TrackFlow business context
 
-**Replace this file** with the CONTEXT for your assigned company:
+TrackFlow operates last-mile delivery and warehouse services in Mexico and Spain. Business reporting must remain separate from operational telemetry.
 
-- **Brasaland** — `CONTEXT-brasaland-briefing.md` (grilled food restaurant chain, Colombia + Florida)
-- **TrackFlow** — `CONTEXT-trackflow-briefing.md` (last-mile delivery and warehouse, Mexico + Spain)
-- **Nexova** — `CONTEXT-nexova-briefing.md` (HR consulting and talent acquisition, Chile + Argentina)
+## Weekly warehouse-client performance
 
-Your instructor or milestone materials will point you to the correct CONTEXT file. Copy its contents here so that all project work and AI assistance use the same domain data, field names, and constraints.
+The weekly reporting pipeline reads the append-only `telemetry_events` source and publishes business metrics to the dedicated `reporting.weekly_warehouse_client_performance` table. It may read telemetry but must not update or delete source events, and must not change the existing telemetry analysis endpoint (`GET /telemetry/report`).
 
----
+Required source events:
 
-_Until you add your context, keep this placeholder so the repo structure is clear._
+- `inbound_order_created`
+- `outbound_order_created`
+- `stock_threshold_triggered`
+- `inventory_discrepancy_detected`
+
+The reporting grain is one row per warehouse, client, and ISO week beginning on Monday (`week_start`). Warehouse dimensions include `los_angeles` and `zaragoza`; client and product identifiers are carried in event properties.
+
+Published KPIs:
+
+- `inbound_units_count`: sum of inbound quantities;
+- `outbound_orders_count`: count of outbound order events;
+- `stockout_events_count`: count of threshold events;
+- `discrepancy_events_count`: count of discrepancy events;
+- `discrepancy_rate`: discrepancy events divided by outbound orders, or `0` when there are no outbound orders.
+
+The transformation is pure Pandas logic. Publishing is an idempotent upsert keyed by `(warehouse, client_id, week_start)`. No currency, revenue, or financial KPI belongs in this report.
+
+Reporting endpoints:
+
+- `GET /reporting/weekly-warehouse-client-performance`
+- `GET /reporting/weekly-warehouse-client-performance/summary`
+- `GET /reporting/weekly-warehouse-client-performance/export`
+
+The backoffice dashboard consumes these endpoints and displays five KPI cards, a trend visualization, and a warehouse/client detail table.

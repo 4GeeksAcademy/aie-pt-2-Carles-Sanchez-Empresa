@@ -32,6 +32,7 @@ Arquitectura:
 
 import time
 import threading
+import inspect
 from functools import wraps
 from typing import Any, Callable, Optional
 
@@ -133,6 +134,30 @@ def cached(ttl: float = 30.0) -> Callable:
             # Las llamadas directas (por ejemplo, tests o tareas internas) no
             # deben compartir la caché global de los endpoints HTTP.
             if request is None:
+                # Los endpoints mantienen `request` como primer argumento para
+                # que FastAPI lo inyecte. Las pruebas y tareas internas suelen
+                # invocarlos sin ese argumento; en ese caso lo insertamos sin
+                # desplazar db, current_user ni los parámetros de negocio.
+                signature = inspect.signature(func)
+                parameters = signature.parameters
+                if "request" in parameters:
+                    # `request` precede a menudo parámetros con Depends(), pero
+                    # las llamadas unitarias históricas no lo incluían. Mapear
+                    # aquí los posicionales contra la firma sin Request evita
+                    # que la base de datos termine en el parámetro request.
+                    positional_names = [
+                        name for name, parameter in parameters.items()
+                        if name != "request"
+                        and parameter.kind in (
+                            inspect.Parameter.POSITIONAL_ONLY,
+                            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        )
+                    ]
+                    direct_kwargs = dict(kwargs)
+                    for name, value in zip(positional_names, args):
+                        direct_kwargs.setdefault(name, value)
+                    direct_kwargs["request"] = None
+                    return await func(**direct_kwargs)
                 return await func(*args, **kwargs)
             if request is not None and request.method != "GET":
                 return await func(*args, **kwargs)
