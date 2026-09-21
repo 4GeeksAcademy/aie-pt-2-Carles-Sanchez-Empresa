@@ -24,6 +24,11 @@ RUN uv pip install --system -r ./api/requirements.txt
 COPY services/telemetry/__init__.py ./telemetry/__init__.py
 COPY services/telemetry/analysis.py ./telemetry/analysis.py
 
+# Módulos de reporting y pipeline, usados por los endpoints /reporting.
+COPY data/ ./data/
+COPY services/reporting/ ./reporting/
+COPY scripts/ ./scripts/
+
 # Copiar el código de la API
 COPY services/api/ ./api/
 

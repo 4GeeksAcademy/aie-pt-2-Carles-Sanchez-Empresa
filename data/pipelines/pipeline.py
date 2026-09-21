@@ -160,6 +160,32 @@ def registrar_ejecucion(run_id: str, started_at: datetime, completed_at: datetim
         })
 
 
+@flow(name="preparar_reporting_flow")
+def preparar_reporting_flow() -> None:
+    """Prepara el esquema y las tablas de destino del reporting."""
+    preparar_tablas_reporting()
+
+
+@flow(name="procesar_kpis_flow")
+def procesar_kpis_flow(week_start: date) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Extrae eventos y calcula los KPIs para una semana."""
+    events = extraer_eventos_telemetria(week_start)
+    kpis = transformar_kpis_por_almacen_cliente(events, week_start)
+    return events, kpis
+
+
+@flow(name="publicar_reporting_flow")
+def publicar_reporting_flow(kpis: pd.DataFrame) -> int:
+    """Publica los KPIs mediante el upsert idempotente."""
+    return cargar_en_reporting(kpis)
+
+
+@flow(name="snapshot_eval_flow")
+def snapshot_eval_flow(kpis: pd.DataFrame, week_start: date) -> str:
+    """Exporta el snapshot de evaluación como actividad secundaria."""
+    return exportar_snapshot_eval(kpis, week_start)
+
+
 def _latest_monday() -> date:
     today = datetime.now(timezone.utc).date()
     return today - timedelta(days=today.weekday() + 7)
@@ -174,12 +200,11 @@ def pipeline_semanal_desempeno(week_start: date | None = None) -> str:
     processed = written = 0
     status = "completed"
     try:
-        preparar_tablas_reporting()
-        events = extraer_eventos_telemetria(week_start)
+        preparar_reporting_flow()
+        events, kpis = procesar_kpis_flow(week_start)
         processed = len(events)
-        kpis = transformar_kpis_por_almacen_cliente(events, week_start)
-        written = cargar_en_reporting(kpis)
-        snapshot_state: State = exportar_snapshot_eval(kpis, week_start, return_state=True)
+        written = publicar_reporting_flow(kpis)
+        snapshot_state: State = snapshot_eval_flow(kpis, week_start, return_state=True)
         if snapshot_state.is_failed():
             errors.append(f"snapshot_eval: {snapshot_state.message}")
     except Exception as exc:

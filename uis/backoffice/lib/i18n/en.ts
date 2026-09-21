@@ -80,6 +80,7 @@ const en: Record<string, string> = {
   "nav.analyzer": "Incident Analyzer",
   "nav.manager": "Incident Manager",
   "nav.telemetry": "Telemetry",
+  "nav.reporting": "Performance Report",
   "nav.profile": "My Profile",
   "nav.logout": "Log Out",
 
@@ -417,6 +418,29 @@ const en: Record<string, string> = {
   "telemetry.empty.auth": "No authentication data for this period",
   "telemetry.chart.quantity": "Count",
   "telemetry.chart.failure_rate": "Failure Rate (%)",
+
+  // ─── Business reporting ───
+  "reporting.title": "Weekly Warehouse and Client Performance",
+  "reporting.subtitle": "Business KPIs by warehouse and client",
+  "reporting.loading": "Loading performance report...",
+  "reporting.error": "Error loading performance report",
+  "reporting.retry": "Retry",
+  "reporting.week": "Week",
+  "reporting.no_week": "No computed week",
+  "reporting.empty": "No performance data is available for the selected week.",
+  "reporting.kpi.inbound": "Inbound units",
+  "reporting.kpi.outbound": "Outbound orders",
+  "reporting.kpi.stockouts": "Stockout events",
+  "reporting.kpi.discrepancies": "Discrepancy events",
+  "reporting.kpi.rate": "Discrepancy rate",
+  "reporting.chart.title": "Inbound units and outbound orders",
+  "reporting.table.warehouse": "Warehouse",
+  "reporting.table.client": "Client",
+  "reporting.table.inbound": "Inbound units",
+  "reporting.table.outbound": "Outbound orders",
+  "reporting.table.stockouts": "Stockouts",
+  "reporting.table.discrepancies": "Discrepancies",
+  "reporting.table.rate": "Discrepancy rate",
 };
 
 export default en;

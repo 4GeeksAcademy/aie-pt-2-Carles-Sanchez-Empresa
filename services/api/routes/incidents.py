@@ -105,7 +105,7 @@ async def list_incidents(
 
 @router.get("/summary", response_model=IncidentSummaryResponse)
 @cached(ttl=60)
-async def get_summary(request: Request):
+async def get_summary(request: Request = None):
     """
     Devuelve métricas agregadas de todas las incidencias.
 

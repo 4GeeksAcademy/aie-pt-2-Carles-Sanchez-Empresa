@@ -197,6 +197,49 @@ Frontend (Recharts)              Backend (FastAPI)               Database (Supab
 - Import: `from telemetry.analysis import ...` (no `from services.telemetry...`)
 - `PYTHONPATH=/app` en Docker
 
+### 2.6. Pipeline de reporting semanal de desempeño
+
+El reporting de negocio está separado del análisis de telemetría. El pipeline
+vive en `data/pipelines/pipeline.py` y usa Prefect 3 para orquestar subflows de
+preparación, procesamiento, publicación y snapshot.
+
+**Fuente y restricciones:**
+
+- Lee `telemetry_events` en modo solo lectura.
+- No modifica `services/telemetry/analysis.py` ni `GET /telemetry/report`.
+- Consume `inbound_order_created`, `outbound_order_created`,
+  `stock_threshold_triggered` e `inventory_discrepancy_detected`.
+- Filtra por semana ISO cuyo `week_start` es lunes.
+
+**Transformación y persistencia:**
+
+- `data/process/transform.py` normaliza propiedades JSONB y aplica una
+  transformación Pandas pura.
+- Grano: `warehouse`, `client_id`, `week_start`.
+- Tabla destino: `reporting.weekly_warehouse_client_performance`.
+- Clave lógica y de upsert: `(warehouse, client_id, week_start)`.
+- KPI: unidades entrantes, pedidos salientes, alertas de stock,
+  discrepancias y tasa de discrepancia.
+- La tasa es `discrepancy_events_count / outbound_orders_count`; sin salidas,
+  el valor es `0`.
+- El pipeline genera snapshots en `data/eval/` y registra la ejecución.
+
+**API y UI:**
+
+- `services/reporting/routes.py` expone listado, resumen y export CSV.
+- Las rutas requieren JWT y la página Next.js del backoffice adjunta el token.
+- `uis/backoffice/app/reporting/page.tsx` muestra cinco KPI, gráfico y tabla.
+
+**Dataset demo reproducible:**
+
+- `scripts/seed_reporting_telemetry.py` es una utilidad externa al pipeline.
+- Por defecto borra solo los cuatro tipos de eventos de reporting y las filas
+  de la tabla destino; no borra usuarios ni otros dominios.
+- Inserta eventos con `ON CONFLICT (event_id) DO NOTHING`.
+- `--no-reset` permite conservar datos e insertar solo eventos ausentes.
+- El dataset validado para `2026-09-07` produce 4200 inbound, 980 outbound,
+  3 stockouts, 2 discrepancias y `0.0020408163` de tasa.
+
 ---
 
 ## Decisiones de Arquitectura
