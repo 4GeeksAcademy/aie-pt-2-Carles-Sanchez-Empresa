@@ -130,6 +130,10 @@ def cached(ttl: float = 30.0) -> Callable:
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Solo cachear GET
             request: Optional[Request] = kwargs.get("request")
+            # Las llamadas directas (por ejemplo, tests o tareas internas) no
+            # deben compartir la caché global de los endpoints HTTP.
+            if request is None:
+                return await func(*args, **kwargs)
             if request is not None and request.method != "GET":
                 return await func(*args, **kwargs)
 
