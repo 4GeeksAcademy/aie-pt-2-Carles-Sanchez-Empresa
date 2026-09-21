@@ -495,3 +495,20 @@ function renderSummaryGrid(containerId, data, labelFn) {
     })
     .join("");
 }
+
+// ──────────────────────────── Language Change Handler ────────────────────────────
+
+/**
+ * __onLangChange — Re-renderiza el contenido dinámico del tab activo al cambiar de idioma.
+ * El contenido generado por JS (tablas, select options) no tiene atributos data-i18n.
+ */
+window.__onLangChange = function () {
+  // Determinar qué tab está activo
+  const activeBtn = document.querySelector('.tab-btn.active');
+  if (activeBtn) {
+    const tab = activeBtn.dataset.tab || 'new';
+    // Re-renderizar el tab activo
+    if (tab === 'list') loadList();
+    if (tab === 'summary') loadSummary();
+  }
+};

@@ -297,6 +297,93 @@
 
 ## ✅ Hitos Completados (continuación)
 
+### 📊 Dashboard de Telemetría — Pipeline + Endpoint + UI Visual
+
+**Fase 1 — Pipeline de análisis con Pandas**
+- [x] `services/telemetry/__init__.py` — Package init con docstring de funciones públicas
+- [x] `services/telemetry/analysis.py` — Pipeline de métricas que consulta SQL y transforma con Pandas:
+  - `_fetch_dataframe(query, params) → pd.DataFrame` — ejecuta query con SQLAlchemy `text()` y devuelve DataFrame
+  - `events_per_day(start_date, end_date) → list[dict]` — COUNT por fecha y event_type
+  - `error_events_by_type(start_date, end_date) → list[dict]` — COUNT donde service='errors' por fecha y event_type
+  - `api_latency_stats(start_date, end_date) → list[dict]` — AVG/P50/P95/P99 de latency_ms por endpoint (desde tags JSONB)
+  - `auth_failure_rate(start_date, end_date) → list[dict]` — login_failed/(login_failed+login_succeeded) por fecha
+- [x] Patrón: SQL load → Pandas refine → `pd.to_datetime(utc=True)` → groupby → aggregate → `.to_dict(orient='records')`
+- [x] Dependencias: `pandas>=2.2.0`, `sqlalchemy` (text), `database.engine`
+- [x] Commit `3472f9a`
+
+**Fase 2 — Endpoint GET /telemetry/report con cache**
+- [x] `services/api/routes/telemetry.py` — Añadido `GET /telemetry/report` al router existente:
+  - Query params opcionales: `start_date`, `end_date` (ISO format)
+  - Default: últimos 7 días UTC
+  - Response: `{ "period": { "from": ..., "to": ... }, "metrics": { "events_per_day": [...], "error_events_by_type": [...], "api_latency_stats": [...], "auth_failure_rate": [...] } }`
+- [x] Cache con `TTLCache` (cachetools): `_report_cache`, maxsize=128, ttl=60s
+- [x] `services/api/requirements.txt` — Añadidos `cachetools>=5.3.0` y `pandas>=2.2.0`
+- [x] Commit `606241e`
+
+**Fase 3 — Dashboard visual (Recharts)**
+- [x] `uis/backoffice/app/telemetry/page.tsx` — Página completa con:
+  - `EventsPerDayChart` (BarChart apilado): volumen de eventos por día
+  - `ErrorEventsChart` (BarChart horizontal): errores por tipo
+  - `LatencyTable`: tabla de latencia por endpoint (P50/P95/P99)
+  - `AuthFailureChart` (LineChart): tasa diaria de fallos de login
+  - `ChartCard`: wrapper reutilizable con título
+  - `EmptyState`: componente de estado vacío
+  - Estados: loading, error (con retry), empty, success
+- [x] Dependencia: `recharts` (BarChart, LineChart, ResponsiveContainer)
+- [x] Commit `434b0c8`
+
+**Fase 4 — Fix error 500 + sidebar + i18n + unificación estilos**
+- [x] **Error 500 corregido**: `ModuleNotFoundError: No module named 'services.telemetry'`
+  - Causa raíz: `services.py` en `/app/api/` sombrea el paquete `services`
+  - Solución: copiar `services/telemetry/` a `/app/telemetry/` en Dockerfile
+  - `PYTHONPATH=/app` en Docker (crítico: era `/app:/app/api`)
+  - Import cambiado a `from telemetry.analysis import ...`
+- [x] **Sidebar**: enlace `📡 Telemetría` añadido en `Sidebar.tsx` con `href="/telemetry"`
+- [x] **i18n**: 22 claves de traducción para telemetría en `es.ts` y `en.ts`:
+  - `telemetry.title`, `telemetry.subtitle`, `telemetry.loading`, `telemetry.error`, `telemetry.retry`
+  - `telemetry.period`, `telemetry.chart.*`, `telemetry.table.*`, `telemetry.empty.*`
+- [x] **useTranslation()** integrado con `lang` para fechas locale-aware
+- [x] **Unificación de estilos**: tabla de latencia y ChartCard ahora usan paleta TrackFlow:
+  - `border-[#c89d66] rounded-xl` (antes `border-[#d1d5db] rounded-lg`)
+  - Header: `bg-[#14263a] text-[#f8fbff]` (antes `bg-[#f3f4f6]`)
+  - Body: `divide-[#c89d66] bg-[#f3ddba]` (antes `divide-[#e5e7eb]`)
+  - ChartCard: `bg-[#f3ddba]` (antes `bg-white`)
+  - EmptyState: `text-[#2f4a62]` (antes `text-[#6b7280]`)
+  - Banner período: `bg-[#f3ddba]` (antes `bg-[#f9fafb]`)
+- [x] Commits: `343c435`, `3a3f567`, `675fa4e`
+
+**Archivos creados:**
+- `services/__init__.py` — Package marker para services
+- `services/telemetry/__init__.py` — Package init del módulo de telemetría
+- `services/telemetry/analysis.py` — Pipeline de análisis con Pandas
+- `uis/backoffice/app/telemetry/page.tsx` — Dashboard visual de telemetría
+
+**Archivos modificados:**
+- `services/Dockerfile` — Copia `services/telemetry/` a `./telemetry/`, PYTHONPATH=/app
+- `services/api/routes/telemetry.py` — Añadido endpoint GET /telemetry/report con cache
+- `services/api/requirements.txt` — Añadidos cachetools, pandas
+- `uis/backoffice/components/Sidebar.tsx` — Enlace telemetry añadido
+- `uis/backoffice/lib/i18n/es.ts` — 22 claves de telemetry
+- `uis/backoffice/lib/i18n/en.ts` — 22 claves de telemetry
+
+**Dependencias nuevas:**
+- `pandas>=2.2.0` — Análisis de datos y agregaciones
+- `cachetools>=5.3.0` — TTLCache para cache de reportes
+- `recharts` — Gráficos React (ya existente en backoffice)
+- `sqlalchemy` — Consultas SQL con `text()` (ya existente en backoffice)
+
+**Commits:**
+- `3472f9a` — feat(telemetry): add Pandas analysis pipeline with 4 metric functions
+- `606241e` — feat(telemetry): add GET /telemetry/report endpoint with TTLCache
+- `434b0c8` — feat(ui): add telemetry dashboard with Recharts visualizations
+- `343c435` — fix(backend): resolve 500 error by fixing telemetry import path
+- `3a3f567` — feat(ui): add telemetry to sidebar and unify table styles
+- `675fa4e` — feat(ui): add i18n to telemetry dashboard and fix backgrounds
+
+---
+
+## ✅ Hitos Completados (continuación)
+
 ### 📡 Plan de Telemetría — `docs/telemetry/`
 
 **Fase 1 — Catálogo exhaustivo de oportunidades de datos**

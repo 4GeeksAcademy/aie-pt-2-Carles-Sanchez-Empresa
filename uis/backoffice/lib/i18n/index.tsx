@@ -78,6 +78,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("lang", newLang);
     document.documentElement.setAttribute("lang", newLang);
     setLangState(newLang);
+    loadMessages(newLang).then(setMessages);
   }, []);
 
   const t: TranslationFn = useCallback(

@@ -17,6 +17,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { href: "/suppliers",  icon: "📋", labelKey: "nav.suppliers" },
   { href: "/incidents",  icon: "📊", labelKey: "nav.analyzer" },
   { href: "/incidents-manager", icon: "🚨", labelKey: "nav.manager" },
+  { href: "/telemetry",  icon: "📡", labelKey: "nav.telemetry" },
   { href: "/account/profile",   icon: "👤", labelKey: "nav.profile" },
 ];
 
