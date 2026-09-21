@@ -28,33 +28,83 @@ from sqlmodel import select
 # ──────────────────── Datos de ejemplo ────────────────────
 
 SKUS = [
-    # Warehouse LA (Los Ángeles)
-    {"name": "Classic T-Shirt", "sku_code": "TSH-LA-001", "client_name": "FashionCorp", "category": "fashion", "warehouse": "LA"},
-    {"name": "Denim Jacket", "sku_code": "DNM-LA-002", "client_name": "FashionCorp", "category": "fashion", "warehouse": "LA"},
-    {"name": "Wireless Earbuds", "sku_code": "WLS-LA-003", "client_name": "TechWorld", "category": "electronics", "warehouse": "LA"},
-    # Warehouse ZGZ (Zaragoza)
-    {"name": "Smartphone Case", "sku_code": "SPH-ZGZ-001", "client_name": "TechWorld", "category": "electronics", "warehouse": "ZGZ"},
-    {"name": "Lipstick Set", "sku_code": "LPS-ZGZ-002", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "ZGZ"},
-    {"name": "Moisturizer Cream", "sku_code": "MST-ZGZ-003", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "ZGZ"},
+    # Warehouse LA (Los Ángeles) — 5 SKUs
+    {"name": "Classic T-Shirt", "sku_code": "TSH-LA-001", "client_name": "FashionCorp", "category": "fashion", "warehouse": "LA", "threshold_min": 10},
+    {"name": "Denim Jacket", "sku_code": "DNM-LA-002", "client_name": "FashionCorp", "category": "fashion", "warehouse": "LA", "threshold_min": 10},
+    {"name": "Running Sneakers", "sku_code": "SNK-LA-003", "client_name": "SportGear", "category": "fashion", "warehouse": "LA", "threshold_min": 10},
+    {"name": "Wireless Earbuds", "sku_code": "WLS-LA-004", "client_name": "TechWorld", "category": "electronics", "warehouse": "LA", "threshold_min": 10},
+    {"name": "Foundation Palette", "sku_code": "FDN-LA-005", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "LA", "threshold_min": 10},
+    # Warehouse ZGZ (Zaragoza) — 5 SKUs
+    {"name": "Smartphone Case", "sku_code": "SPH-ZGZ-001", "client_name": "TechWorld", "category": "electronics", "warehouse": "ZGZ", "threshold_min": 10},
+    {"name": "Bluetooth Speaker", "sku_code": "SPK-ZGZ-002", "client_name": "TechWorld", "category": "electronics", "warehouse": "ZGZ", "threshold_min": 10},
+    {"name": "Lipstick Set", "sku_code": "LPS-ZGZ-003", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "ZGZ", "threshold_min": 10},
+    {"name": "Moisturizer Cream", "sku_code": "MST-ZGZ-004", "client_name": "BeautyLab", "category": "cosmetics", "warehouse": "ZGZ", "threshold_min": 10},
+    {"name": "Slim Fit Jeans", "sku_code": "JNS-ZGZ-005", "client_name": "FashionCorp", "category": "fashion", "warehouse": "ZGZ", "threshold_min": 10},
 ]
 
 # Cada entrada: (sku_code, quantity, reference, warehouse)
+# 18 entradas distribuidas entre ambos almacenes
 ENTRIES = [
+    # LA — 9 entradas
     ("TSH-LA-001", 200, "REF-FASHION-001", "LA"),
+    ("TSH-LA-001", 100, "REF-FASHION-010", "LA"),   # 2ª recepción del mismo SKU
     ("DNM-LA-002", 80, "REF-FASHION-002", "LA"),
-    ("WLS-LA-003", 300, "REF-TECH-001", "LA"),
+    ("SNK-LA-003", 150, "REF-SPORT-001", "LA"),
+    ("WLS-LA-004", 300, "REF-TECH-001", "LA"),
+    ("WLS-LA-004", 50, "REF-TECH-005", "LA"),        # 2ª recepción
+    ("FDN-LA-005", 120, "REF-BEAUTY-003", "LA"),
+    ("DNM-LA-002", 40, "REF-FASHION-011", "LA"),     # 2ª recepción
+    ("SNK-LA-003", 60, "REF-SPORT-004", "LA"),       # 2ª recepción
+    # ZGZ — 9 entradas
     ("SPH-ZGZ-001", 500, "REF-TECH-002", "ZGZ"),
-    ("LPS-ZGZ-002", 150, "REF-BEAUTY-001", "ZGZ"),
-    ("MST-ZGZ-003", 120, "REF-BEAUTY-002", "ZGZ"),
+    ("SPK-ZGZ-002", 200, "REF-TECH-003", "ZGZ"),
+    ("LPS-ZGZ-003", 150, "REF-BEAUTY-001", "ZGZ"),
+    ("LPS-ZGZ-003", 80, "REF-BEAUTY-006", "ZGZ"),   # 2ª recepción
+    ("MST-ZGZ-004", 120, "REF-BEAUTY-002", "ZGZ"),
+    ("JNS-ZGZ-005", 100, "REF-FASHION-004", "ZGZ"),
+    ("SPH-ZGZ-001", 200, "REF-TECH-006", "ZGZ"),    # 2ª recepción
+    ("SPK-ZGZ-002", 100, "REF-TECH-007", "ZGZ"),    # 2ª recepción
+    ("MST-ZGZ-004", 60, "REF-BEAUTY-007", "ZGZ"),   # 2ª recepción
 ]
 
 # Cada salida: (sku_code, quantity, exit_type, tracking_number, warehouse)
+# 18 salidas — incluye dispatch y loss para cubrir ambos exit_types
 EXITS = [
-    ("TSH-LA-001", 30, "dispatch", "TRK-987654-001", "LA"),
-    ("WLS-LA-003", 50, "dispatch", "TRK-987654-002", "LA"),
-    ("SPH-ZGZ-001", 100, "dispatch", "TRK-987654-003", "ZGZ"),
-    ("MST-ZGZ-003", 5, "loss", None, "ZGZ"),  # pérdida en ZGZ
+    # LA — 9 salidas
+    ("TSH-LA-001", 50, "dispatch", "TRK-987654-001", "LA"),
+    ("TSH-LA-001", 20, "loss", None, "LA"),            # pérdida LA
+    ("DNM-LA-002", 30, "dispatch", "TRK-987654-002", "LA"),
+    ("SNK-LA-003", 40, "dispatch", "TRK-987654-003", "LA"),
+    ("WLS-LA-004", 80, "dispatch", "TRK-987654-004", "LA"),
+    ("WLS-LA-004", 10, "loss", None, "LA"),            # pérdida LA
+    ("FDN-LA-005", 30, "dispatch", "TRK-987654-005", "LA"),
+    ("SNK-LA-003", 20, "dispatch", "TRK-987654-010", "LA"),
+    ("FDN-LA-005", 15, "dispatch", "TRK-987654-011", "LA"),
+    # ZGZ — 9 salidas
+    ("SPH-ZGZ-001", 150, "dispatch", "TRK-987654-006", "ZGZ"),
+    ("SPK-ZGZ-002", 60, "dispatch", "TRK-987654-007", "ZGZ"),
+    ("LPS-ZGZ-003", 40, "dispatch", "TRK-987654-008", "ZGZ"),
+    ("MST-ZGZ-004", 25, "loss", None, "ZGZ"),         # pérdida ZGZ
+    ("JNS-ZGZ-005", 30, "dispatch", "TRK-987654-009", "ZGZ"),
+    ("SPH-ZGZ-001", 100, "dispatch", "TRK-987654-012", "ZGZ"),
+    ("SPK-ZGZ-002", 40, "dispatch", "TRK-987654-013", "ZGZ"),
+    ("JNS-ZGZ-005", 20, "dispatch", "TRK-987654-014", "ZGZ"),
+    ("LPS-ZGZ-003", 30, "dispatch", "TRK-987654-015", "ZGZ"),
 ]
+
+
+# ── Casos especiales para telemetría ──
+#
+# M3 (stock_threshold_triggered):
+#   ✅ Implementado: threshold_min = 10 para todos los SKUs.
+#   Se dispara automáticamente en el frontend cuando una salida deja el stock < threshold_min.
+#   Con los datos actuales del seed, M3 se disparará para cualquier SKU cuyo stock caiga por debajo de 10.
+#   Ejemplo: FDN-LA-005 tiene stock final de 75 (120-30-15) → no se dispara (75 > 10).
+#   Para forzar M3: crear una salida que deje el stock por debajo de 10 uds.
+#
+# M5 (inventory_discrepancy_detected):
+#   ❌ Requiere función de auditoría física (no implementado aún).
+#   Candidatos: TSH-LA-001 (pérdida de 20 uds), MST-ZGZ-004 (pérdida de 25 uds).
 
 
 def _get_sku_by_code(db, sku_code: str):

@@ -31,6 +31,7 @@ class SKU(SQLModel, table=True):
     client_name: str = Field(nullable=False)
     category: str = Field(nullable=False)
     warehouse: str = Field(nullable=False)
+    threshold_min: Optional[int] = Field(default=10, nullable=True)
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         nullable=False,

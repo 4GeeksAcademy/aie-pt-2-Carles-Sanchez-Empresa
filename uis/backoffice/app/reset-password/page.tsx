@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { API_BASE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n";
+import { track } from "@/services/telemetry";
 
 function ResetPasswordForm() {
   const { t } = useTranslation();
@@ -62,6 +63,10 @@ function ResetPasswordForm() {
       });
 
       if (res.ok) {
+        // O11: password_changed
+        track("password_changed", {
+          change_type: "reset_via_token",
+        });
         router.push("/login?reason=password_reset");
       } else {
         const data = await res.json();

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { track } from "@/services/telemetry";
 import type { StockEntryInput, StockEntryResult } from "@/services/api";
 
 interface Props {
-  products: { id: number; name: string; warehouse: string }[];
+  products: { id: number; name: string; warehouse: string; client_name: string; category: string }[];
   onSubmit: (data: StockEntryInput) => Promise<StockEntryResult>;
 }
 
@@ -30,6 +31,17 @@ export function InboundForm({ products, onSubmit }: Props) {
         quantity: parseInt(quantity, 10),
         reference,
         warehouse,
+      });
+      // M1: inbound_order_created
+      const product = products.find((p) => p.id === parseInt(skuId, 10));
+      const warehouseMap: Record<string, string> = { LA: "los_angeles", ZGZ: "zaragoza" };
+      track("inbound_order_created", {
+        warehouse: warehouseMap[warehouse] || warehouse || "unknown",
+        client_id: product?.client_name || "unknown",
+        product_id: parseInt(skuId, 10),
+        product_category: product?.category || "unknown",
+        quantity: parseInt(quantity, 10),
+        reference: reference || undefined,
       });
       setSuccess(true);
       setSkuId("");

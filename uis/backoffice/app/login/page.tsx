@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { login, getToken } from "@trackflow/core/services/auth";
 import { useTranslation } from "@/lib/i18n";
+import { track } from "@/services/telemetry";
 
 function LoginForm() {
   const { t } = useTranslation();
@@ -35,11 +36,31 @@ function LoginForm() {
     setError(null);
     setIsSubmitting(true);
 
+    // O6: login_attempted
+    track("login_attempted", {
+      login_method: "password",
+      ip_hash: "not_available", // IP hash no disponible en frontend
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 100) : undefined,
+    });
+
     try {
       await login(email, password);
+      // O7: login_succeeded
+      track("login_succeeded", {
+        ip_hash: "not_available",
+        previous_session_id: undefined,
+      });
       router.replace(redirectTo);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("auth.login.error"));
+      const errorMsg = err instanceof Error ? err.message : t("auth.login.error");
+      setError(errorMsg);
+      // O8: login_failed
+      track("login_failed", {
+        failure_reason: errorMsg.toLowerCase().includes("credential") ? "invalid_credentials" : "invalid_credentials",
+        ip_hash: "not_available",
+        attempt_number: 1, // No mantenemos contador en frontend
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 100) : undefined,
+      });
     } finally {
       setIsSubmitting(false);
     }
