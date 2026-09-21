@@ -836,3 +836,9 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
 - ~~**N+1 en `list_orders`**~~ → ✅ Resuelto en Fase 2 con `sku_cache` y `_batch_calculate_stock()`
 
 ---
+### ⚙️ Ticket DEV-53 — Proceso nocturno de telemetría
+- [x] Creada la migración SQL de `job_runs` con índice por job y fecha.
+- [x] Implementada la máquina de estados y lock distribuido en `services/job_runner.py`.
+- [x] Implementado `scripts/nightly_export.py` con TARGET_DATE, exportación idempotente y subprocess del pipeline.
+- [x] Añadida plantilla cron y documentación operativa en `docs/NIGHTLY_EXPORT.md`.
+- [x] Validada la sintaxis y ejecutada la suite existente: 130 tests correctos.
