@@ -1,26 +1,32 @@
 """
-routes/telemetry.py — Endpoint real de telemetría (TrackFlow).
+routes/telemetry.py — Endpoints de telemetría (TrackFlow).
 
 Fase 3 — Persistencia en Supabase con bulk insert.
+Fase 4 — Reporte técnico con cache.
 
-Endpoint: POST /telemetry/events
-Body: { "events": [ ... ] }  (lista de dicts crudos, no tipada)
-Response 200: { "received": N, "stored": M, "rejected": R }
-
-Validación parcial: cada evento se valida individualmente con
-TelemetryEvent.model_validate(). Los inválidos se rechazan pero
-el resto del lote se persiste igual (aceptación parcial).
+Endpoints:
+  - POST /telemetry/events — Recibe y almacena eventos
+  - GET  /telemetry/report — Sirve métricas operacionales con cache
 """
 
 import logging
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
-from fastapi import APIRouter, Request
+from cachetools import TTLCache
+from fastapi import APIRouter, Query, Request
 from pydantic import ValidationError
 from sqlmodel import Session
 
 from database import engine
 from models import TelemetryEventRecord
 from pydantic_models import TelemetryEvent
+from telemetry.analysis import (
+    api_latency_stats,
+    auth_failure_rate,
+    error_events_by_type,
+    events_per_day,
+)
 from telemetry_schemas import filter_properties, get_event_category
 
 logger = logging.getLogger(__name__)
@@ -43,7 +49,89 @@ def _dedup_key(event_type: str, props: dict) -> str | None:
     return f"{metric_name}:{metric_id}:{page}"
 
 
-# ──────────────────────────── Endpoint real ────────────────────────
+# ──────────────────────────── Cache para reporte ────────────────────────
+
+# Cache con TTL de 60 segundos — thread-safe por defecto
+_report_cache: TTLCache = TTLCache(maxsize=128, ttl=60)
+
+
+def _get_cache_key(start_date: str, end_date: str) -> tuple[str, str]:
+    """Genera una clave de cache para el reporte."""
+    return (start_date, end_date)
+
+
+# ──────────────────────────── Endpoint: Reporte ────────────────────────
+
+@router.get("/report")
+async def get_telemetry_report(
+    start_date: Optional[str] = Query(None, description="Fecha inicio ISO 8601 (UTC)"),
+    end_date: Optional[str] = Query(None, description="Fecha fin ISO 8601 (UTC)"),
+):
+    """
+    Endpoint de reporte técnico de telemetría — Fase 4.
+
+    Devuelve métricas operacionales calculadas a partir de los eventos
+    almacenados en `telemetry_events`.
+
+    Parámetros query opcionales:
+      - start_date: Fecha de inicio en formato ISO 8601 (inclusivo)
+      - end_date: Fecha de fin en formato ISO 8601 (exclusivo)
+
+    Si no se proveen fechas, usa por defecto los últimos 7 días (UTC).
+
+    Respuesta:
+      {
+        "period": { "from": "...", "to": "..." },
+        "metrics": {
+          "events_per_day": [...],
+          "error_events_by_type": [...],
+          "api_latency_stats": [...],
+          "auth_failure_rate": [...]
+        }
+      }
+    """
+    now = datetime.now(timezone.utc)
+
+    # ── 1. Resolver período (una sola vez) ──
+    if end_date is None:
+        end_date = now.isoformat()
+    if start_date is None:
+        start_dt = now - timedelta(days=7)
+        start_date = start_dt.isoformat()
+
+    # ── 2. Verificar cache ──
+    cache_key = _get_cache_key(start_date, end_date)
+    cached_result = _report_cache.get(cache_key)
+    if cached_result is not None:
+        logger.info("Cache hit for report: %s", cache_key)
+        return cached_result
+
+    # ── 3. Ejecutar pipeline de métricas ──
+    logger.info("Cache miss — computing report for: %s", cache_key)
+
+    metrics = {
+        "events_per_day": events_per_day(start_date, end_date),
+        "error_events_by_type": error_events_by_type(start_date, end_date),
+        "api_latency_stats": api_latency_stats(start_date, end_date),
+        "auth_failure_rate": auth_failure_rate(start_date, end_date),
+    }
+
+    # ── 4. Construir respuesta ──
+    result = {
+        "period": {
+            "from": start_date,
+            "to": end_date,
+        },
+        "metrics": metrics,
+    }
+
+    # ── 5. Almacenar en cache ──
+    _report_cache[cache_key] = result
+
+    return result
+
+
+# ──────────────────────────── Endpoint: Eventos ────────────────────────
 
 @router.post("/events")
 async def receive_telemetry_events(request: Request):
