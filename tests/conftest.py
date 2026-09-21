@@ -19,6 +19,9 @@ import pytest
 _SERVICES_API = Path(__file__).resolve().parent.parent / "services" / "api"
 sys.path.insert(0, str(_SERVICES_API))
 
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(_REPO_ROOT))
+
 
 # ───────────────────── Fixtures de BD ─────────────────────
 
@@ -51,12 +54,16 @@ def tmp_db_path(tmp_path):
 
 
 @pytest.fixture(autouse=True)
-def mock_db(tmp_db_path):
+def mock_db(tmp_db_path, request):
     """
     Reemplaza la base de datos de TinyDB por una temporal.
     Se ejecuta automáticamente en cada test.
     """
     from tinydb import TinyDB, Query
+
+    if "tests/pipelines" in str(request.node.fspath):
+        yield {}
+        return
 
     # Crear BD temporal
     db = TinyDB(str(tmp_db_path))
@@ -175,15 +182,21 @@ def valid_token(sample_user):
 # ───────────────────── Mocks de servicios externos ─────────────────────
 
 @pytest.fixture(autouse=True)
-def mock_email_service():
+def mock_email_service(request):
     """Mockea el envío de email para evitar llamadas reales a Resend."""
+    if "tests/pipelines" in str(request.node.fspath):
+        yield None
+        return
     with patch("routes.auth.send_reset_email") as mock:
         yield mock
 
 
 @pytest.fixture(autouse=True)
-def mock_logger():
+def mock_logger(request):
     """Mockea logger.exception para verificar que se llama sin silenciar."""
+    if "tests/pipelines" in str(request.node.fspath):
+        yield None
+        return
     with patch("routes.auth.logger.exception") as mock:
         yield mock
 

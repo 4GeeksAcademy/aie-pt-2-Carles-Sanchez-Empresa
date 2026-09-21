@@ -71,7 +71,7 @@ async def create_supplier(payload: SupplierCreate):
 @router.get("", response_model=list[SupplierListItem])
 @cached(ttl=120)
 async def list_suppliers(
-    request: Request,
+    request: Request = None,
     country: str = Query(None, description="Filtrar por país (USA o Spain)"),
     category: str = Query(None, description="Filtrar por categoría"),
 ):
