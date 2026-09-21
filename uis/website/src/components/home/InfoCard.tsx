@@ -7,9 +7,11 @@ interface InfoCardProps {
     src: string;
     alt: string;
   };
+  /** Marcar como above-the-fold (LCP) para usar loading="eager". */
+  priority?: boolean;
 }
 
-export function InfoCard({ title, points, image }: InfoCardProps) {
+export function InfoCard({ title, points, image, priority }: InfoCardProps) {
   return (
     <article className="flex flex-col rounded-lg border border-[#c89d66] bg-[#e5be83] p-4">
       <div className="flex-1">
@@ -30,7 +32,7 @@ export function InfoCard({ title, points, image }: InfoCardProps) {
             width={1000}
             height={667}
             className="h-48 w-full rounded-md object-cover"
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
             decoding="async"
           />
         </div>

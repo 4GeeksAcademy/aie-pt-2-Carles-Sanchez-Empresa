@@ -21,6 +21,7 @@ export default function HomePage() {
       titleKey: "home.service.2.title",
       points: [t("home.service.2.point.1"), t("home.service.2.point.2"), t("home.service.2.point.3")],
       image: { src: "/media/Furgoneta.webp", alt: t("home.service.2.img_alt") },
+      priority: true,
     },
     {
       titleKey: "home.service.3.title",
@@ -76,6 +77,7 @@ export default function HomePage() {
                 title={t(service.titleKey)}
                 points={service.points}
                 image={service.image}
+                priority={service.priority}
               />
             ))}
           </div>

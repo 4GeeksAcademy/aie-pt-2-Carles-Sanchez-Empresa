@@ -8,10 +8,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className="h-full antialiased">
       <head>
-        {/* Preconnect a recursos críticos para reducir latencia */}
-        <link rel="preconnect" href="/" crossOrigin="anonymous" />
-        {/* Preload del logo para LCP */}
-        <link rel="preload" href="/Logo TrackFlow.webp" as="image" type="image/webp" fetchPriority="high" />
         {/* Resource hints para mejorar entrega de recursos */}
         <link rel="dns-prefetch" href="/" />
         {/* Meta tag para que sea indexable */}
