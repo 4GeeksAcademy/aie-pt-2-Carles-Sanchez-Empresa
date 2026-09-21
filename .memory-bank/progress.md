@@ -180,6 +180,115 @@
 
 ---
 
+### 🚀 Sistema de Telemetría — Frontend + Backend (Fases 1-3 + Actividad Web Vitals)
+
+**Fase 1 — Endpoint stub en FastAPI**
+- [x] Endpoint `POST /telemetry/events` en `services/api/routes/telemetry.py`:
+  - Acepta body `{ "events": [...] }` con modelo `TelemetryBatchRequest`
+  - Valida la estructura básica del envelope (eventId, timestamp, sessionId, event_type, properties)
+  - Registra en log los `event_type` recibidos para depuración
+  - Responde `200 OK` con `{ "received": N }` (N = cantidad de eventos del lote)
+- [x] Modelo Pydantic `TelemetryEvent` en `pydantic_models.py`:
+  - 8 campos obligatorios del envelope: `eventId`, `timestamp`, `sessionId`, `userId`, `event_type`, `schemaVersion`, `requestId`, `properties`
+  - Validación de patrones: `event_type` (`entidad_acción`), `schemaVersion` (`d.d`)
+  - Modelo reutilizable para Fase 3 (persistencia)
+- [x] Variable de entorno `TELEMETRY_ENDPOINT` en backend (`docker-compose.yml` + `.env.example`)
+- [x] Router registrado en `main.py` con `app.include_router(telemetry_router)`
+- [x] Exportado en `routes/__init__.py`
+
+**Fase 2 — TelemetryService en el frontend**
+- [x] Servicio en `uis/backoffice/services/telemetry.ts`:
+  - **Cola local**: acumula eventos en memoria en un arreglo interno
+  - **Batch + debounce**: envía cada 10 segundos o al llegar a 20 eventos (lo que ocurra primero)
+  - **Flush confiable**: `navigator.sendBeacon` en evento `visibilitychange` para garantizar envío al cerrar pestaña
+  - **Reintentos con backoff**: hasta 3 intentos con espera exponencial (1s → 2s → 4s) antes de descartar lote
+- [x] Auto-generación de campos del envelope:
+  - `eventId`: UUID v4 generado al capturar
+  - `sessionId`: UUID v4 generado al login, persistido en `sessionStorage`
+  - `userId`: extraído del JWT almacenado (payload `sub` o `id`)
+  - `timestamp`: ISO 8601 al momento de captura
+  - `schemaVersion`: constante `"1.0"`
+  - `requestId`: UUID v4 por lote (correlación extremo a extremo)
+- [x] Única función pública: `track(eventType: string, properties: Record<string, unknown>): void`
+- [x] Variable de entorno `NEXT_PUBLIC_TELEMETRY_ENDPOINT` en frontend (`docker-compose.yml` + `.env.example`)
+- [x] Rewrite de Next.js para proxy: `/telemetry/:path*` → `${apiTarget}/telemetry/:path*`
+- [x] `initTelemetry()` exportado para inicialización desde layout raíz
+- [x] Sin llamadas directas fetch/axios para telemetría fuera del TelemetryService
+
+**Fase 3 — Instrumentación amplia: técnica y de negocio**
+- [x] **Métricas Obligatorias (M1-M5)** — todas instrumentadas:
+  - M1 `inbound_order_created` en `InboundForm.tsx` (post submit exitoso)
+  - M2 `outbound_order_created` en `OutboundForm.tsx` (post submit exitoso)
+  - M3 `stock_threshold_triggered` detectado en errores de `OutboundForm.tsx`
+  - M4 `direct_stock_edit_rejected` en `DataEditor.tsx` (al intentar editar stock vía JSON)
+  - M5 `inventory_discrepancy_detected` — pendiente feature de auditoría física en frontend
+- [x] **Piso Técnico Transversal** — instrumentado en toda la aplicación:
+  - O3 `stock_validation_failed` en handler de errores de `OutboundForm.tsx`
+  - O4 `product_stock_queried` con throttle en cambios de filtro de `StockTable.tsx`
+  - O13 `api_latency_recorded` con muestreo 1:10 en `services/api.ts`
+  - O17 `frontend_error_captured` en `ErrorTracker.tsx` (React Error Boundary + window.onerror + unhandledrejection)
+  - O18 `api_error_returned` en handler de errores de `services/api.ts`
+  - O21 `page_viewed` con throttle 30s en `BackofficeClientLayout.tsx`
+  - `page_load_timed` con métricas de navegación (loadEventEnd, TTFB) en `BackofficeClientLayout.tsx`
+- [x] **Autenticación (O6-O11)** — instrumentada en hooks/components:
+  - O6 `login_attempted` antes de enviar credenciales en `login/page.tsx`
+  - O7 `login_succeeded` tras login exitoso en `login/page.tsx`
+  - O8 `login_failed` con razón del fallo en `login/page.tsx`
+  - O9 `session_expired` al detectar token ausente en `AuthGuard.tsx`
+  - O10 `password_reset_requested` tras solicitar reset en `forgot-password/page.tsx`
+  - O11 `password_changed` tras cambio exitoso en `reset-password/page.tsx`
+- [x] Eventos usan `event_type` del plan de telemetría y properties dentro de allowlists definidos en `event-schemas.json`
+- [x] Sin PII en eventos: IP hasheada, emails/teléfonos enmascarados con `[REDACTED]`, contraseñas nunca capturadas
+
+**Actividad Adicional — Rendimiento y Web Vitals**
+- [x] Web Vitals instrumentados como eventos de telemetría en `BackofficeClientLayout.tsx`:
+  - CLS, LCP, FID, INP vía `PerformanceObserver`
+  - TTFB desde Navigation Timing API
+  - Cada métrica enviada como `web_vital_measured` con `page` (ruta actual)
+- [x] Esquema `web_vital_measured` (O23) registrado en `event-schemas.json`:
+  - Allowlist: `metric_name`, `metric_value`, `metric_delta`, `metric_id`, `page`
+  - Categoría: performance, processing: stream
+- [x] Evento O23 documentado en `telemetry-plan.md`:
+  - Entrada en catálogo de oportunidades
+  - Definición del esquema con tabla de properties
+  - Estrategia de entrega: stream (métricas en tiempo real)
+- [x] Auth events instrumentados en hooks/components (`AuthGuard.tsx`, `login/page.tsx`, etc.) — no en cada página individualmente
+- [x] Evento `login_failed` incluye `failure_reason` pero nunca email ni contraseña
+
+**Archivos creados:**
+- `services/api/routes/telemetry.py` — Endpoint stub POST /telemetry/events
+- `uis/backoffice/services/telemetry.ts` — TelemetryService (cola, batch, sendBeacon, backoff)
+- `uis/backoffice/components/ErrorTracker.tsx` — Error Boundary + global error listeners
+
+**Archivos modificados:**
+- `services/api/pydantic_models.py` — Modelos TelemetryEvent y TelemetryBatchRequest
+- `services/api/main.py` — Registro de telemetry_router
+- `services/api/routes/__init__.py` — Export de telemetry_router
+- `.env.example` — Variables NEXT_PUBLIC_TELEMETRY_ENDPOINT y TELEMETRY_ENDPOINT
+- `docker-compose.yml` — Variables de entorno para api y backoffice
+- `uis/backoffice/next.config.ts` — Rewrite /telemetry/:path*
+- `uis/backoffice/app/layout.tsx` — Import de ErrorTracker
+- `uis/backoffice/app/BackofficeClientLayout.tsx` — Init telemetry + page_viewed + page_load_timed + Web Vitals
+- `uis/backoffice/components/inventory/InboundForm.tsx` — M1: inbound_order_created
+- `uis/backoffice/components/inventory/OutboundForm.tsx` — M2: outbound_order_created + M3: stock_threshold_triggered + O3: stock_validation_failed
+- `uis/backoffice/components/inventory/StockTable.tsx` — O4: product_stock_queried
+- `uis/backoffice/components/dashboard/DataEditor.tsx` — M4: direct_stock_edit_rejected
+- `uis/backoffice/app/login/page.tsx` — O6: login_attempted + O7: login_succeeded + O8: login_failed
+- `uis/backoffice/components/AuthGuard.tsx` — O9: session_expired
+- `uis/backoffice/app/forgot-password/page.tsx` — O10: password_reset_requested
+- `uis/backoffice/app/reset-password/page.tsx` — O11: password_changed
+- `uis/backoffice/services/api.ts` — O13: api_latency_recorded + O18: api_error_returned
+- `docs/telemetry/event-schemas.json` — Añadido O23: web_vital_measured
+- `docs/telemetry/telemetry-plan.md` — Documentación O23 + schema + delivery strategy
+
+**Commits:**
+- `67f06a5` — feat(backend): add telemetry stub endpoint POST /telemetry/events with Pydantic models
+- `4f22520` — feat(frontend): add TelemetryService with local queue, batch, sendBeacon, backoff
+- `b14bb89` — feat(telemetry): instrumentar Fase 3 — métricas obligatorias M1-M5 + piso técnico + auth + Web Vitals
+- `d4c7386` — fix(telemetry): add web_vital_measured schema to event-schemas.json and telemetry-plan
+
+---
+
 ## 🔜 Próximos Pasos
 
 *(Por definir — sección reservada para futuros hitos)*

@@ -2,6 +2,7 @@
 
 import { memo, useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { track } from "@/services/telemetry";
 
 interface DataEditorProps {
   products: unknown[];
@@ -41,6 +42,31 @@ function DataEditorInner({ products, shipments, carriers, onUpdateProducts, onUp
   }, [carriers]);
 
   const applyAll = useCallback(() => {
+    // M4: direct_stock_edit_rejected — detectar intentos de editar stock directamente
+    try {
+      const parsedProducts = JSON.parse(productsRaw);
+      if (Array.isArray(parsedProducts)) {
+        const offenders = parsedProducts.filter(
+          (p: Record<string, unknown>) => "current_stock" in p || "stock" in p
+        );
+        if (offenders.length > 0) {
+          const first = offenders[0] as Record<string, unknown>;
+          track("direct_stock_edit_rejected", {
+            warehouse: (first.warehouse as string) || "unknown",
+            client_id: (first.client_name as string) || "unknown",
+            product_id: typeof first.id === "number" ? first.id : 0,
+            product_category: (first.category as string) || "unknown",
+            attempted_new_stock: typeof first.current_stock === "number" ? first.current_stock : typeof first.stock === "number" ? first.stock : 0,
+            current_stock: 0,
+            method: "backoffice",
+            rejection_reason: "Direct stock editing not allowed through JSON editor",
+          });
+        }
+      }
+    } catch {
+      // JSON parse error — no action needed for telemetry
+    }
+
     onUpdateProducts(productsRaw);
     onUpdateShipments(shipmentsRaw);
     onUpdateCarriers(carriersRaw);
