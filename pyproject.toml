@@ -1,3 +1,22 @@
+[project]
+name = "trackflow"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "cachetools>=7.2.0",
+    "fastapi>=0.141.1",
+    "libpass>=1.9.3",
+    "pandas>=3.0.6",
+    "prefect>=3",
+    "psycopg2-binary>=2.9.13",
+    "python-dotenv>=1.2.3",
+    "python-jose[cryptography]>=3.5.0",
+    "resend>=2.47.0",
+    "sqlalchemy>=2.0.54",
+    "sqlmodel>=0.0.42",
+    "tinydb>=4.9.0",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

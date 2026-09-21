@@ -105,7 +105,7 @@ El pipeline puede ejecutarse múltiples veces sobre la misma semana sin producir
 
 1. **Extracción:** re-leer los mismos eventos produce el mismo DataFrame.
 2. **Transformación:** los mismos eventos agrupados producen los mismos KPIs.
-3. **Carga:** el `INSERT ... ON CONFLICT (warehouse, client_id, week_start) DO UPDATE` sobreescribe la fila existente con valores idénticos y actualiza `computed_at`.
+3. **Carga:** el `INSERT ... ON CONFLICT (warehouse, client_id, week_start) DO UPDATE` sobreescribe la fila existente con los mismos KPI y actualiza `computed_at` como marca de la última recomputación. Por eso los KPI son idénticos aunque ese timestamp cambie.
 
 **Segunda corrida después de un fallo en carga:** los registros que ya se insertaron correctamente se sobreescriben con los mismos valores (idempotentes). Los que no se insertaron se crean. Resultado final: la tabla refleja exactamente el estado correcto, sin duplicados.
 
@@ -198,6 +198,18 @@ Dispara una corrida manual del pipeline. Acepta `week_start` opcional. Devuelve 
 ---
 
 ## 8. Restricciones
+
+## 9. Ejecución
+
+El ciclo previsto es semanal, el lunes por la mañana. También se puede lanzar manualmente:
+
+```bash
+python data/pipelines/pipeline.py
+python data/pipelines/pipeline.py --week-start 2026-09-08
+```
+
+La primera ejecución crea, si no existen, el esquema `reporting` y sus tablas de resultados y auditoría.
+
 
 - Cada fila pertenece a un único cliente — nunca se agrega entre clientes.
 - `telemetry_events` es **solo lectura** — este pipeline nunca escribe ahí.

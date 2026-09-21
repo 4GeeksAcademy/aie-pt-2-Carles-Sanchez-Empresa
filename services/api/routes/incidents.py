@@ -62,7 +62,7 @@ async def create_incident(payload: IncidentCreate):
 @router.get("", response_model=list[IncidentListItem])
 @cached(ttl=30)
 async def list_incidents(
-    request: Request,
+    request: Request = None,
     status: Optional[str] = Query(None, description="Filtrar por estado (open, in_progress, resolved, discarded)"),
     origin: Optional[str] = Query(None, description="Filtrar por origen (customer, branch, internal)"),
     branch: Optional[str] = Query(None, description="Filtrar por sede (central, la_warehouse, la_office, zaragoza_warehouse, zaragoza_office)"),
