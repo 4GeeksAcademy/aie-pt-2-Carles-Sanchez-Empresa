@@ -120,3 +120,16 @@ class TelemetryEventRecord(SQLModel, table=True):
         Index("ix_telemetry_event_type", "event_type"),
         Index("ix_telemetry_tags_gin", "tags", postgresql_using="gin"),
     )
+
+
+class TaskFailure(SQLModel, table=True):
+    """Registro persistente de tareas que agotaron sus reintentos (DLQ)."""
+
+    __tablename__ = "celery_task_failures"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    task_id: str = Field(index=True, nullable=False)
+    task_name: str = Field(nullable=False)
+    attempt: int = Field(nullable=False)
+    error_message: str = Field(nullable=False)
+    failed_at: str = Field(nullable=False)
