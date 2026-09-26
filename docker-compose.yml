@@ -47,11 +47,60 @@ services:
     volumes:
       # Bind mount para recarga en caliente (--reload)
       - ./services/api:/app/api
+      # El bind mount anterior oculta los archivos copiados en /app/api.
+      # Exponemos también el módulo Celery para que la API pueda encolar.
+      - ./services/celery_app.py:/app/api/celery_app.py:ro
       - ./packages/shared-py:/app/packages/shared-py
     env_file:
       - .env
     environment:
       - TELEMETRY_ENDPOINT=/telemetry/events
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      - redis
+    networks:
+      - trackflow-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: trackflow-redis
+    command: redis-server --maxmemory-policy noeviction
+    ports:
+      - "6379:6379"
+    networks:
+      - trackflow-net
+
+  worker:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    container_name: trackflow-worker
+    command: celery -A services.celery_app worker --loglevel=INFO -E
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+    depends_on:
+      - redis
+    networks:
+      - trackflow-net
+
+  flower:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    container_name: trackflow-flower
+    command: celery -A services.celery_app flower --port=5555 --persistent --db=/data/flower.db
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+    volumes:
+      - ./data/flower:/data
+    depends_on:
+      - redis
     networks:
       - trackflow-net
 
