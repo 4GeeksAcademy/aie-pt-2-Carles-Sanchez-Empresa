@@ -81,6 +81,7 @@ const es: Record<string, string> = {
   "nav.manager": "Gestor de Incidencias",
   "nav.telemetry": "Telemetría",
   "nav.reporting": "Reporte de Desempeño",
+  "nav.salesForecast": "Pronóstico de Ventas",
   "nav.profile": "Mi Perfil",
   "nav.logout": "Cerrar Sesión",
 

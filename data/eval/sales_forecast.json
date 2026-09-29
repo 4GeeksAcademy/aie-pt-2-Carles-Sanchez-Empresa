@@ -1,0 +1,377 @@
+{
+  "source": "data/raw/trackflow_sales.csv",
+  "model": "RandomForestRegressor",
+  "random_state": 42,
+  "train_period": {
+    "start": "2016-01",
+    "end": "2023-12",
+    "months": 96
+  },
+  "test_period": {
+    "start": "2024-01",
+    "end": "2025-12",
+    "months": 24
+  },
+  "metrics": {
+    "mse_eur2": 19124041771.65458,
+    "normalized_mse_percent": 1.1332155754516133,
+    "rmse_percent_of_mean": 10.645259862735214,
+    "rmse_eur": 138289.70233410216,
+    "psi": 7.006892592011961,
+    "gini": 1.0,
+    "gini_threshold_eur": 1060704.065,
+    "k2_score": 12.591457987091982,
+    "k2_pvalue": 0.0018441644189261272,
+    "months": 24
+  },
+  "validation": {
+    "period": "2022-01/2023-12",
+    "months": 24,
+    "band_method": "2.5th and 97.5th percentiles of chronological validation residuals"
+  },
+  "psi_method": "Prediction-score distributions; reference is a chronological 24-month recursive forecast on the 2022-2023 training validation window; decile cut points from reference.",
+  "gini_method": "Gini = 2*AUC - 1 for ranking months whose actual revenue exceeds the training 75th percentile.",
+  "k2_method": "D\u2019Agostino-Pearson normality statistic on actual-minus-predicted residuals; p-value is reported separately.",
+  "psi_reference_predictions": [
+    1219136.4206715482,
+    990904.377225099,
+    1020457.8412230349,
+    1027159.9235592856,
+    1193006.6023861608,
+    1064725.331908055,
+    1194370.0760287794,
+    1046678.6810507146,
+    1040843.6042502377,
+    1193687.5522046129,
+    1270831.7502144054,
+    1272487.1916385721,
+    1270272.3808656551,
+    1052808.7494347217,
+    1066894.6836486002,
+    1070474.4669212191,
+    1240488.296298571,
+    1197779.1714248806,
+    1244510.0217009524,
+    1095867.6580710711,
+    1092776.7781910114,
+    1241731.9940138091,
+    1270357.8157094053,
+    1272487.1916385721
+  ],
+  "validation_predictions": [
+    {
+      "month": "2022-01-01",
+      "actual_eur": 1053177.23,
+      "predicted_eur": 1219136.4206715482
+    },
+    {
+      "month": "2022-02-01",
+      "actual_eur": 926582.69,
+      "predicted_eur": 990904.377225099
+    },
+    {
+      "month": "2022-03-01",
+      "actual_eur": 1029616.99,
+      "predicted_eur": 1020457.8412230349
+    },
+    {
+      "month": "2022-04-01",
+      "actual_eur": 1113886.79,
+      "predicted_eur": 1027159.9235592856
+    },
+    {
+      "month": "2022-05-01",
+      "actual_eur": 1054765.21,
+      "predicted_eur": 1193006.6023861608
+    },
+    {
+      "month": "2022-06-01",
+      "actual_eur": 1021110.72,
+      "predicted_eur": 1064725.331908055
+    },
+    {
+      "month": "2022-07-01",
+      "actual_eur": 1044150.32,
+      "predicted_eur": 1194370.0760287794
+    },
+    {
+      "month": "2022-08-01",
+      "actual_eur": 1032691.0,
+      "predicted_eur": 1046678.6810507146
+    },
+    {
+      "month": "2022-09-01",
+      "actual_eur": 1015802.87,
+      "predicted_eur": 1040843.6042502377
+    },
+    {
+      "month": "2022-10-01",
+      "actual_eur": 1032566.51,
+      "predicted_eur": 1193687.5522046129
+    },
+    {
+      "month": "2022-11-01",
+      "actual_eur": 1417904.68,
+      "predicted_eur": 1270831.7502144054
+    },
+    {
+      "month": "2022-12-01",
+      "actual_eur": 1351928.84,
+      "predicted_eur": 1272487.1916385721
+    },
+    {
+      "month": "2023-01-01",
+      "actual_eur": 1123796.35,
+      "predicted_eur": 1270272.3808656551
+    },
+    {
+      "month": "2023-02-01",
+      "actual_eur": 987056.79,
+      "predicted_eur": 1052808.7494347217
+    },
+    {
+      "month": "2023-03-01",
+      "actual_eur": 1153693.44,
+      "predicted_eur": 1066894.6836486002
+    },
+    {
+      "month": "2023-04-01",
+      "actual_eur": 1192427.95,
+      "predicted_eur": 1070474.4669212191
+    },
+    {
+      "month": "2023-05-01",
+      "actual_eur": 1110225.74,
+      "predicted_eur": 1240488.296298571
+    },
+    {
+      "month": "2023-06-01",
+      "actual_eur": 1148014.16,
+      "predicted_eur": 1197779.1714248806
+    },
+    {
+      "month": "2023-07-01",
+      "actual_eur": 1183355.76,
+      "predicted_eur": 1244510.0217009524
+    },
+    {
+      "month": "2023-08-01",
+      "actual_eur": 1212865.9,
+      "predicted_eur": 1095867.6580710711
+    },
+    {
+      "month": "2023-09-01",
+      "actual_eur": 1145589.7,
+      "predicted_eur": 1092776.7781910114
+    },
+    {
+      "month": "2023-10-01",
+      "actual_eur": 1198695.27,
+      "predicted_eur": 1241731.9940138091
+    },
+    {
+      "month": "2023-11-01",
+      "actual_eur": 1468073.17,
+      "predicted_eur": 1270357.8157094053
+    },
+    {
+      "month": "2023-12-01",
+      "actual_eur": 1494874.34,
+      "predicted_eur": 1272487.1916385721
+    }
+  ],
+  "points": [
+    {
+      "month": "2024-01-01",
+      "year": 2024,
+      "actual_eur": 1161748.57,
+      "predicted_eur": 1249750.2188333338,
+      "lower_eur": 1086572.9635302734,
+      "upper_eur": 1457951.0856040325
+    },
+    {
+      "month": "2024-02-01",
+      "year": 2024,
+      "actual_eur": 1046003.73,
+      "predicted_eur": 1119506.3247924307,
+      "lower_eur": 956329.0694893703,
+      "upper_eur": 1327707.1915631294
+    },
+    {
+      "month": "2024-03-01",
+      "year": 2024,
+      "actual_eur": 1197557.22,
+      "predicted_eur": 1268443.2420359817,
+      "lower_eur": 1105265.9867329213,
+      "upper_eur": 1476644.1088066804
+    },
+    {
+      "month": "2024-04-01",
+      "year": 2024,
+      "actual_eur": 1251053.19,
+      "predicted_eur": 1327179.2852977966,
+      "lower_eur": 1164002.0299947362,
+      "upper_eur": 1535380.1520684953
+    },
+    {
+      "month": "2024-05-01",
+      "year": 2024,
+      "actual_eur": 1247444.4,
+      "predicted_eur": 1222903.7375856843,
+      "lower_eur": 1059726.4822826239,
+      "upper_eur": 1431104.604356383
+    },
+    {
+      "month": "2024-06-01",
+      "year": 2024,
+      "actual_eur": 1233109.87,
+      "predicted_eur": 1269886.9325194934,
+      "lower_eur": 1106709.677216433,
+      "upper_eur": 1478087.799290192
+    },
+    {
+      "month": "2024-07-01",
+      "year": 2024,
+      "actual_eur": 1189849.71,
+      "predicted_eur": 1327494.995326785,
+      "lower_eur": 1164317.7400237245,
+      "upper_eur": 1535695.8620974836
+    },
+    {
+      "month": "2024-08-01",
+      "year": 2024,
+      "actual_eur": 1179769.0,
+      "predicted_eur": 1340303.1375732133,
+      "lower_eur": 1177125.882270153,
+      "upper_eur": 1548504.004343912
+    },
+    {
+      "month": "2024-09-01",
+      "year": 2024,
+      "actual_eur": 1177139.57,
+      "predicted_eur": 1272680.856307648,
+      "lower_eur": 1109503.6010045875,
+      "upper_eur": 1480881.7230783466
+    },
+    {
+      "month": "2024-10-01",
+      "year": 2024,
+      "actual_eur": 1163583.17,
+      "predicted_eur": 1339244.9089038088,
+      "lower_eur": 1176067.6536007484,
+      "upper_eur": 1547445.7756745075
+    },
+    {
+      "month": "2024-11-01",
+      "year": 2024,
+      "actual_eur": 1543667.82,
+      "predicted_eur": 1424327.9441701174,
+      "lower_eur": 1261150.688867057,
+      "upper_eur": 1632528.810940816
+    },
+    {
+      "month": "2024-12-01",
+      "year": 2024,
+      "actual_eur": 1603521.02,
+      "predicted_eur": 1426378.3565463668,
+      "lower_eur": 1263201.1012433064,
+      "upper_eur": 1634579.2233170655
+    },
+    {
+      "month": "2025-01-01",
+      "year": 2025,
+      "actual_eur": 1306044.31,
+      "predicted_eur": 1380743.886505951,
+      "lower_eur": 1217566.6312028905,
+      "upper_eur": 1588944.7532766496
+    },
+    {
+      "month": "2025-02-01",
+      "year": 2025,
+      "actual_eur": 1158868.49,
+      "predicted_eur": 1242754.991134018,
+      "lower_eur": 1079577.7358309575,
+      "upper_eur": 1450955.8579047166
+    },
+    {
+      "month": "2025-03-01",
+      "year": 2025,
+      "actual_eur": 1359677.14,
+      "predicted_eur": 1385239.0078003462,
+      "lower_eur": 1222061.7524972858,
+      "upper_eur": 1593439.874571045
+    },
+    {
+      "month": "2025-04-01",
+      "year": 2025,
+      "actual_eur": 1304281.43,
+      "predicted_eur": 1414847.456992409,
+      "lower_eur": 1251670.2016893486,
+      "upper_eur": 1623048.3237631076
+    },
+    {
+      "month": "2025-05-01",
+      "year": 2025,
+      "actual_eur": 1241285.69,
+      "predicted_eur": 1345139.8397162491,
+      "lower_eur": 1181962.5844131887,
+      "upper_eur": 1553340.7064869478
+    },
+    {
+      "month": "2025-06-01",
+      "year": 2025,
+      "actual_eur": 1299171.32,
+      "predicted_eur": 1387277.9996164176,
+      "lower_eur": 1224100.7443133572,
+      "upper_eur": 1595478.8663871163
+    },
+    {
+      "month": "2025-07-01",
+      "year": 2025,
+      "actual_eur": 1254308.44,
+      "predicted_eur": 1415402.945463242,
+      "lower_eur": 1252225.6901601816,
+      "upper_eur": 1623603.8122339407
+    },
+    {
+      "month": "2025-08-01",
+      "year": 2025,
+      "actual_eur": 1244265.94,
+      "predicted_eur": 1417122.016970385,
+      "lower_eur": 1253944.7616673247,
+      "upper_eur": 1625322.8837410838
+    },
+    {
+      "month": "2025-09-01",
+      "year": 2025,
+      "actual_eur": 1311144.28,
+      "predicted_eur": 1391069.0871080842,
+      "lower_eur": 1227891.8318050238,
+      "upper_eur": 1599269.953878783
+    },
+    {
+      "month": "2025-10-01",
+      "year": 2025,
+      "actual_eur": 1264409.36,
+      "predicted_eur": 1419218.5168570515,
+      "lower_eur": 1256041.2615539911,
+      "upper_eur": 1627419.3836277502
+    },
+    {
+      "month": "2025-11-01",
+      "year": 2025,
+      "actual_eur": 1739132.01,
+      "predicted_eur": 1427297.2862076173,
+      "lower_eur": 1264120.0309045569,
+      "upper_eur": 1635498.152978316
+    },
+    {
+      "month": "2025-12-01",
+      "year": 2025,
+      "actual_eur": 1700717.6,
+      "predicted_eur": 1426378.3565463668,
+      "lower_eur": 1263201.1012433064,
+      "upper_eur": 1634579.2233170655
+    }
+  ]
+}
