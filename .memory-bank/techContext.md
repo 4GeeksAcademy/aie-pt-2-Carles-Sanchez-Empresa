@@ -652,3 +652,17 @@ uis/talent-pipeline-tracker/
 ### Paquete compartido (`packages/shared/`)
 
 - `@repo/shared-types` v0.0.1 (privado, sin dependencias externas)
+### 2.7. Proceso nocturno DEV-53
+
+El proceso de exportación nocturna vive fuera de FastAPI en `scripts/nightly_export.py`.
+Usa `services/job_runner.py` para persistir la máquina de estados `job_runs`
+(`pending → processing → completed | failed`) en PostgreSQL. El estado `processing`
+es el lock distribuido y la idempotencia se consulta por `(job_name, target_date)`.
+La tabla y su índice/índice parcial se crean con
+`services/migrations/001_create_job_runs.sql`.
+
+El script calcula ayer en UTC o usa `TARGET_DATE=YYYY-MM-DD`, crea un snapshot de
+`telemetry_events` en `data/raw/telemetry_YYYY-MM-DD.csv` si no existe y lanza el
+pipeline existente con un subprocess. El pipeline no consume el CSV. El disparador
+recomendado es cron independiente; la plantilla está en
+`infra/cron/nightly_export.cron.example` y la operación en `docs/NIGHTLY_EXPORT.md`.
