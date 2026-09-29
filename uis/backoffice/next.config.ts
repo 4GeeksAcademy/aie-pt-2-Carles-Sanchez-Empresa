@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
     const apiTarget = `http://${API_HOST}:${API_PORT}`;
     return [
       { source: "/api/incidents/:path*", destination: `${apiTarget}/api/incidents/:path*` },
+      { source: "/api/reporting/:path*", destination: `${apiTarget}/reporting/:path*` },
       { source: "/api/:path*", destination: `${apiTarget}/:path*` },
       { source: "/auth/:path*", destination: `${apiTarget}/auth/:path*` },
       { source: "/users/:path*", destination: `${apiTarget}/users/:path*` },

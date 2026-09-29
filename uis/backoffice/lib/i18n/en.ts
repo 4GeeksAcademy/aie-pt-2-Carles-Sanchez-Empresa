@@ -81,6 +81,7 @@ const en: Record<string, string> = {
   "nav.manager": "Incident Manager",
   "nav.telemetry": "Telemetry",
   "nav.reporting": "Performance Report",
+  "nav.salesForecast": "Sales Forecast",
   "nav.profile": "My Profile",
   "nav.logout": "Log Out",
 
