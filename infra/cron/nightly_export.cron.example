@@ -1,0 +1,7 @@
+# TrackFlow DEV-53 — ejecutar cada noche a las 02:00.
+# Instalar con: crontab infra/cron/nightly_export.cron.example
+# Ajustar PROJECT_ROOT y PYTHON_BIN antes de instalar.
+PROJECT_ROOT=/ruta/al/proyecto
+PYTHON_BIN=/ruta/al/python
+
+0 2 * * * cd "$PROJECT_ROOT" && "$PYTHON_BIN" scripts/nightly_export.py >> "$PROJECT_ROOT/data/nightly_export.log" 2>&1
