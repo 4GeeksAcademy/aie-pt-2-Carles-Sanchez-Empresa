@@ -11,6 +11,7 @@ import pandas as pd
 from scipy.stats import normaltest
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, roc_auc_score
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data/raw/trackflow_sales.csv"
@@ -71,6 +72,56 @@ def create_training_matrix(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series
     y = frame.loc[1:, "revenue_eur"].astype(float).reset_index(drop=True)
     dates = frame.loc[1:, "month"].reset_index(drop=True)
     return x, y, dates
+
+
+def decompose_training_series(frame: pd.DataFrame) -> dict[str, Any]:
+    """Decompose the training-only series for diagnostics before feature creation.
+
+    The classical decomposition uses centered smoothing and therefore is not a
+    causal predictor. Its components are diagnostic only and never enter the
+    feature matrix; restricting it to train also keeps test observations out.
+    """
+    training = frame.loc[frame["month"] <= TRAIN_END].copy()
+    series = pd.Series(
+        training["revenue_eur"].to_numpy(dtype=float),
+        index=pd.DatetimeIndex(training["month"]),
+        name="revenue_eur",
+    )
+    result = seasonal_decompose(series, model="multiplicative", period=12, extrapolate_trend="period")
+
+    yearly_trend = result.trend.groupby(result.trend.index.year).mean()
+    annual_growth = {
+        str(int(year)): float((yearly_trend.loc[year] / yearly_trend.loc[year - 1] - 1) * 100)
+        for year in yearly_trend.index
+        if year - 1 in yearly_trend.index
+    }
+    seasonal_percent = {
+        str(month): float((result.seasonal[result.seasonal.index.month == month].mean() - 1) * 100)
+        for month in range(1, 13)
+    }
+    relative_residuals = (result.resid - 1.0) * 100
+    monthly_components = [
+        {
+            "month": month.strftime("%Y-%m-%d"),
+            "trend_eur": float(result.trend.loc[month]),
+            "residual_percent": float(relative_residuals.loc[month]),
+        }
+        for month in series.index
+    ]
+    return {
+        "period": "2016-01/2023-12",
+        "model": "multiplicative",
+        "seasonal_period_months": 12,
+        "trend_annual_growth_percent": annual_growth,
+        "seasonal_effect_percent_by_month": seasonal_percent,
+        "residual_std_percent_of_revenue": float(relative_residuals.std()),
+        "monthly_components": monthly_components,
+        "components_used_as_features": False,
+        "method_note": (
+            "Classical centered seasonal decomposition on training data only; diagnostic only, "
+            "not used as model features because its centered trend/residual are non-causal."
+        ),
+    }
 
 
 def new_model() -> RandomForestRegressor:
@@ -138,6 +189,9 @@ def build_report(frame: pd.DataFrame) -> dict[str, Any]:
     if len(train) != 96 or len(test) != 24:
         raise ValueError("El split debe contener 96 meses de entrenamiento y 24 de prueba.")
 
+    # Diagnóstico previo a crear el diseño supervisado; nunca usa datos de test.
+    decomposition = decompose_training_series(frame)
+
     # Ventana temporal final 2022-2023 reservada dentro de entrenamiento para
     # estimar errores de validación y la banda, sin consultar los años de prueba.
     validation_start = pd.Timestamp("2022-01-01")
@@ -183,6 +237,7 @@ def build_report(frame: pd.DataFrame) -> dict[str, Any]:
         "train_period": {"start": "2016-01", "end": "2023-12", "months": 96},
         "test_period": {"start": "2024-01", "end": "2025-12", "months": 24},
         "metrics": metrics,
+        "decomposition": decomposition,
         "validation": {"period": "2022-01/2023-12", "months": 24, "band_method": "2.5th and 97.5th percentiles of chronological validation residuals"},
         "psi_method": "Prediction-score distributions; reference is a chronological 24-month recursive forecast on the 2022-2023 training validation window; decile cut points from reference.",
         "gini_method": "Gini = 2*AUC - 1 for ranking months whose actual revenue exceeds the training 75th percentile.",
