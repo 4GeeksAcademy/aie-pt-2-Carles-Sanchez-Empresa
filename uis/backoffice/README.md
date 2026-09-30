@@ -60,7 +60,7 @@ The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls t
 | `/` | JWT | Dashboard — inventory, shipments & carriers |
 | `/suppliers` | JWT | Supplier directory CRUD |
 | `/incidents` | JWT | CSV incident analyzer |
-| `/sales-forecast` | JWT | TrackFlow consolidated revenue forecast, test metrics, variability band and annual filters |
+| `/sales-forecast` | JWT | TrackFlow consolidated revenue forecast, test metrics, variability band, annual filters, and training-series decomposition charts |
 | `/account/profile` | JWT | User profile management |
 
 > Protected routes require a valid JWT stored in `localStorage` (`trackflow_token`).

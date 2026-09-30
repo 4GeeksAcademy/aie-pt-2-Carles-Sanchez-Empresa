@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Area,
+  Bar,
+  BarChart,
   CartesianGrid,
   ComposedChart,
+  LineChart,
   Legend,
   Line,
   ResponsiveContainer,
@@ -46,6 +49,17 @@ interface ForecastReport {
   gini_method: string;
   k2_method: string;
   validation: { period: string; band_method: string };
+  decomposition?: {
+    period: string;
+    model: string;
+    seasonal_period_months: number;
+    trend_annual_growth_percent: Record<string, number>;
+    seasonal_effect_percent_by_month: Record<string, number>;
+    residual_std_percent_of_revenue: number;
+    monthly_components: { month: string; trend_eur: number; residual_percent: number }[];
+    components_used_as_features: boolean;
+    method_note: string;
+  };
 }
 
 const cardClass = "rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm";
@@ -93,6 +107,21 @@ export default function SalesForecastPage() {
     band_base: point.lower_eur,
   })), [report]);
 
+  const trendData = useMemo(() => Object.entries(report?.decomposition?.trend_annual_growth_percent ?? {})
+    .map(([year, growth]) => ({ year, growth })), [report]);
+  const seasonalData = useMemo(() => Object.entries(report?.decomposition?.seasonal_effect_percent_by_month ?? {})
+    .sort(([monthA], [monthB]) => Number(monthA) - Number(monthB))
+    .map(([month, effect]) => ({
+      month: new Intl.DateTimeFormat("es-ES", { month: "short", timeZone: "UTC" })
+        .format(new Date(Date.UTC(2024, Number(month) - 1, 1))),
+      effect,
+    })), [report]);
+  const componentData = useMemo(() => (report?.decomposition?.monthly_components ?? []).map((component) => ({
+    ...component,
+    month_label: new Intl.DateTimeFormat("es-ES", { month: "short", year: "2-digit", timeZone: "UTC" })
+      .format(new Date(`${component.month}T00:00:00Z`)),
+  })), [report]);
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <header>
@@ -136,23 +165,112 @@ export default function SalesForecastPage() {
           <MetricCard title="Meses comparados" value={report.metrics.months} description="Se recalcula con el rango de años seleccionado." />
         </section>
 
-        <section className={`${cardClass} h-[420px]`}>
+        <section className={`${cardClass} min-h-[440px] pb-8`}>
           <h2 className="mb-4 text-lg font-semibold text-[#14263a]">Predicción frente a ingresos reales</h2>
-          <ResponsiveContainer width="100%" height="90%">
-            <ComposedChart data={chartData} margin={{ top: 8, right: 22, left: 12, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month_label" minTickGap={16} />
-              <YAxis tickFormatter={(value: number) => `€${Math.round(value / 1000)}k`} width={75} />
-              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-              <Legend />
-              <Area dataKey="band_base" stackId="confidence" stroke="none" fill="transparent" name="" legendType="none" />
-              <Area dataKey="band" stackId="confidence" stroke="none" fill="#93c5fd" fillOpacity={0.35} name="Banda de variabilidad (95%)" />
-              <Line dataKey="actual_eur" name="Ingresos reales" stroke="#14263a" strokeWidth={2} dot={false} />
-              <Line dataKey="predicted_eur" name="Predicción Random Forest" stroke="#dc6b2f" strokeWidth={2} dot={false} />
-            </ComposedChart>
-          </ResponsiveContainer>
-          <p className="text-xs text-[#2f4a62]">La banda usa los percentiles 2,5 y 97,5 de residuos en validación temporal 2022–2023, no valores del periodo de prueba.</p>
+          <div className="h-[340px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={chartData} margin={{ top: 8, right: 22, left: 12, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month_label" minTickGap={16} />
+                <YAxis tickFormatter={(value: number) => `€${Math.round(value / 1000)}k`} width={75} />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <Legend />
+                <Area dataKey="band_base" stackId="confidence" stroke="none" fill="transparent" name="" legendType="none" />
+                <Area dataKey="band" stackId="confidence" stroke="none" fill="#93c5fd" fillOpacity={0.35} name="Banda de variabilidad (95%)" />
+                <Line dataKey="actual_eur" name="Ingresos reales" stroke="#14263a" strokeWidth={2} dot={false} />
+                <Line dataKey="predicted_eur" name="Predicción Random Forest" stroke="#dc6b2f" strokeWidth={2} dot={false} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="mt-3 pb-2 text-xs leading-5 text-[#2f4a62]">La banda usa los percentiles 2,5 y 97,5 de residuos en validación temporal 2022–2023, no valores del periodo de prueba.</p>
         </section>
+
+        {report.decomposition && <section className={`${cardClass} space-y-5`}>
+          <div>
+            <h2 className="text-lg font-semibold text-[#14263a]">Descomposición de la serie</h2>
+            <p className="text-sm text-[#2f4a62]">
+              Componentes multiplicativos estimados en entrenamiento ({report.decomposition.period}), con estacionalidad de {report.decomposition.seasonal_period_months} meses.
+            </p>
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="h-[300px] rounded-lg border border-[#c89d66] bg-white/50 p-3">
+              <h3 className="mb-2 text-sm font-semibold text-[#14263a]">Crecimiento anual de tendencia</h3>
+              <ResponsiveContainer width="100%" height="88%">
+                <BarChart data={trendData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="year" />
+                  <YAxis tickFormatter={(value: number) => `${value}%`} />
+                  <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
+                  <Bar dataKey="growth" name="Crecimiento tendencia" fill="#dc6b2f" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="h-[300px] rounded-lg border border-[#c89d66] bg-white/50 p-3">
+              <h3 className="mb-2 text-sm font-semibold text-[#14263a]">Efecto estacional por mes</h3>
+              <ResponsiveContainer width="100%" height="88%">
+                <BarChart data={seasonalData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis tickFormatter={(value: number) => `${value}%`} />
+                  <Tooltip formatter={(value) => `${Number(value).toFixed(2)}%`} />
+                  <Bar dataKey="effect" name="Efecto estacional" fill="#287d8e" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="h-[300px] rounded-lg border border-[#c89d66] bg-white/50 p-3">
+              <h3 className="mb-2 text-sm font-semibold text-[#14263a]">Componente de tendencia (EUR)</h3>
+              <ResponsiveContainer width="100%" height="88%">
+                <LineChart data={componentData} margin={{ top: 8, right: 12, left: 12, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month_label" minTickGap={20} />
+                  <YAxis tickFormatter={(value: number) => `€${Math.round(value / 1000)}k`} width={75} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                  <Line type="monotone" connectNulls dataKey="trend_eur" name="Tendencia" stroke="#dc6b2f" strokeWidth={2} dot={{ r: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="h-[300px] rounded-lg border border-[#c89d66] bg-white/50 p-3">
+              <h3 className="mb-2 text-sm font-semibold text-[#14263a]">Componente residual (%)</h3>
+              <ResponsiveContainer width="100%" height="88%">
+                <LineChart data={componentData} margin={{ top: 8, right: 12, left: 12, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month_label" minTickGap={20} />
+                  <YAxis tickFormatter={(value: number) => `${value}%`} width={55} />
+                  <Tooltip formatter={(value) => `${Number(value).toFixed(3)}%`} />
+                  <Line type="monotone" connectNulls dataKey="residual_percent" name="Residual (factor − 1)" stroke="#287d8e" strokeWidth={1.5} dot={{ r: 2 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <MetricCard
+              title="Crecimiento anual observado"
+              value={trendData.length ? `${Math.min(...trendData.map((item) => item.growth)).toFixed(2)}–${Math.max(...trendData.map((item) => item.growth)).toFixed(2)}%` : "N/D"}
+              description="Rango de crecimiento medio de la tendencia entre años consecutivos."
+            />
+            <MetricCard
+              title="Efecto en febrero"
+              value={`${(report.decomposition.seasonal_effect_percent_by_month["2"] ?? 0).toFixed(2)}%`}
+              description="El contexto de TrackFlow describe una caída de aproximadamente 10–15%."
+            />
+            <MetricCard
+              title="Efecto nov.–dic."
+              value={`${(report.decomposition.seasonal_effect_percent_by_month["11"] ?? 0).toFixed(1)}% / ${(report.decomposition.seasonal_effect_percent_by_month["12"] ?? 0).toFixed(1)}%`}
+              description="El contexto prevé picos aproximados de 25–35% en temporada alta."
+            />
+          </div>
+          <p className="text-sm text-[#2f4a62]">
+            Variabilidad residual: {report.decomposition.residual_std_percent_of_revenue.toFixed(2)}% (desviación estándar del factor residual).
+            {" "}{report.decomposition.components_used_as_features
+              ? "Los componentes se utilizan como features."
+              : "Los componentes son diagnósticos y no entran como features porque el suavizado centrado no es causal."}
+          </p>
+          <p className="text-xs text-[#2f4a62]">
+            Comparación con el contexto: febrero debería caer 10–15% y noviembre/diciembre subir 25–35%. Los gráficos muestran los efectos estimados en los datos de entrenamiento; las magnitudes pueden diferir de esos rangos aproximados.
+          </p>
+        </section>}
 
         <section className={cardClass}>
           <h2 className="mb-2 font-semibold text-[#14263a]">Cómo leer estas métricas</h2>
