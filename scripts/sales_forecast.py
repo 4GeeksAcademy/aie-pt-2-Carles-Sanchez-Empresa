@@ -16,6 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data/raw/trackflow_sales.csv"
 OUTPUT_PATH = ROOT / "data/eval/sales_forecast.json"
 RANDOM_STATE = 42
+N_ESTIMATORS = 400
+MIN_SAMPLES_LEAF = 4
+MAX_FEATURES = 0.6
 TRAIN_END = pd.Timestamp("2023-12-01")
 TEST_START = pd.Timestamp("2024-01-01")
 TEST_END = pd.Timestamp("2025-12-01")
@@ -76,8 +79,15 @@ def create_training_matrix(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series
 def new_model() -> RandomForestRegressor:
     # Random Forest es un punto de partida adecuado para solo 96 meses: promedia
     # árboles, es relativamente sencillo de explicar y requiere poco ajuste.
-    # Se fija la semilla para que el experimento sea reproducible.
-    return RandomForestRegressor(n_estimators=400, min_samples_leaf=2, max_features=0.9, random_state=RANDOM_STATE, n_jobs=-1)
+    # Se limitan las hojas y las features por split; se conservan 400 árboles
+    # para estabilizar el promedio del ensamble.
+    return RandomForestRegressor(
+        n_estimators=N_ESTIMATORS,
+        min_samples_leaf=MIN_SAMPLES_LEAF,
+        max_features=MAX_FEATURES,
+        random_state=RANDOM_STATE,
+        n_jobs=-1,
+    )
 
 
 def recursive_forecast(model: RandomForestRegressor, observed_history: list[float], dates: pd.DatetimeIndex) -> np.ndarray:
