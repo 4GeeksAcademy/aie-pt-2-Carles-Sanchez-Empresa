@@ -27,10 +27,19 @@ COPY services/telemetry/analysis.py ./telemetry/analysis.py
 # Módulos de reporting y pipeline, usados por los endpoints /reporting.
 COPY data/ ./data/
 COPY services/reporting/ ./reporting/
+COPY services/__init__.py ./services/__init__.py
+COPY services/celery_app.py ./services/celery_app.py
 COPY scripts/ ./scripts/
 
 # Copiar el código de la API
 COPY services/api/ ./api/
+# El worker necesita los módulos históricos de la API, por ejemplo
+# `from database import engine`, durante la ejecución del pipeline.
+COPY services/api/database.py ./database.py
+COPY services/api/models.py ./models.py
+# La API se ejecuta con /app/api como directorio de imports. Este archivo
+# debe copiarse después del árbol de la API para no ser sobrescrito.
+COPY services/celery_app.py ./api/celery_app.py
 
 # ─── Variable de entorno por defecto ───────────────────────
 # PYTHONPATH=/app permite importar tanto `routes` como `telemetry.analysis`

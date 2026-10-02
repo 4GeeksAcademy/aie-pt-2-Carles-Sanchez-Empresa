@@ -37,7 +37,7 @@ export interface TranslationFn {
 
 interface LanguageContextValue {
   lang: string;
-  setLang: (lang: string) => void;
+  setLang: (lang: string) => void | Promise<void>;
   t: TranslationFn;
 }
 
@@ -73,10 +73,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setLang = useCallback((newLang: string) => {
+  const setLang = useCallback(async (newLang: string) => {
     if (newLang !== "es" && newLang !== "en") return;
     localStorage.setItem("lang", newLang);
     document.documentElement.setAttribute("lang", newLang);
+
+    // El idioma inglés se carga de forma dinámica. Antes solo se cambiaba el
+    // estado, dejando todas las claves en español (o mostrando las propias
+    // claves) cuando el usuario pulsaba el selector por primera vez.
+    const nextMessages = await loadMessages(newLang);
+    setMessages(nextMessages);
     setLangState(newLang);
   }, []);
 

@@ -45,6 +45,8 @@ The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls t
 /profiles/*  → http://localhost:8000/profiles/*
 ```
 
+`/api/reporting/*` is proxied to the authenticated FastAPI reporting router, including `/api/reporting/sales-forecast` for the sales forecast view.
+
 > 💡 The frontend uses `API_BASE = "/api"` in `lib/constants.ts`. All fetch calls (e.g. `fetch("/api/suppliers")`) are proxied to the backend without the `/api` prefix. Routes called directly by `@trackflow/core` (login, register) use `/auth/*` and `/users/*` rewrites directly.
 
 ---
@@ -58,6 +60,7 @@ The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls t
 | `/` | JWT | Dashboard — inventory, shipments & carriers |
 | `/suppliers` | JWT | Supplier directory CRUD |
 | `/incidents` | JWT | CSV incident analyzer |
+| `/sales-forecast` | JWT | TrackFlow consolidated revenue forecast, test metrics, variability band and annual filters |
 | `/account/profile` | JWT | User profile management |
 
 > Protected routes require a valid JWT stored in `localStorage` (`trackflow_token`).

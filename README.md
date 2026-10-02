@@ -122,6 +122,26 @@ uv run seed                # optional: populate sample suppliers
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+### Tareas asíncronas (Celery + Redis)
+
+Con Docker Compose se levantan Redis, el worker y Flower junto con la API:
+
+```bash
+docker compose up --build api redis worker flower
+```
+
+El worker es un proceso separado de FastAPI y publica eventos para Flower. Para iniciarlo manualmente:
+
+```bash
+celery -A services.celery_app worker --loglevel=INFO -E
+```
+
+Para detenerlo, pulsa `Ctrl+C` o ejecuta `docker compose stop worker`. Flower está disponible en `http://localhost:5555`.
+
+Flower usa almacenamiento persistente en `data/flower/flower.db`, por lo que su historial no se pierde al recrear el contenedor. El historial solo incluye tareas observadas después de activar esta configuración; para la evidencia de la PR hay que ejecutar de nuevo una tarea completada y otra fallida.
+
+El endpoint `POST /reporting/pipeline-runs` devuelve un `task_id` inmediatamente. Consulta el estado con `GET /tasks/{task_id}`.
+
 > ⚠️ Run `uvicorn` **inside** the venv (`source venv/bin/activate` first), or use `uv run uvicorn main:app ...` as an alternative.
 
 API endpoints:
