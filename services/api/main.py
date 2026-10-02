@@ -14,6 +14,7 @@ Módulos:
 """
 
 import csv
+import asyncio
 import io
 import logging
 import sys
@@ -32,7 +33,7 @@ timing_logger = logging.getLogger("api.timing")
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, Request
+from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -42,6 +43,22 @@ from database import engine
 from i18n import get_translator, get_language_from_request
 from models import SQLModel
 from pydantic_models import AnalyzeResponse
+try:
+    from services.celery_app import app as celery_app
+except ModuleNotFoundError:  # Ejecución directa con PYTHONPATH apuntando a api/
+    # En la imagen Docker `/app/api/services.py` sombrea al paquete `/app/services`,
+    # por lo que no se puede importar `services.celery_app` de forma normal.
+    # Cargar el módulo por ruta mantiene compatibles Docker, uvicorn y los tests.
+    import importlib.util
+
+    _celery_path = Path(__file__).resolve().parents[1] / "services" / "celery_app.py"
+    _celery_spec = importlib.util.spec_from_file_location("trackflow_celery_app", _celery_path)
+    if _celery_spec is None or _celery_spec.loader is None:
+        raise ImportError(f"No se pudo cargar Celery desde {_celery_path}")
+    _celery_module = importlib.util.module_from_spec(_celery_spec)
+    _celery_spec.loader.exec_module(_celery_module)
+    celery_app = _celery_module.app
+from models import TaskFailure
 from routes import (
     auth_router,
     incidents_router,
@@ -64,8 +81,16 @@ async def lifespan(app: FastAPI):
         format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    SQLModel.metadata.create_all(engine)
-    logger.info("Tablas SQLModel creadas/verificadas en Supabase")
+    # No bloquear el arranque HTTP si Supabase está caído o no es accesible
+    # desde Docker. Antes Uvicorn abría el socket, pero la aplicación quedaba
+    # atrapada en create_all y el puerto 8000 cerraba las conexiones.
+    try:
+        await asyncio.wait_for(asyncio.to_thread(SQLModel.metadata.create_all, engine), timeout=10)
+        logger.info("Tablas SQLModel creadas/verificadas en Supabase")
+    except asyncio.TimeoutError:
+        logger.warning("Supabase no respondió en 10s; la API arranca sin ejecutar create_all")
+    except Exception:
+        logger.exception("No se pudieron verificar las tablas SQLModel; la API continúa disponible")
     yield
 
 
@@ -77,6 +102,18 @@ app = FastAPI(
     version="3.0.0",
     lifespan=lifespan,
 )
+
+
+@app.get("/tasks/{task_id}", tags=["Tasks"])
+async def get_task_status(task_id: str):
+    """Devuelve el estado y resultado de una tarea Celery."""
+    result = celery_app.AsyncResult(task_id)
+    payload = {"task_id": task_id, "status": result.status.lower(), "result": None}
+    if result.successful():
+        payload["result"] = result.result
+    elif result.failed():
+        payload["result"] = {"error": str(result.result)}
+    return payload
 
 # ── CORS: permitir peticiones desde el frontend ──
 app.add_middleware(

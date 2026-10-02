@@ -1,0 +1,5 @@
+event_id,timestamp,event_type,session_id,user_id,service,tags
+test-evt-001,2025-01-15T10:00:00Z,page_viewed,sess-test-001,user-test-001,navigation,{'page': '/home'}
+test-evt-002,2025-01-15T11:00:00Z,page_viewed,sess-test-002,user-test-002,navigation,{'page': '/dashboard'}
+test-evt-003,2025-01-15T12:00:00Z,login_succeeded,sess-test-003,user-test-003,authentication,{'ip_hash': 'abc123'}
+vital-1,2025-01-15T13:00:00Z,web_vital_measured,sess-v,user-v,performance,"{'page': '/home', 'metric_id': 'lcp-abc', 'metric_name': 'LCP', 'metric_delta': 100, 'metric_value': 2500}"
