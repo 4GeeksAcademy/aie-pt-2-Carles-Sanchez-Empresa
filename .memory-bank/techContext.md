@@ -65,6 +65,8 @@
 | **pandas** | >=2.2.0 | Análisis de datos: DataFrame, groupby, aggregate, merge para pipeline de métricas de telemetría |
 | **cachetools** | >=5.3.0 | `TTLCache` para cache de reportes de telemetría (maxsize=128, ttl=60s) |
 | **SQLAlchemy** | — | Consultas SQL con `text()` para métricas de telemetría (ya existente para inventario con SQLModel) |
+| **Qdrant** | latest / 1.19.1 | Base de datos vectorial para la Base de Conocimiento RAG (colección `trackflow_knowledge`, vectores 1024 dim, distancia Coseno) |
+| **openai (SDK)** | >=3.29.0 | Cliente compatible con OpenAI para conectar con el proxy LLM de 4Geeks (`llm.4geeks.ai/v1`) |
 
 ### Paquete compartido Python — `packages/shared-py/`
 
