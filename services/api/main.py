@@ -51,7 +51,9 @@ except ModuleNotFoundError:  # Ejecución directa con PYTHONPATH apuntando a api
     # Cargar el módulo por ruta mantiene compatibles Docker, uvicorn y los tests.
     import importlib.util
 
-    _celery_path = Path(__file__).resolve().parents[1] / "services" / "celery_app.py"
+    _celery_path = Path(__file__).resolve().parent.parent / "celery_app.py"
+    if not _celery_path.exists():
+        _celery_path = Path(__file__).resolve().parent / "celery_app.py"
     _celery_spec = importlib.util.spec_from_file_location("trackflow_celery_app", _celery_path)
     if _celery_spec is None or _celery_spec.loader is None:
         raise ImportError(f"No se pudo cargar Celery desde {_celery_path}")
@@ -63,6 +65,7 @@ from routes import (
     auth_router,
     incidents_router,
     inventory_router,
+    knowledge_router,
     profiles_router,
     reporting_router,
     suppliers_router,
@@ -282,6 +285,7 @@ app.include_router(inventory_router, dependencies=[Depends(get_current_user)])
 app.include_router(users_router)
 app.include_router(profiles_router)
 app.include_router(auth_router)
+app.include_router(knowledge_router)
 app.include_router(telemetry_router)  # Stub — sin autenticación, sin persistencia (Fase 2)
 app.include_router(reporting_router, dependencies=[Depends(get_current_user)])
 

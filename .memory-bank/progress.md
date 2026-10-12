@@ -870,3 +870,35 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
   advertencia por la opción `asyncio_mode` desconocida en la configuración.
 - [ ] Decidir con negocio si RMSE o MAE es la métrica de promoción antes de
   sustituir el baseline; el candidato regularizado queda evaluado, no promovido.
+
+---
+
+### 🧠 Base de Conocimiento RAG — Hito 7 (`trackflow_knowledge`)
+
+- [x] **Infraestructura**: servicio Qdrant en `docker-compose.yml` (`qdrant/qdrant:latest`, puertos 6333/6334, volumen `./data/qdrant:/qdrant/storage`).
+- [x] **Modelos e Inferencia**:
+  - Modelos dedicados de 4Geeks: Embeddings `madrid-spain/openrouter/perplexity/pplx-embed-v1-0.6b` (1024 dim) y Generación `madrid-spain/openrouter/deepseek/deepseek-v4-flash`.
+  - Validación de seguridad en runtime (`validate_model_separation`) impidiendo reutilizar el modelo generativo para embeddings.
+- [x] **Fase 1 — Preparación de datos e indexación (`data/process/rag.py`)**:
+  - Ingestión de los 4 documentos oficiales de TrackFlow desde `docs/company-knowledge-base/` (`carrier-coverage`, `returns-policy`, `sla-delivery`, `storage-pricing`).
+  - Chunking semántico por secciones lógicas preservando reglas de negocio intactas (exactamente 3 chunks por documento, 12 chunks en total).
+  - Identificadores deterministas (`uuid5`) y estrategia *clean-and-reload* para garantizar idempotencia total en `setup()`.
+- [x] **Fase 2 — Pipeline de recuperación y generación (`data/pipelines/rag.py`)**:
+  - Función `retrieve(query, *, k=5, min_score=0.35)` con filtrado por score mínimo y salida en diccionarios limpios.
+  - Función `generate_answer(question, context)` adoptando la voz de Account Manager de TrackFlow e imponiendo las restricciones de negocio del CONTEXT (SLA en picos de demanda, devoluciones internacionales manuales con Sofía Ramos, descuentos >50 m³ aprobados por Miguel Torres, excepciones con Carlos Vega).
+  - Función de entrada `query(question) -> str` orquestando recuperación y generación.
+- [x] **Fase 3 — Endpoint de consulta (`services/api/routes/knowledge.py`)**:
+  - Endpoint `POST /knowledge/query` (y alias `POST /api/knowledge/query`) en FastAPI respondiendo `{ "answer": "..." }`.
+  - Importa directamente `query()` desde el pipeline sin duplicar lógica y sin exponer fragmentos crudos al cliente.
+- [x] **Fase 4 — Interfaz de usuario (`uis/backoffice/app/knowledge/`)**:
+  - Página Next.js `/knowledge` en el Backoffice con soporte modo claro/oscuro y paleta TrackFlow.
+  - Manejo de estados de carga (spinner), error (reintento) y visualización de la respuesta oficial con preguntas frecuentes clicables.
+  - Menú lateral actualizado (`Sidebar.tsx`) y traducciones en `es.ts` y `en.ts`.
+- [x] **Fase 5 — Pruebas unitarias (`tests/pipelines/test_rag.py`)**:
+  - 8 pruebas unitarias offline con mocks para Qdrant y LLM validando filtrado por `min_score`, retorno de $< k$ resultados, síntesis del LLM y no exposición de chunks crudos.
+  - Ejecución 100% exitosa con `python -m pytest tests/pipelines/test_rag.py`.
+- [x] **Fase 5b — Evaluación de Retrieval (`data/eval/`)**:
+  - Dataset `data/eval/test-queries.json` con 12 consultas cubriendo los 4 documentos y picos de demanda.
+  - Script `data/eval/measure_rag_recall.py` alcanzando un **Recall@3 del 100.00%** (12/12 en Rank #1, superando la meta de $\ge 80\%$).
+- [x] **Fase 6 — Documento de diseño RAG (`docs/rag/rag-design.md`)**:
+  - Documentación técnica exhaustiva: diagrama y flujo E2E, estrategia de chunking semántico, prácticas de embeddings, calibración del umbral `min_score` y justificación de arquitectura sin frameworks.
