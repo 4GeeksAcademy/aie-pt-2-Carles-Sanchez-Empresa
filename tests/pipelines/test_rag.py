@@ -205,7 +205,7 @@ class TestQueryAndGeneration:
         mock_response = MagicMock()
         mock_response.choices = [mock_choice]
         mock_openai_client.chat.completions.create.return_value = mock_response
-
+        
         monkeypatch.setattr("data.pipelines.rag.get_openai_client", lambda: mock_openai_client)
 
         result = query("¿Cuál es la tarifa de almacenamiento en Los Ángeles?")

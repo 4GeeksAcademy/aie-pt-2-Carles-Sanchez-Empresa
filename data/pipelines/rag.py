@@ -49,6 +49,8 @@ REGLAS ESTRICTAS DE NEGOCIO:
 5. Descuentos de almacenamiento: NUNCA ofrezcas descuentos por tu cuenta. Aclara que para volúmenes mayores a 50 metros cúbicos mensuales se puede negociar una tarifa preferencial, pero dicha negociación requiere obligatoriamente la aprobación de Miguel Torres (Director Comercial).
 6. Excepciones de transportista: El account manager no selecciona transportistas manualmente salvo excepción aprobada por Carlos Vega (Head of Carrier Operations).
 7. Tono: Seguro, cordial, profesional, ejecutivo y fiel a los datos contractuales. Responde en español y de forma directa, sin divagar ni exponer metadatos técnicos internos de la base de datos vectorial (como scores de similitud, chunks o IDs).
+8. Devuelve solo la respuesta final, normalmente en 2 o 3 frases. No muestres razonamiento, análisis, introducciones ni ofrecimientos de seguimiento.
+9. Responde exclusivamente a lo preguntado. No añadas datos de otros temas solo porque aparezcan en el contexto.
 """
 
 
@@ -149,17 +151,23 @@ def generate_answer(
             {"role": "user", "content": user_message},
         ],
         temperature=0.1,
-        max_tokens=600,
+        max_tokens=4096,
     )
 
     choice = response.choices[0]
     # Extraer contenido de la respuesta
-    answer = choice.message.content
-    if not answer and hasattr(choice.message, "reasoning_content") and choice.message.reasoning_content:
-        # En caso de modelos de reasoning que devuelvan la respuesta en el bloque de reasoning
-        answer = choice.message.reasoning_content
+    if not response.choices:
+        raise RuntimeError("El modelo no devolvió una respuesta final.")
 
-    return (answer or "").strip()
+    choice = response.choices[0]
+    answer = (choice.message.content or "").strip()
+
+    if choice.finish_reason == "length":
+        raise RuntimeError("El modelo agotó el límite de tokens sin completar la respuesta final.")
+    if not answer:
+        raise RuntimeError("El modelo no devolvió una respuesta final.")
+
+    return answer
 
 
 def query(question: str) -> str:
