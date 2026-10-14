@@ -9,6 +9,7 @@ Todas las pruebas se ejecutan de manera aislada y offline:
 
 from __future__ import annotations
 
+from contextlib import closing
 from unittest.mock import MagicMock, patch
 import pytest
 
@@ -18,6 +19,50 @@ from data.pipelines.rag import (
     query,
     retrieve,
 )
+from data.process import rag as ingestion
+from qdrant_client import QdrantClient
+
+
+@pytest.mark.parametrize("filename,source_id", list(ingestion.DOC_SOURCE_MAP.items()))
+def test_setup_reindexes_updated_markdown_without_stale_points(tmp_path, monkeypatch, filename, source_id):
+    monkeypatch.setattr(ingestion, "validate_model_separation", lambda: None)
+    original = (
+        "# Politica de prueba\n\nTarifas aplicables:\n\n"
+        "- Precio: 18 USD.\n- Gracia: 30 dias, salvo excepcion contractual.\n\n"
+        "Las devoluciones internacionales requieren gestion manual.\n\n"
+        "Los descuentos requieren aprobacion.\n\nRegla obsoleta de prueba."
+    )
+    for document_filename in ingestion.DOC_SOURCE_MAP:
+        (tmp_path / document_filename).write_text(original, encoding="utf-8")
+
+    embedding = MagicMock(side_effect=lambda text: [1.0, 2.0] if "20 USD" in text else [2.0, 1.0])
+    with closing(QdrantClient(":memory:")) as client:
+        first = ingestion.setup(source_dir=tmp_path, qdrant_client=client, embed_fn=embedding)
+        before, _ = client.scroll("trackflow_knowledge", limit=100, with_payload=True, with_vectors=True)
+        previous = [point for point in before if point.payload["source_document"] == source_id]
+        assert len(previous) == 4
+        assert "18 USD" in next(point for point in previous if point.payload["chunk_index"] == 0).payload["text"]
+
+        updated = original.replace("18 USD", "20 USD").replace("\n\nRegla obsoleta de prueba.", "")
+        (tmp_path / filename).write_text(updated, encoding="utf-8")
+        embedding.reset_mock()
+        second = ingestion.setup(source_dir=tmp_path, qdrant_client=client, embed_fn=embedding)
+        after, _ = client.scroll("trackflow_knowledge", limit=100, with_payload=True, with_vectors=True)
+        current = [point for point in after if point.payload["source_document"] == source_id]
+
+        assert len(current) == 3
+        assert second["chunks_indexed"] == first["chunks_indexed"] - 1
+        assert client.count("trackflow_knowledge", exact=True).count == second["chunks_indexed"]
+        assert {point.id for point in current} == {
+            point.id for point in previous if point.payload["chunk_index"] < 3
+        }
+        price_point = next(point for point in current if point.payload["chunk_index"] == 0)
+        assert "20 USD" in price_point.payload["text"]
+        assert "18 USD" not in price_point.payload["text"]
+        assert "salvo excepcion contractual" in price_point.payload["text"]
+        assert price_point.vector != next(point for point in previous if point.id == price_point.id).vector
+        assert any("20 USD" in call.args[0] for call in embedding.call_args_list)
+        assert all("Regla obsoleta" not in point.payload["text"] for point in current)
 
 
 class MockScoredPoint:
