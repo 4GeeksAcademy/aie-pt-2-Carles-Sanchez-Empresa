@@ -881,7 +881,7 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
   - Validación de seguridad en runtime (`validate_model_separation`) impidiendo reutilizar el modelo generativo para embeddings.
 - [x] **Fase 1 — Preparación de datos e indexación (`data/process/rag.py`)**:
   - Ingestión de los 4 documentos oficiales de TrackFlow desde `docs/company-knowledge-base/` (`carrier-coverage`, `returns-policy`, `sla-delivery`, `storage-pricing`).
-  - Chunking semántico por secciones lógicas preservando reglas de negocio intactas (exactamente 3 chunks por documento, 12 chunks en total).
+  - Chunking extraído del contenido Markdown por encabezados, párrafos y listas completas, sin cuerpos de políticas fijos en código. Corpus reindexado: 14 chunks (SLA 3, devoluciones 5, transportistas 3, almacenamiento 3).
   - Identificadores deterministas (`uuid5`) y estrategia *clean-and-reload* para garantizar idempotencia total en `setup()`.
 - [x] **Fase 2 — Pipeline de recuperación y generación (`data/pipelines/rag.py`)**:
   - Función `retrieve(query, *, k=5, min_score=0.35)` con filtrado por score mínimo y salida en diccionarios limpios.
@@ -895,10 +895,10 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
   - Manejo de estados de carga (spinner), error (reintento) y visualización de la respuesta oficial con preguntas frecuentes clicables.
   - Menú lateral actualizado (`Sidebar.tsx`) y traducciones en `es.ts` y `en.ts`.
 - [x] **Fase 5 — Pruebas unitarias (`tests/pipelines/test_rag.py`)**:
-  - 8 pruebas unitarias offline con mocks para Qdrant y LLM validando filtrado por `min_score`, retorno de $< k$ resultados, síntesis del LLM y no exposición de chunks crudos.
+  - 8 pruebas unitarias de recuperación/generación y 4 casos de regresión offline de reindexación (uno por documento) con Qdrant en memoria: cambiar Markdown actualiza textos y vectores y elimina reglas obsoletas sin duplicar puntos.
   - Ejecución 100% exitosa con `python -m pytest tests/pipelines/test_rag.py`.
 - [x] **Fase 5b — Evaluación de Retrieval (`data/eval/`)**:
   - Dataset `data/eval/test-queries.json` con 12 consultas cubriendo los 4 documentos y picos de demanda.
-  - Script `data/eval/measure_rag_recall.py` alcanzando un **Recall@3 del 100.00%** (12/12 en Rank #1, superando la meta de $\ge 80\%$).
+  - Evaluación corregida para comparar documento e índice del chunk esperado. Ejecución reportada por el usuario el 2026-10-14: **Recall@3 del 100.00%** (12/12 en Rank #1, superando la meta de $\ge 80\%$); no mide fidelidad de generación.
 - [x] **Fase 6 — Documento de diseño RAG (`docs/rag/rag-design.md`)**:
   - Documentación técnica exhaustiva: diagrama y flujo E2E, estrategia de chunking semántico, prácticas de embeddings, calibración del umbral `min_score` y justificación de arquitectura sin frameworks.

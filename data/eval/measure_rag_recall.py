@@ -52,8 +52,17 @@ def evaluate_recall_at_k(
         retrieved_docs = [chunk.get("source_document") for chunk in retrieved_chunks]
         scores = [chunk.get("score") for chunk in retrieved_chunks]
 
-        is_hit = expected_doc in retrieved_docs
-        rank = (retrieved_docs.index(expected_doc) + 1) if is_hit else None
+        expected_index = tc["expected_chunk_index"]
+        rank = next(
+            (
+                position
+                for position, chunk in enumerate(retrieved_chunks, start=1)
+                if chunk.get("source_document") == expected_doc
+                and chunk.get("chunk_index") == expected_index
+            ),
+            None,
+        )
+        is_hit = rank is not None
 
         if is_hit:
             hits += 1
@@ -72,6 +81,10 @@ def evaluate_recall_at_k(
             "scores": scores,
             "hit": is_hit,
             "rank": rank,
+            "expected_chunk_index": expected_index,
+            "retrieved_chunk_indices": [
+                chunk.get("chunk_index") for chunk in retrieved_chunks
+            ],
         })
 
     recall_at_k = (hits / total_queries) if total_queries > 0 else 0.0
