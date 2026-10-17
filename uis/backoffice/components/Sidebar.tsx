@@ -20,6 +20,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { href: "/telemetry",  icon: "📡", labelKey: "nav.telemetry" },
   { href: "/reporting", icon: "📈", labelKey: "nav.reporting" },
   { href: "/sales-forecast", icon: "💶", labelKey: "nav.salesForecast" },
+  { href: "/knowledge", icon: "🤖", labelKey: "nav.knowledge" },
   { href: "/account/profile",   icon: "👤", labelKey: "nav.profile" },
 ];
 

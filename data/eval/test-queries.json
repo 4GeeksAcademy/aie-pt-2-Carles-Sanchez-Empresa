@@ -1,0 +1,74 @@
+[
+  {
+    "id": "q1",
+    "question": "¿Cuál es la ventana de devolución estándar para los clientes?",
+    "expected_document": "returns-policy",
+    "expected_chunk_index": 1
+  },
+  {
+    "id": "q2",
+    "question": "¿Quién asume los costes del envío de vuelta en una devolución si el producto llegó dañado?",
+    "expected_document": "returns-policy",
+    "expected_chunk_index": 2
+  },
+  {
+    "id": "q3",
+    "question": "¿Cómo se gestionan las devoluciones internacionales de productos comprados en un país y devueltos en otro?",
+    "expected_document": "returns-policy",
+    "expected_chunk_index": 3
+  },
+  {
+    "id": "q4",
+    "question": "¿Qué transportista ofrece mejor tarifa para paquetes pesados de más de 5 kg en Los Ángeles?",
+    "expected_document": "carrier-coverage",
+    "expected_chunk_index": 0
+  },
+  {
+    "id": "q5",
+    "question": "¿Qué transportista tiene la mejor cobertura en zonas rurales de Aragón?",
+    "expected_document": "carrier-coverage",
+    "expected_chunk_index": 1
+  },
+  {
+    "id": "q6",
+    "question": "¿Puede un account manager cambiar manualmente el transportista asignado a un envío?",
+    "expected_document": "carrier-coverage",
+    "expected_chunk_index": 2
+  },
+  {
+    "id": "q7",
+    "question": "¿Cuáles son los tiempos de entrega estándar y express en envíos nacionales?",
+    "expected_document": "sla-delivery",
+    "expected_chunk_index": 0
+  },
+  {
+    "id": "q8",
+    "question": "¿Qué compensación contractual recibe un cliente si el SLA cae por debajo del 90% dos meses consecutivos?",
+    "expected_document": "sla-delivery",
+    "expected_chunk_index": 1
+  },
+  {
+    "id": "q9",
+    "question": "¿Se garantiza el SLA de entrega en días de alta demanda como Black Friday, Navidad o Rebajas?",
+    "expected_document": "sla-delivery",
+    "expected_chunk_index": 2
+  },
+  {
+    "id": "q10",
+    "question": "¿Cuál es la tarifa estándar de almacenamiento por metro cúbico al mes en Los Ángeles y Zaragoza?",
+    "expected_document": "storage-pricing",
+    "expected_chunk_index": 0
+  },
+  {
+    "id": "q11",
+    "question": "¿Cuánto recargo paga el inventario con más de 180 días sin movimiento?",
+    "expected_document": "storage-pricing",
+    "expected_chunk_index": 0
+  },
+  {
+    "id": "q12",
+    "question": "¿Qué condiciones se aplican para negociar descuentos de almacenamiento en clientes con más de 50 m3?",
+    "expected_document": "storage-pricing",
+    "expected_chunk_index": 2
+  }
+]
