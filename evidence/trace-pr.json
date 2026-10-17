@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "run_id": "a498c54b-2cab-48cc-a9f6-7397f97f9236",
+  "thread_id": "9b3dfb76-32cc-4b1d-8c5e-3a59b6dfefb3",
+  "started_at": "2026-10-17T15:35:28.621741+00:00",
+  "status": "completed",
+  "question": "\u00bfCu\u00e1l es la tarifa est\u00e1ndar de almacenamiento en Zaragoza?",
+  "resumed": false,
+  "events": [
+    {
+      "sequence": 1,
+      "node": "receive_question",
+      "started_at": "2026-10-17T15:35:28.628987+00:00",
+      "input": {
+        "question": "\u00bfCu\u00e1l es la tarifa est\u00e1ndar de almacenamiento en Zaragoza?",
+        "context": [],
+        "answer": null,
+        "error": null
+      },
+      "status": "completed",
+      "output": {
+        "question": "\u00bfCu\u00e1l es la tarifa est\u00e1ndar de almacenamiento en Zaragoza?",
+        "context": [],
+        "answer": null,
+        "error": null
+      },
+      "next": "retrieve_context",
+      "reason": "valid_question",
+      "finished_at": "2026-10-17T15:35:28.634066+00:00",
+      "duration_ms": 0.061
+    },
+    {
+      "sequence": 2,
+      "node": "retrieve_context",
+      "started_at": "2026-10-17T15:35:28.655265+00:00",
+      "input": {
+        "question": "\u00bfCu\u00e1l es la tarifa est\u00e1ndar de almacenamiento en Zaragoza?",
+        "context": [],
+        "answer": null,
+        "error": null
+      },
+      "status": "completed",
+      "output": {
+        "context": [
+          {
+            "company": "trackflow",
+            "source_document": "storage-pricing",
+            "section": "Tarifas de Almacenamiento / bloque 1",
+            "language": "es",
+            "chunk_index": 0,
+            "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+            "score": 0.5904
+          },
+          {
+            "company": "trackflow",
+            "source_document": "carrier-coverage",
+            "section": "Cobertura de Transportistas / bloque 2",
+            "language": "es",
+            "chunk_index": 1,
+            "text": "Cobertura de Transportistas\n\nEspa\u00f1a (Zaragoza): MRW, SEUR, DHL, y dos transportistas locales de \u00faltima\nmilla en zona metropolitana de Zaragoza.\n- SEUR: mejor cobertura en zonas rurales de Arag\u00f3n.\n- MRW: tarifas m\u00e1s competitivas para paquetes peque\u00f1os (menores a 2 kg).\n- Transportistas locales: solo disponibles dentro del \u00e1rea metropolitana de\n  Zaragoza, no cubren el resto de Espa\u00f1a.",
+            "score": 0.4399
+          },
+          {
+            "company": "trackflow",
+            "source_document": "storage-pricing",
+            "section": "Tarifas de Almacenamiento / bloque 3",
+            "language": "es",
+            "chunk_index": 2,
+            "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+            "score": 0.4342
+          }
+        ]
+      },
+      "next": "generate_response",
+      "reason": "context_available",
+      "finished_at": "2026-10-17T15:35:29.663519+00:00",
+      "duration_ms": 975.819
+    },
+    {
+      "sequence": 3,
+      "node": "generate_response",
+      "started_at": "2026-10-17T15:35:29.669953+00:00",
+      "input": {
+        "question": "\u00bfCu\u00e1l es la tarifa est\u00e1ndar de almacenamiento en Zaragoza?",
+        "context": [
+          {
+            "company": "trackflow",
+            "source_document": "storage-pricing",
+            "section": "Tarifas de Almacenamiento / bloque 1",
+            "language": "es",
+            "chunk_index": 0,
+            "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+            "score": 0.5904
+          },
+          {
+            "company": "trackflow",
+            "source_document": "carrier-coverage",
+            "section": "Cobertura de Transportistas / bloque 2",
+            "language": "es",
+            "chunk_index": 1,
+            "text": "Cobertura de Transportistas\n\nEspa\u00f1a (Zaragoza): MRW, SEUR, DHL, y dos transportistas locales de \u00faltima\nmilla en zona metropolitana de Zaragoza.\n- SEUR: mejor cobertura en zonas rurales de Arag\u00f3n.\n- MRW: tarifas m\u00e1s competitivas para paquetes peque\u00f1os (menores a 2 kg).\n- Transportistas locales: solo disponibles dentro del \u00e1rea metropolitana de\n  Zaragoza, no cubren el resto de Espa\u00f1a.",
+            "score": 0.4399
+          },
+          {
+            "company": "trackflow",
+            "source_document": "storage-pricing",
+            "section": "Tarifas de Almacenamiento / bloque 3",
+            "language": "es",
+            "chunk_index": 2,
+            "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+            "score": 0.4342
+          }
+        ],
+        "answer": null,
+        "error": null
+      },
+      "status": "completed",
+      "output": {
+        "answer": "La tarifa est\u00e1ndar de almacenamiento en Zaragoza es de 16 EUR por metro c\u00fabico al mes."
+      },
+      "next": "__end__",
+      "reason": "response_ready",
+      "finished_at": "2026-10-17T15:35:34.501696+00:00",
+      "duration_ms": 4825.249
+    }
+  ],
+  "answer": "La tarifa est\u00e1ndar de almacenamiento en Zaragoza es de 16 EUR por metro c\u00fabico al mes.",
+  "error": null,
+  "metadata": {
+    "graph_sha256": "77de7511ad26a8d0246ebee90e0bcca50564187eb85d73691014cf0b0bde0d39",
+    "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
+    "corpus_sha256": {
+      "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
+      "trackflow-returns-policy.es.md": "6a6eccd83a6e087785a42eeb10e47f8ba89f02a8ae4415ca68cb2f78f17897e8",
+      "trackflow-sla-delivery.es.md": "c759eff9ebfa957c96feb1c73965817f64aafdb35d7ec1fe6c0aa25f08ab75bb",
+      "trackflow-storage-pricing.es.md": "061cc66725309116b144c6afc8c14f781cfc2d1638696a872bb984da50f364e2"
+    },
+    "generation_model": "madrid-spain/openrouter/deepseek/deepseek-v4-flash",
+    "top_k": 5,
+    "min_score": 0.35,
+    "capture_kind": "live"
+  },
+  "finished_at": "2026-10-17T15:35:34.513170+00:00"
+}

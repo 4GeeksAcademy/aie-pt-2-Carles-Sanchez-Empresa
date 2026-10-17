@@ -873,6 +873,30 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
 
 ---
 
+### Agente de soporte LangGraph - Parte 1 (2026-10-17)
+
+- [x] Corregida la colision de imports entre el paquete `services` y el modulo
+  de usuarios, ahora `user_services.py`; prueba con el paquete precargado.
+- [x] Declarado `trackflow-shared` como dependencia local del workspace uv para
+  que `uv sync` conserve su instalacion y la prueba de API sea reproducible.
+
+- [x] Estado minimo validado, nodos separados y ramas por pregunta/contexto vacios.
+- [x] Reutilizacion de `retrieve`, `embed` y `generate_answer`; `query` se conserva
+  para el endpoint RAG anterior, sin reenvolverlo en un nodo.
+- [x] Compilacion al arrancar y comprobaciones de conectividad/tipado.
+- [x] Checkpoints SQLite con prueba de persistencia y reanudacion tras reinicio,
+  sin repetir la recuperacion ya completada.
+- [x] Trazas persistentes y consultables por CLI, incluidos errores sanitizados.
+- [x] Cinco evals sobre capturas guardadas, incluido anclaje de almacenamiento
+  en Zaragoza y rechazo de una respuesta incorrecta aunque el routing sea correcto.
+- [x] `POST /agent/query` integrado en la API y ejecutable de forma independiente;
+  convive con `/knowledge/query`, sin logica RAG en el endpoint.
+- [x] Dependencias y volumen Docker, README de operacion y tests RAG conservados.
+- [x] Verificacion completa: `uv run python -m pytest tests/ -q`, 165 pruebas
+  correctas; solo avisos de deprecacion de dependencias/codigo existente.
+- [ ] Capturar y evaluar corridas con Qdrant y LLM reales antes de validar para
+  produccion. Las capturas iniciales son simuladas y estan etiquetadas como tales.
+
 ### 🧠 Base de Conocimiento RAG — Hito 7 (`trackflow_knowledge`)
 
 - [x] **Infraestructura**: servicio Qdrant en `docker-compose.yml` (`qdrant/qdrant:latest`, puertos 6333/6334, volumen `./data/qdrant:/qdrant/storage`).

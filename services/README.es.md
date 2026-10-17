@@ -7,6 +7,14 @@ Cada subcarpeta dentro de `services/` debe corresponder a **un servicio concreto
 - **Propósito principal**: centralizar toda la lógica backend, APIs y consumidores de colas que dan soporte a los casos de uso de la compañía.
 - **Recomendación**: documenta en este archivo (o en sub-READMEs) los servicios que vayas añadiendo, su objetivo, tecnología usada y cómo ejecutarlos.
 
+## Agente de soporte
+
+[`support_agent`](./support_agent/README.md) orquesta el RAG existente con
+LangGraph, checkpoints SQLite y trazas persistentes. Expone `POST /agent/query`
+en la API unificada sin sustituir el endpoint de conocimiento. Su README incluye
+arranque independiente, consulta de trazas, reanudacion y evaluaciones offline
+y con servicios reales.
+
 ## Control de trabajos batch
 
 `services/job_runner.py` encapsula la máquina de estados de `job_runs` para el
