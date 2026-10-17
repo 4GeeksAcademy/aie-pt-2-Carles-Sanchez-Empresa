@@ -67,6 +67,8 @@
 | **SQLAlchemy** | — | Consultas SQL con `text()` para métricas de telemetría (ya existente para inventario con SQLModel) |
 | **Qdrant** | latest / 1.19.1 | Base de datos vectorial para la Base de Conocimiento RAG (colección `trackflow_knowledge`, vectores 1024 dim, distancia Coseno) |
 | **openai (SDK)** | >=3.29.0 | Cliente compatible con OpenAI para conectar con el proxy LLM de 4Geeks (`llm.4geeks.ai/v1`) |
+| **LangGraph** | >=1.2.16 | Grafo de soporte con estado Pydantic minimo y rutas condicionales, compilado al arrancar |
+| **langgraph-checkpoint-sqlite** | >=3.1.2 | Checkpoints persistentes con `SqliteSaver`; trazas JSON en otra base SQLite |
 
 ### Paquete compartido Python — `packages/shared-py/`
 
@@ -245,6 +247,30 @@ preparación, procesamiento, publicación y snapshot.
 ---
 
 ## Decisiones de Arquitectura
+
+### Agente de soporte - Parte 1
+
+- `packages/shared-py` es miembro del workspace uv y dependencia editable de
+  la raiz; `uv sync` instala `trackflow_shared` sin pasos manuales.
+- La logica de usuarios/perfiles vive en `services/api/user_services.py`;
+  routers y mocks importan ese nombre para evitar la colision con el paquete
+  raiz `services`. No usar `from services import create_user`.
+
+- `services/support_agent/` reutiliza `data.pipelines.rag.retrieve` y
+  `generate_answer` sin llamar al `query` monolitico ni duplicar embeddings.
+- `AgentState`: pregunta, contexto recuperado, respuesta y error; sin historial.
+- La inicializacion valida conectividad y compila antes de servir peticiones;
+  Pydantic valida los valores de estado durante la ejecucion.
+- `POST /agent/query` convive con `/knowledge/query`; el adaptador HTTP no
+  contiene logica RAG y no expone errores internos ni contexto recuperado.
+- SQLite persiste checkpoints y trazas en `SUPPORT_AGENT_STATE_DIR`; valor local
+  por defecto `~/.local/state/trackflow/support_agent`, volumen dedicado en Compose.
+  Uso monoproceso; no equivale a persistencia distribuida ni ejecucion exactly-once.
+- Inspeccion y reanudacion mediante CLI local; las trazas no son un endpoint publico.
+- Cinco evals offline consumen capturas persistidas y verifican anclaje contra
+  las politicas oficiales. Las capturas iniciales simulan embeddings y LLM:
+  no demuestran fidelidad del modelo real. El comando de captura real requiere
+  Qdrant indexado y acceso al gateway; los tests RAG existentes se conservan.
 
 ### 1. Monorepo con separación por dominios
 

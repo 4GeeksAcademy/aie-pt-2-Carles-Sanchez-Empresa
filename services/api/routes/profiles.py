@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from auth import get_current_user
 from pydantic_models import ProfileResponse
-from services import get_profile_by_user_id, update_profile, create_profile
+from user_services import get_profile_by_user_id, update_profile, create_profile
 
 router = APIRouter(prefix="/profiles", tags=["Profiles"])
 

@@ -27,6 +27,8 @@ COPY services/telemetry/analysis.py ./telemetry/analysis.py
 # Módulos de reporting y pipeline, usados por los endpoints /reporting.
 COPY data/ ./data/
 COPY services/reporting/ ./reporting/
+COPY services/support_agent/ ./support_agent/
+COPY docs/company-knowledge-base/ ./docs/company-knowledge-base/
 COPY services/__init__.py ./services/__init__.py
 COPY services/celery_app.py ./services/celery_app.py
 COPY scripts/ ./scripts/

@@ -12,7 +12,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 
 from auth import get_current_user, require_admin
 from pydantic_models import DeleteResponse, ProfileResponse
-from services import (
+from user_services import (
     create_user,
     get_user_by_id,
     get_all_users,
