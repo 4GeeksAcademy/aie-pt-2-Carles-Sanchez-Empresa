@@ -666,3 +666,30 @@ El script calcula ayer en UTC o usa `TARGET_DATE=YYYY-MM-DD`, crea un snapshot d
 pipeline existente con un subprocess. El pipeline no consume el CSV. El disparador
 recomendado es cron independiente; la plantilla está en
 `infra/cron/nightly_export.cron.example` y la operación en `docs/NIGHTLY_EXPORT.md`.
+
+### 2.8. Evaluación del pronóstico de ingresos
+
+- El pipeline está en `scripts/sales_forecast.py`; fuente mensual consolidada:
+  `data/raw/trackflow_sales.csv` (2016-01 a 2025-12).
+- El modelo configurado para los pronósticos es `RandomForestRegressor` con
+  `n_estimators=400`, `min_samples_leaf=4`, `max_features=0.6` y semilla 42.
+  El baseline de comparación conserva `min_samples_leaf=2` y `max_features=0.9`.
+- Entrenamiento: 96 meses hasta 2023-12. Prueba recursiva: 24 meses de 2024-01
+  a 2025-12. El estimador no se serializa; el script produce métricas y
+  predicciones en `data/eval/sales_forecast.json`.
+- `scripts/evaluate.py` compara configuraciones mediante `TimeSeriesSplit` de
+  cinco folds cronológicos, genera una curva con validación fija 2022-01–2023-12
+  y guarda CV, gráfico y reporte en `data/eval/`.
+- CV del candidato: MAE 78.737 EUR; RMSE 105.854 ± 33.851 EUR. CV del baseline:
+  MAE 77.476 EUR; RMSE 92.308 ± 27.311 EUR. El candidato no supera al baseline
+  con las medias CV de MAE o RMSE.
+- Comparación observada en 2024–2025: candidato MAE 96.509 EUR / RMSE 144.522
+  EUR; baseline MAE 119.885 EUR / RMSE 138.290 EUR. No tratar esos resultados
+  como prueba independiente: el periodo se consultó durante la comparación de
+  configuraciones.
+- La brecha train/validación no prueba sobreajuste por sí sola. La serie cambia
+  temporalmente y, en la curva, tamaño de entrenamiento y distancia a validación
+  varían simultáneamente. Los umbrales diagnósticos del reporte son heurísticos.
+- RMSE se informa por penalizar errores grandes; no hay una función de coste
+  documentada que confirme que esa penalización represente el impacto económico.
+  Acordar con negocio la métrica de promoción antes de desplegar el candidato.
