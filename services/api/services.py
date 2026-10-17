@@ -24,7 +24,7 @@ def create_user(
     Crea un nuevo usuario con contraseña hasheada.
 
     Args:
-        email: Email único del usuario.
+        email: Email único del usuario (se normaliza a minúsculas).
         password: Contraseña en texto plano (se hashea antes de guardar).
         role: Rol del usuario. Por defecto "user".
 
@@ -34,15 +34,18 @@ def create_user(
     Raises:
         ValueError: Si el email ya está registrado.
     """
-    # Verificar email único
-    existing = users_table.get(UserQuery.email == email)
+    # Normalizar email a minúsculas para garantizar unicidad case-insensitive
+    email_normalized = email.strip().lower()
+
+    # Verificar email único (case-insensitive)
+    existing = users_table.get(UserQuery.email == email_normalized)
     if existing:
         raise ValueError(f"El email '{email}' ya está registrado")
 
     now = generate_timestamp()
 
     doc = {
-        "email": email,
+        "email": email_normalized,
         "hashed_password": hash_password(password),
         "role": role,
         "is_active": True,
@@ -67,8 +70,11 @@ def get_user_by_id(user_id: int) -> Optional[dict]:
 
 
 def get_user_by_email(email: str) -> Optional[dict]:
-    """Obtiene un usuario por su email (incluye contraseña para login)."""
-    doc = users_table.get(UserQuery.email == email)
+    """Obtiene un usuario por su email (incluye contraseña para login).
+
+    La búsqueda es case-insensitive: normaliza el email a minúsculas.
+    """
+    doc = users_table.get(UserQuery.email == email.strip().lower())
     if doc is None:
         return None
     doc["id"] = doc.doc_id if hasattr(doc, "doc_id") else None
@@ -92,6 +98,8 @@ def update_user(user_id: int, data: dict) -> Optional[dict]:
     """
     Actualiza un usuario existente.
 
+    Normaliza el email a minúsculas si se proporciona.
+
     Args:
         user_id: ID del usuario a actualizar.
         data: Diccionario con los campos a actualizar.
@@ -102,6 +110,15 @@ def update_user(user_id: int, data: dict) -> Optional[dict]:
     doc = users_table.get(doc_id=user_id)
     if doc is None:
         return None
+
+    # Normalizar email si se está actualizando
+    if "email" in data and data["email"] is not None:
+        data["email"] = data["email"].strip().lower()
+
+        # Verificar que el nuevo email no esté en uso por otro usuario
+        existing = users_table.get(UserQuery.email == data["email"])
+        if existing and existing.doc_id != user_id:
+            raise ValueError(f"El email '{data['email']}' ya está registrado")
 
     data["updated_at"] = generate_timestamp()
     users_table.update(data, doc_ids=[user_id])
