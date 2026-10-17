@@ -15,6 +15,9 @@ dependencies = [
     "trackflow-shared @ file:///workspaces/aie-pt-2-Carles-Sanchez-Empresa/packages/shared-py/",
     "sqlmodel>=0.0.42",
     "psycopg2-binary>=2.9.12",
+    "celery>=5.4.0",
+    "redis>=5.0.0",
+    "flower>=2.0.0",
 ]
 
 [tool.setuptools]
