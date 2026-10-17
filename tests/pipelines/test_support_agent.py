@@ -1,6 +1,7 @@
 """Offline graph contracts and persistent runtime regression tests."""
 
 import sys
+import subprocess
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -185,10 +186,8 @@ def test_startup_fails_clearly_if_graph_cannot_compile(monkeypatch):
 
 
 def test_unified_api_registers_agent_and_preserves_legacy_rag(tmp_path, monkeypatch):
-    import services
     import main
 
-    assert hasattr(services, "__path__")
     monkeypatch.setenv("SUPPORT_AGENT_STATE_DIR", str(tmp_path))
     monkeypatch.setattr(main.SQLModel.metadata, "create_all", Mock())
     with TestClient(main.app) as client:
@@ -199,3 +198,14 @@ def test_unified_api_registers_agent_and_preserves_legacy_rag(tmp_path, monkeypa
         response = client.post("/agent/query", json={"question": "   "})
         assert response.status_code == 400
         assert main.app.state.support_agent.traces.get(response.json()["detail"]["run_id"])["status"] == "rejected"
+
+
+def test_api_imports_when_root_services_package_was_loaded_first():
+    repository = Path(__file__).resolve().parents[2]
+    api = repository / "services" / "api"
+    script = (
+        "import services, sys; "
+        f"sys.path.insert(0, {str(api)!r}); "
+        "assert hasattr(services, '__path__'); import main"
+    )
+    subprocess.run([sys.executable, "-c", script], cwd=repository, check=True)
