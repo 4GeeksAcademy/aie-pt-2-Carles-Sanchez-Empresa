@@ -4,6 +4,8 @@ Unified backend for TrackFlow. This service exposes business APIs and also serve
 
 User/profile operations live in `user_services.py`. Routers import that module
 explicitly to avoid a collision with the repository-level `services` package.
+`services.py` remains as a compatibility facade for legacy imports; it contains
+no duplicate business logic.
 From the repository root, `uv sync` also installs the local `trackflow-shared`
 workspace package needed by the API.
 
