@@ -43,6 +43,7 @@ from database import engine
 from i18n import get_translator, get_language_from_request
 from models import SQLModel
 from pydantic_models import AnalyzeResponse
+from support_agent.api import agent_lifespan, router as agent_router
 try:
     from services.celery_app import app as celery_app
 except ModuleNotFoundError:  # Ejecución directa con PYTHONPATH apuntando a api/
@@ -94,7 +95,8 @@ async def lifespan(app: FastAPI):
         logger.warning("Supabase no respondió en 10s; la API arranca sin ejecutar create_all")
     except Exception:
         logger.exception("No se pudieron verificar las tablas SQLModel; la API continúa disponible")
-    yield
+    async with agent_lifespan(app):
+        yield
 
 
 # ──────────────────────────── App ────────────────────────────
@@ -105,6 +107,7 @@ app = FastAPI(
     version="3.0.0",
     lifespan=lifespan,
 )
+app.include_router(agent_router)
 
 
 @app.get("/tasks/{task_id}", tags=["Tasks"])

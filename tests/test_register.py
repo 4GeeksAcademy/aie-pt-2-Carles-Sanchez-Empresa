@@ -122,7 +122,7 @@ class TestRegisterFailureModes:
         R-F1: register_duplicate_email
         Email ya registrado → HTTPException 400 con error de email duplicado
         """
-        from services import create_user
+        from user_services import create_user
 
         with pytest.raises(ValueError) as exc:
             create_user("test@trackflow.com", "AnyPassword123!")

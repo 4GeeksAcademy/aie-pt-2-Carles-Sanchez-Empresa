@@ -1,5 +1,5 @@
 """
-services.py — Capa de servicios para usuarios y perfiles (TrackFlow).
+user_services.py — Capa de servicios para usuarios y perfiles (TrackFlow).
 
 Contiene las funciones de negocio para operar con las tablas TinyDB
 de users y profiles, separadas de la lógica HTTP de los routers.
@@ -12,8 +12,6 @@ from database import users_table, profiles_table, UserQuery, ProfileQuery
 from auth import hash_password
 from pydantic_models import generate_timestamp
 
-
-# ════════════════════════════ USUARIOS ════════════════════════════
 
 def create_user(
     email: str,
@@ -29,18 +27,16 @@ def create_user(
         role: Rol del usuario. Por defecto "user".
 
     Returns:
-        Diccionario con los datos del usuario creado (sin contraseña).
+        Usuario actualizado (sin contraseña).
 
     Raises:
         ValueError: Si el email ya está registrado.
     """
-    # Verificar email único
     existing = users_table.get(UserQuery.email == email)
     if existing:
         raise ValueError(f"El email '{email}' ya está registrado")
 
     now = generate_timestamp()
-
     doc = {
         "email": email,
         "hashed_password": hash_password(password),
@@ -49,16 +45,13 @@ def create_user(
         "created_at": now,
         "updated_at": now,
     }
-
     doc_id = users_table.insert(doc)
     doc["id"] = doc_id
-
-    # No devolver la contraseña
     return _sanitize_user(doc)
 
 
 def get_user_by_id(user_id: int) -> Optional[dict]:
-    """Obtiene un usuario por su ID (doc_id de TinyDB)."""
+    """Obtiene un usuario por su ID del documento TinyDB."""
     doc = users_table.get(doc_id=user_id)
     if doc is None:
         return None
@@ -67,7 +60,7 @@ def get_user_by_id(user_id: int) -> Optional[dict]:
 
 
 def get_user_by_email(email: str) -> Optional[dict]:
-    """Obtiene un usuario por su email (incluye contraseña para login)."""
+    """Obtiene un usuario por email, incluyendo el hash para login."""
     doc = users_table.get(UserQuery.email == email)
     if doc is None:
         return None
@@ -76,7 +69,7 @@ def get_user_by_email(email: str) -> Optional[dict]:
 
 
 def get_all_users() -> list[dict]:
-    """Obtiene todos los usuarios (sin contraseñas)."""
+    """Obtiene todos los usuarios sin contraseñas."""
     users = []
     for doc in users_table.all():
         doc_id = doc.doc_id if hasattr(doc, "doc_id") else doc.get("id")
@@ -102,10 +95,8 @@ def update_user(user_id: int, data: dict) -> Optional[dict]:
     doc = users_table.get(doc_id=user_id)
     if doc is None:
         return None
-
     data["updated_at"] = generate_timestamp()
     users_table.update(data, doc_ids=[user_id])
-
     updated = users_table.get(doc_id=user_id)
     updated["id"] = user_id
     return _sanitize_user(updated)
@@ -121,8 +112,6 @@ def delete_user(user_id: int) -> bool:
     doc = users_table.get(doc_id=user_id)
     if doc is None:
         return False
-
-    # Eliminar perfil vinculado
     profile = profiles_table.get(ProfileQuery.user_id == user_id)
     if profile:
         profile_id = profile.doc_id if hasattr(profile, "doc_id") else None
@@ -130,13 +119,9 @@ def delete_user(user_id: int) -> bool:
             profiles_table.remove(doc_ids=[profile_id])
         else:
             profiles_table.remove(ProfileQuery.user_id == user_id)
-
-    # Eliminar usuario
     users_table.remove(doc_ids=[user_id])
     return True
 
-
-# ════════════════════════════ PERFILES ════════════════════════════
 
 def create_profile(
     user_id: int,
@@ -157,7 +142,6 @@ def create_profile(
         Diccionario con los datos del perfil creado.
     """
     now = generate_timestamp()
-
     doc = {
         "user_id": user_id,
         "name": name or "",
@@ -166,7 +150,6 @@ def create_profile(
         "created_at": now,
         "updated_at": now,
     }
-
     doc_id = profiles_table.insert(doc)
     doc["id"] = doc_id
     return doc
@@ -197,19 +180,14 @@ def update_profile(user_id: int, data: dict) -> Optional[dict]:
     profile = profiles_table.get(ProfileQuery.user_id == user_id)
     if profile is None:
         return None
-
     data["updated_at"] = generate_timestamp()
     profile_id = profile.doc_id if hasattr(profile, "doc_id") else None
-
     if profile_id is not None:
         profiles_table.update(data, doc_ids=[profile_id])
     else:
         profiles_table.update(data, ProfileQuery.user_id == user_id)
-
     return get_profile_by_user_id(user_id)
 
-
-# ════════════════════════════ HELPERS ════════════════════════════
 
 def _sanitize_user(user: dict) -> dict:
     """Elimina el campo hashed_password del diccionario de usuario."""

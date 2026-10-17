@@ -26,7 +26,7 @@ from auth import (
 from database import users_table, UserQuery
 from email_service import send_reset_email
 from pydantic_models import MessageResponse, DeleteResponse, ProfileResponse
-from services import get_user_by_email, get_profile_by_user_id, update_user
+from user_services import get_user_by_email, get_profile_by_user_id, update_user
 
 t = get_translator("es")
 
