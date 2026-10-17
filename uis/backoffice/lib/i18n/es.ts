@@ -82,6 +82,7 @@ const es: Record<string, string> = {
   "nav.telemetry": "Telemetría",
   "nav.reporting": "Reporte de Desempeño",
   "nav.salesForecast": "Pronóstico de Ventas",
+  "nav.knowledge": "Base de Conocimiento",
   "nav.profile": "Mi Perfil",
   "nav.logout": "Cerrar Sesión",
 
