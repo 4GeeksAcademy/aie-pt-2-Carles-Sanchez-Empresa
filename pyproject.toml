@@ -6,12 +6,16 @@ dependencies = [
     "cachetools>=7.2.0",
     "fastapi>=0.141.1",
     "libpass>=1.9.3",
+    "matplotlib>=3.11.2",
     "pandas>=3.0.6",
     "prefect>=3",
     "psycopg2-binary>=2.9.13",
+    "pytest>=9.1.1",
     "python-dotenv>=1.2.3",
     "python-jose[cryptography]>=3.5.0",
     "resend>=2.47.0",
+    "scikit-learn>=1.9.1",
+    "scipy>=1.18.1",
     "sqlalchemy>=2.0.54",
     "sqlmodel>=0.0.42",
     "tinydb>=4.9.0",
@@ -20,3 +24,8 @@ dependencies = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.4.0",
+]

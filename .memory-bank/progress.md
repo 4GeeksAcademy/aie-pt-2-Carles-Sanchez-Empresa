@@ -842,3 +842,31 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
 - [x] Implementado `scripts/nightly_export.py` con TARGET_DATE, exportación idempotente y subprocess del pipeline.
 - [x] Añadida plantilla cron y documentación operativa en `docs/NIGHTLY_EXPORT.md`.
 - [x] Validada la sintaxis y ejecutada la suite existente: 130 tests correctos.
+
+---
+### Evaluación y regularización del pronóstico de ingresos
+- [x] Añadido `scripts/evaluate.py` con validación temporal `TimeSeriesSplit` de
+  5 folds, curva de aprendizaje y reporte técnico en `data/eval/`.
+- [x] Añadidos tests de orden cronológico y ausencia de barajado en
+  `tests/pipelines/test_cv_chronological_order.py`.
+- [x] Regularizado `scripts/sales_forecast.py`: RandomForestRegressor con
+  `n_estimators=400`, `min_samples_leaf=4`, `max_features=0.6` y `random_state=42`.
+- [x] Añadidas dependencias de evaluación al proyecto Python y actualizado
+  `uv.lock` (scikit-learn, matplotlib y scipy).
+- [x] Generados `data/eval/evaluation_report.md`, `cv_results.json`,
+  `learning_curve.png` y actualizado `sales_forecast.json`.
+- [x] Comparación CV (2016–2023, 5 folds): candidato MAE 78.737 EUR y RMSE
+  105.854 ± 33.851 EUR; baseline (leaf=2, max_features=0.9) MAE 77.476 EUR y
+  RMSE 92.308 ± 27.311 EUR. El candidato no mejora las medias CV.
+- [x] Comparación recursiva 2024–2025: candidato MAE 96.509 EUR / RMSE 144.522
+  EUR; baseline MAE 119.885 EUR / RMSE 138.290 EUR. Es exploratoria, no una
+  estimación independiente, porque este periodo se consultó al comparar modelos.
+- [x] Reporte corregido: el diagnóstico presenta indicios compatibles con
+  sobreajuste, no una conclusión definitiva; explicita que el tamaño del train y
+  la distancia temporal cambian a la vez en la curva. El error relativo usa la
+  media real de ingresos de 2022–2023, no el promedio de todo el dataset.
+- [x] Verificados `evaluate.py` y `sales_forecast.py`; pasan 3 tests focalizados
+  (2 tests cronológicos y el test del split train/test). Pytest emite una
+  advertencia por la opción `asyncio_mode` desconocida en la configuración.
+- [ ] Decidir con negocio si RMSE o MAE es la métrica de promoción antes de
+  sustituir el baseline; el candidato regularizado queda evaluado, no promovido.

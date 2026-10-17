@@ -1,0 +1,106 @@
+{
+  "n_splits": 5,
+  "method": "TimeSeriesSplit (chronological, no shuffle)",
+  "mae_eur_mean": 78737.08692331096,
+  "mae_eur_std": 32142.779269734023,
+  "rmse_eur_mean": 105854.07207471637,
+  "rmse_eur_std": 33851.208417660455,
+  "mae_per_fold": [
+    47964.69692286093,
+    102227.30621990061,
+    56320.67272681841,
+    64514.020939579306,
+    122658.73780739552
+  ],
+  "rmse_per_fold": [
+    78140.80659779164,
+    132297.602661867,
+    77021.76358410627,
+    90639.90475756463,
+    151170.2827722523
+  ],
+  "folds": [
+    {
+      "fold": 1,
+      "train_start": "2016-01",
+      "train_end": "2017-04",
+      "val_start": "2017-05",
+      "val_end": "2018-08",
+      "train_size": 16,
+      "val_size": 16,
+      "mae_eur": 47964.69692286093,
+      "rmse_eur": 78140.80659779164
+    },
+    {
+      "fold": 2,
+      "train_start": "2016-01",
+      "train_end": "2018-08",
+      "val_start": "2018-09",
+      "val_end": "2019-12",
+      "train_size": 32,
+      "val_size": 16,
+      "mae_eur": 102227.30621990061,
+      "rmse_eur": 132297.602661867
+    },
+    {
+      "fold": 3,
+      "train_start": "2016-01",
+      "train_end": "2019-12",
+      "val_start": "2020-01",
+      "val_end": "2021-04",
+      "train_size": 48,
+      "val_size": 16,
+      "mae_eur": 56320.67272681841,
+      "rmse_eur": 77021.76358410627
+    },
+    {
+      "fold": 4,
+      "train_start": "2016-01",
+      "train_end": "2021-04",
+      "val_start": "2021-05",
+      "val_end": "2022-08",
+      "train_size": 64,
+      "val_size": 16,
+      "mae_eur": 64514.020939579306,
+      "rmse_eur": 90639.90475756463
+    },
+    {
+      "fold": 5,
+      "train_start": "2016-01",
+      "train_end": "2022-08",
+      "val_start": "2022-09",
+      "val_end": "2023-12",
+      "train_size": 80,
+      "val_size": 16,
+      "mae_eur": 122658.73780739552,
+      "rmse_eur": 151170.2827722523
+    }
+  ],
+  "baseline": {
+    "min_samples_leaf": 2,
+    "max_features": 0.9,
+    "n_estimators": 400,
+    "rmse_eur_mean": 92308.16890170024,
+    "rmse_eur_std": 27311.319207465298,
+    "mae_eur_mean": 77476.43993850567
+  },
+  "exploratory_holdout": {
+    "period": [
+      "2024-01",
+      "2025-12"
+    ],
+    "independent": false,
+    "note": "Periodo inspeccionado durante la comparaci\u00f3n de configuraciones; m\u00e9tricas exploratorias.",
+    "regularized": {
+      "mae_eur": 96508.8064811898,
+      "rmse_eur": 144522.27287545177,
+      "months": 24
+    },
+    "baseline": {
+      "mae_eur": 119884.68286243721,
+      "rmse_eur": 138289.70233410218,
+      "months": 24
+    }
+  },
+  "learning_curve_path": "data/eval/learning_curve.png"
+}
