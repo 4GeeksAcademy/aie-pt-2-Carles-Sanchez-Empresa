@@ -32,6 +32,17 @@ The `dev` script uses port 3001. FastAPI must be running on port 8000 or proxied
 
 The `EN | ES` control in the navbar changes the complete interface immediately. The selected language is stored in `localStorage` under `lang`, so it persists across routes and browser reloads.
 
+## Knowledge Base
+
+The `/knowledge` view uses the shared TrackFlow palette and ES/EN translations,
+including suggested questions, loading and retry states. Queries require Qdrant
+with the indexed `trackflow_knowledge` collection and the configured embedding/LLM services.
+
+In Docker, the API uses `QDRANT_URL=http://qdrant:6333` and depends on the Qdrant
+service. A host-side `QDRANT_URL=http://localhost:6333` is not valid inside the
+API container: it points back to the API container and causes query responses
+with HTTP 503. After changing Compose, run `docker compose up -d api` to apply it.
+
 ---
 
 ## API proxy (rewrites)
@@ -60,6 +71,7 @@ The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls t
 | `/` | JWT | Dashboard — inventory, shipments & carriers |
 | `/suppliers` | JWT | Supplier directory CRUD |
 | `/incidents` | JWT | CSV incident analyzer |
+| `/knowledge` | JWT | Knowledge assistant with suggested questions and generated answers |
 | `/sales-forecast` | JWT | TrackFlow consolidated revenue forecast, test metrics, variability band and annual filters |
 | `/account/profile` | JWT | User profile management |
 

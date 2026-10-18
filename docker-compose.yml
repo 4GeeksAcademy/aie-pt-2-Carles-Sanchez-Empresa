@@ -57,10 +57,11 @@ services:
     environment:
       - TELEMETRY_ENDPOINT=/telemetry/events
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - QDRANT_URL=http://qdrant:6333
       - SUPPORT_AGENT_STATE_DIR=/var/lib/trackflow-agent
     depends_on:
       - redis
+      - qdrant
     networks:
       - trackflow-net
 
