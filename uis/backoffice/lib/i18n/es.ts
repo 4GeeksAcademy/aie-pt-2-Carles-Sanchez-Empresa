@@ -88,6 +88,7 @@ const es: Record<string, string> = {
 
   "knowledge.title": "Base de conocimiento",
   "knowledge.subtitle": "Políticas, acuerdos de servicio, transportistas y tarifas de TrackFlow.",
+  "knowledge.spanish_only_notice": "Por ahora, las respuestas del agente solo están disponibles en español.",
   "knowledge.suggested_title": "Consultas frecuentes",
   "knowledge.suggested.returns": "¿Cuál es la ventana de devolución estándar y cómo funcionan las internacionales?",
   "knowledge.suggested.carriers": "¿Qué transportistas usamos en Los Ángeles y cuál es mejor para paquetes de más de 5 kg?",

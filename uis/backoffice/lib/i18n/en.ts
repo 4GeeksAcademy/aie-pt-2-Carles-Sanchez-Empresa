@@ -88,6 +88,7 @@ const en: Record<string, string> = {
 
   "knowledge.title": "Knowledge base",
   "knowledge.subtitle": "TrackFlow policies, service agreements, carriers and pricing.",
+  "knowledge.spanish_only_notice": "For now, the agent's responses are only available in Spanish.",
   "knowledge.suggested_title": "Frequently asked questions",
   "knowledge.suggested.returns": "What is the standard return window and how do international returns work?",
   "knowledge.suggested.carriers": "Which carriers do we use in Los Angeles and which is best for parcels over 5 kg?",
