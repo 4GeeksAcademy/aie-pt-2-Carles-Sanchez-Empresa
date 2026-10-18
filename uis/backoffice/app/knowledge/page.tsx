@@ -16,7 +16,7 @@ const FREQUENT_QUESTIONS = [
 ];
 
 export default function KnowledgePage(): ReactElement {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -86,6 +86,11 @@ export default function KnowledgePage(): ReactElement {
       </div>
 
       <div className="space-y-6 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm sm:p-6">
+      {lang === "en" && (
+        <p role="note" className="border-l-4 border-[#c89d66] bg-[#f8fbff] px-4 py-3 text-sm text-[#2f4a62]">
+          {t("knowledge.spanish_only_notice")}
+        </p>
+      )}
       {/* Sugerencias de consultas frecuentes */}
       <div className="space-y-2">
         <h2 className="text-sm font-semibold text-[#14263a]">
