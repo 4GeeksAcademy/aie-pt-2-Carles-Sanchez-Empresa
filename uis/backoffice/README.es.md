@@ -32,6 +32,18 @@ El script `dev` usa el puerto 3001. FastAPI debe estar ejecutándose en el puert
 
 El control `EN | ES` del navbar cambia inmediatamente toda la interfaz. El idioma seleccionado se guarda en `localStorage` con la clave `lang`, por lo que se conserva al navegar y recargar el navegador.
 
+## Base de conocimiento
+
+La vista `/knowledge` utiliza la paleta compartida de TrackFlow y traducciones
+ES/EN, incluidas preguntas sugeridas y estados de carga y reintento. Las consultas
+requieren Qdrant con la colección `trackflow_knowledge` indexada y los servicios
+de embeddings/LLM configurados.
+
+En Docker, la API utiliza `QDRANT_URL=http://qdrant:6333` y depende del servicio
+Qdrant. La dirección `QDRANT_URL=http://localhost:6333` del entorno local no sirve
+dentro del contenedor de la API: apunta al propio contenedor y provoca respuestas
+HTTP 503. Tras cambiar Compose, ejecutar `docker compose up -d api` para aplicarlo.
+
 ---
 
 ## Proxy API (rewrites)
@@ -61,6 +73,7 @@ Esto evita problemas de CORS en desarrollo y Codespaces.
 | `/suppliers` | JWT | CRUD de proveedores |
 | `/incidents` | JWT | Analizador CSV de incidencias |
 | `/incidents-manager` | JWT | Gestor centralizado: alta, listado, estados y métricas |
+| `/knowledge` | JWT | Asistente de conocimiento con preguntas sugeridas y respuestas generadas |
 | `/account/profile` | JWT | Gestión de perfil de usuario |
 
 > Las rutas protegidas requieren un JWT válido en `localStorage` (`trackflow_token`).

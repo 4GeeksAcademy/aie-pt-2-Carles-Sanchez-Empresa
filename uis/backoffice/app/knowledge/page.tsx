@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent, type ReactElement } from "react";
 import { API_BASE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n";
 
@@ -9,13 +9,13 @@ interface QueryResponse {
 }
 
 const FREQUENT_QUESTIONS = [
-  "¿Cuál es la ventana de devolución estándar y cómo funcionan las internacionales?",
-  "¿Qué transportistas usamos en Los Ángeles y cuál es mejor para paquetes de más de 5 kg?",
-  "¿Qué garantía de SLA dais durante el Black Friday y fechas de alta demanda?",
-  "¿Cómo se calculan las tarifas de almacenamiento y qué descuentos hay para más de 50 m³?",
+  "knowledge.suggested.returns",
+  "knowledge.suggested.carriers",
+  "knowledge.suggested.sla",
+  "knowledge.suggested.storage",
 ];
 
-export default function KnowledgePage() {
+export default function KnowledgePage(): ReactElement {
   const { t } = useTranslation();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
@@ -23,8 +23,8 @@ export default function KnowledgePage() {
   const [error, setError] = useState<string | null>(null);
   const [lastQuery, setLastQuery] = useState<string | null>(null);
 
-  const handleSubmit = async (e?: React.FormEvent, customQuestion?: string) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async (event?: FormEvent<HTMLFormElement>, customQuestion?: string): Promise<void> => {
+    if (event) event.preventDefault();
     const queryText = (customQuestion ?? question).trim();
     if (!queryText || loading) return;
 
@@ -43,111 +43,105 @@ export default function KnowledgePage() {
       });
 
       if (!response.ok) {
-        let errMessage = `Error ${response.status}: ${response.statusText}`;
-        try {
-          const errData = await response.json();
-          if (errData?.detail) errMessage = errData.detail;
-        } catch {
-          // Si no es JSON válido, usamos el statusText
+        if (response.status === 503) {
+          throw new Error(t("knowledge.error_unavailable"));
         }
+        let errMessage = `Error ${response.status}: ${response.statusText}`;
+        const errData: { detail?: unknown } | null = await response.json().catch(() => null);
+        if (typeof errData?.detail === "string") errMessage = errData.detail;
         throw new Error(errMessage);
       }
 
       const data: QueryResponse = await response.json();
       setAnswer(data.answer);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error al conectar con la base de conocimiento.";
+      const msg = err instanceof Error && !(err instanceof TypeError)
+        ? err.message
+        : t("knowledge.error_connection");
       setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSelectSuggested = (q: string) => {
-    setQuestion(q);
-    void handleSubmit(undefined, q);
+  const handleSelectSuggested = (suggestedQuestion: string): void => {
+    setQuestion(suggestedQuestion);
+    void handleSubmit(undefined, suggestedQuestion);
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl space-y-6 p-4 text-[#2f4a62] sm:p-6">
       {/* Encabezado */}
-      <div className="border-b border-gray-200 pb-5 dark:border-gray-800">
+      <div className="border-b border-[#c89d66] pb-5">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-xl text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-            🤖
-          </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-              {t("knowledge.title") || "Asistente de Base de Conocimiento"}
+            <h1 className="text-2xl font-bold text-[#14263a]">
+              {t("knowledge.title")}
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {t("knowledge.subtitle") ||
-                "Consulta acuerdos estándar, SLAs, políticas de devolución, transportistas y tarifas oficiales de TrackFlow."}
+            <p className="text-sm text-[#2f4a62]">
+              {t("knowledge.subtitle")}
             </p>
           </div>
         </div>
       </div>
 
+      <div className="space-y-6 rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm sm:p-6">
       {/* Sugerencias de consultas frecuentes */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-          {t("knowledge.suggested_title") || "Preguntas frecuentes de clientes y prospectos"}
-        </p>
+        <h2 className="text-sm font-semibold text-[#14263a]">
+          {t("knowledge.suggested_title")}
+        </h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {FREQUENT_QUESTIONS.map((q, idx) => (
+          {FREQUENT_QUESTIONS.map((key) => (
             <button
-              key={idx}
+              key={key}
               type="button"
-              onClick={() => handleSelectSuggested(q)}
+              onClick={() => handleSelectSuggested(t(key))}
               disabled={loading}
-              className="group flex items-start gap-2 rounded-lg border border-gray-200 bg-white p-3 text-left text-xs font-medium text-gray-700 shadow-sm transition hover:border-blue-500 hover:bg-blue-50/50 hover:text-blue-700 disabled:opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-blue-500 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+              className="flex min-h-16 items-center rounded-lg border border-[#c89d66] bg-[#f3ddba] p-4 text-left text-sm font-medium text-[#14263a] shadow-sm transition-colors hover:bg-[#e5be83] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14263a] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span className="text-blue-500 transition group-hover:translate-x-0.5">💬</span>
-              <span className="line-clamp-2">{q}</span>
+              <span className="min-w-0 break-words">{t(key)}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Formulario de consulta */}
-      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-        <div className="relative">
-          <label htmlFor="knowledge-question" className="sr-only">
-            {t("knowledge.input_label") || "Pregunta"}
+      <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="knowledge-question" className="block text-sm font-semibold text-[#14263a]">
+            {t("knowledge.input_label")}
           </label>
           <textarea
             id="knowledge-question"
             rows={3}
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder={
-              t("knowledge.input_placeholder") ||
-              "Escribe tu consulta sobre políticas, coberturas, SLAs o tarifas... (ej. ¿Cuál es el compromiso de entrega express en Zaragoza?)"
-            }
+            onChange={(event) => setQuestion(event.target.value)}
+            placeholder={t("knowledge.input_placeholder")}
             disabled={loading}
-            className="w-full rounded-xl border border-gray-300 bg-white p-4 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 disabled:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-500 dark:disabled:bg-gray-800"
+            className="min-h-32 w-full resize-y rounded-lg border border-[#c89d66] bg-[#f8fbff] p-4 text-base text-[#14263a] shadow-sm placeholder:text-[#2f4a62]/70 focus:border-[#14263a] focus:outline-none focus:ring-2 focus:ring-[#c89d66]/50 disabled:opacity-60 sm:text-sm"
           />
         </div>
 
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {t("knowledge.disclaimer") || "Las respuestas se generan en base a los acuerdos y documentos oficiales de TrackFlow."}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="min-w-0 text-xs text-[#2f4a62]">
+            {t("knowledge.disclaimer")}
           </p>
-          <div className="flex gap-2">
+          <div className="flex shrink-0 justify-end gap-2">
             {question && (
               <button
                 type="button"
                 onClick={() => setQuestion("")}
                 disabled={loading}
-                className="rounded-lg px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                className="min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-[#2f4a62] transition-colors hover:bg-[#f3ddba] focus-visible:outline-2 focus-visible:outline-[#14263a]"
               >
-                {t("knowledge.clear") || "Limpiar"}
+                {t("knowledge.clear")}
               </button>
             )}
             <button
               type="submit"
               disabled={loading || !question.trim()}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+              className="inline-flex min-h-11 min-w-36 items-center justify-center gap-2 rounded-lg bg-[#14263a] px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1d4f7a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#14263a] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -159,12 +153,12 @@ export default function KnowledgePage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  <span>{t("knowledge.consulting") || "Consultando..."}</span>
+                  <span>{t("knowledge.consulting")}</span>
                 </>
               ) : (
                 <>
-                  <span>{t("knowledge.ask_button") || "Preguntar al Asistente"}</span>
-                  <span>→</span>
+                  <span>{t("knowledge.ask_button")}</span>
+                  <span aria-hidden="true">→</span>
                 </>
               )}
             </button>
@@ -174,35 +168,33 @@ export default function KnowledgePage() {
 
       {/* Estado de carga */}
       {loading && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-6 text-center dark:border-blue-900/50 dark:bg-blue-950/20">
-          <div className="mx-auto flex h-10 w-10 animate-spin items-center justify-center rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-400">
-            <span className="sr-only">Cargando</span>
+        <div role="status" className="border-y border-[#c89d66] bg-[#f3ddba]/50 p-6 text-center">
+          <div aria-hidden="true" className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[#14263a] border-t-transparent">
           </div>
-          <p className="mt-3 text-sm font-medium text-blue-900 dark:text-blue-200">
-            {t("knowledge.loading_text") || "Buscando en la base de conocimiento y redactando la respuesta..."}
+          <p className="mt-3 text-sm font-medium text-[#14263a]">
+            {t("knowledge.loading_text")}
           </p>
-          <p className="mt-1 text-xs text-blue-700 dark:text-blue-400">
-            {t("knowledge.loading_subtext") || "Consultando Qdrant y verificando políticas comerciales oficiales."}
+          <p className="mt-1 text-xs text-[#2f4a62]">
+            {t("knowledge.loading_subtext")}
           </p>
         </div>
       )}
 
       {/* Estado de error */}
       {error && !loading && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
+        <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-5 text-red-900">
           <div className="flex items-start gap-3">
-            <span className="text-xl">⚠️</span>
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-red-800 dark:text-red-300">
-                {t("knowledge.error_title") || "No fue posible obtener una respuesta"}
+            <div className="min-w-0 space-y-1 break-words">
+              <h3 className="text-sm font-semibold text-red-800">
+                {t("knowledge.error_title")}
               </h3>
-              <p className="text-xs text-red-700 dark:text-red-400">{error}</p>
+              <p className="text-sm text-red-700">{error}</p>
               <button
                 type="button"
                 onClick={() => void handleSubmit(undefined, lastQuery ?? undefined)}
-                className="mt-2 text-xs font-semibold text-red-800 underline hover:no-underline dark:text-red-300"
+                className="mt-2 min-h-11 text-sm font-semibold text-red-800 underline hover:no-underline"
               >
-                {t("knowledge.retry") || "Reintentar consulta"}
+                {t("knowledge.retry")}
               </button>
             </div>
           </div>
@@ -211,31 +203,31 @@ export default function KnowledgePage() {
 
       {/* Resultado generado */}
       {answer && !loading && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-800">
+        <section aria-live="polite" aria-label={t("knowledge.official_answer")} className="space-y-4 border-y border-[#c89d66] py-6">
+          <div className="flex flex-col gap-2 border-b border-[#c89d66]/50 pb-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
-              <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                {t("knowledge.official_answer") || "Respuesta Oficial del Asistente Comercial"}
-              </span>
+              <h2 className="text-sm font-semibold text-[#14263a]">
+                {t("knowledge.official_answer")}
+              </h2>
             </div>
             {lastQuery && (
-              <span className="line-clamp-1 max-w-xs text-xs italic text-gray-400 dark:text-gray-500 sm:max-w-md">
+              <span className="min-w-0 break-words text-xs italic text-[#2f4a62] sm:max-w-md">
                 &ldquo;{lastQuery}&rdquo;
               </span>
             )}
           </div>
 
-          <div className="mt-4 whitespace-pre-line text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+          <div className="whitespace-pre-line break-words text-sm leading-relaxed text-[#14263a]">
             {answer}
           </div>
 
-          <div className="mt-5 border-t border-gray-100 pt-3 text-xs text-gray-400 dark:border-gray-800 dark:text-gray-500">
-            {t("knowledge.footer_note") ||
-              "Fuente: Políticas estándar de TrackFlow (SLA, Devoluciones, Transportistas y Almacenamiento)."}
+          <div className="border-t border-[#c89d66]/50 pt-3 text-xs text-[#2f4a62]">
+            {t("knowledge.footer_note")}
           </div>
-        </div>
+        </section>
       )}
+      </div>
     </div>
   );
 }

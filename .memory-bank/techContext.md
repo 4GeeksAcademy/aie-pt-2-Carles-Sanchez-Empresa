@@ -360,6 +360,12 @@ Los valores crudos de la API (ej. `received`, `in_progress`) se mapean a etiquet
 - `uis/backoffice/lib/i18n/index.tsx` expone un único `LanguageProvider` para toda la aplicación.
 - El selector `EN | ES` actualiza todas las vistas sin recarga y persiste la selección en `localStorage` con la clave `lang`.
 - Los valores técnicos enviados a FastAPI se mantienen estables; solo sus etiquetas de presentación se traducen.
+- La base de conocimiento incluye traducciones ES/EN para etiquetas, preguntas sugeridas y estados. `t()` devuelve la clave si falta una entrada; no se deben usar alternativas con `||` para compensarlo.
+
+### 9.2 Conectividad Qdrant en Docker
+
+- La API utiliza `QDRANT_URL=http://qdrant:6333` en Compose y declara `depends_on: qdrant`.
+- La dirección interna es fija para evitar que un valor local `http://localhost:6333` de `.env` apunte al propio contenedor de la API. Esta configuración no modifica el uso de Qdrant fuera de Docker.
 
 ### 10. Gestor de Incidencias — Paquete compartido Python (`packages/shared-py/`)
 

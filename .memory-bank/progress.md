@@ -915,9 +915,14 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
   - Endpoint `POST /knowledge/query` (y alias `POST /api/knowledge/query`) en FastAPI respondiendo `{ "answer": "..." }`.
   - Importa directamente `query()` desde el pipeline sin duplicar lógica y sin exponer fragmentos crudos al cliente.
 - [x] **Fase 4 — Interfaz de usuario (`uis/backoffice/app/knowledge/`)**:
-  - Página Next.js `/knowledge` en el Backoffice con soporte modo claro/oscuro y paleta TrackFlow.
+  - Página Next.js `/knowledge` en el Backoffice con la paleta corporativa TrackFlow, sin estilos de modo oscuro específicos que desentonen con el resto de vistas.
   - Manejo de estados de carga (spinner), error (reintento) y visualización de la respuesta oficial con preguntas frecuentes clicables.
   - Menú lateral actualizado (`Sidebar.tsx`) y traducciones en `es.ts` y `en.ts`.
+- [x] **Corrección operativa y visual (2026-10-18)**:
+  - Resuelto HTTP 503 por `QDRANT_URL=http://localhost:6333` dentro de la API: Compose utiliza `http://qdrant:6333` y arranca Qdrant como dependencia.
+  - Completadas las traducciones ES/EN de la vista y de las preguntas sugeridas; paneles y bordes dorados/anaranjados compartidos con el backoffice y controles responsive.
+  - Verificación: 12 pruebas RAG correctas y Playwright en 1440 y 390 px (ES/EN, colores, sin desbordamiento, carga, 503 simulado, reintento real HTTP 200 y limpieza del campo; sin errores JavaScript).
+  - TypeScript global sigue bloqueado por cinco errores ajenos a esta vista en `BackofficeClientLayout.tsx` y `app/telemetry/page.tsx`; sin errores detectados en los archivos de interfaz modificados.
 - [x] **Fase 5 — Pruebas unitarias (`tests/pipelines/test_rag.py`)**:
   - 8 pruebas unitarias de recuperación/generación y 4 casos de regresión offline de reindexación (uno por documento) con Qdrant en memoria: cambiar Markdown actualiza textos y vectores y elimina reglas obsoletas sin duplicar puntos.
   - Ejecución 100% exitosa con `python -m pytest tests/pipelines/test_rag.py`.
