@@ -35,8 +35,29 @@ The `EN | ES` control in the navbar changes the complete interface immediately. 
 ## Knowledge Base
 
 The `/knowledge` view uses the shared TrackFlow palette and ES/EN translations,
-including suggested questions, loading and retry states. Queries require Qdrant
-with the indexed `trackflow_knowledge` collection and the configured embedding/LLM services.
+including suggested questions, loading and retry states. It calls
+`POST /api/agent/query` through the existing Next.js proxy, which forwards to
+`POST /agent/query`. The shared API client attaches the current session JWT;
+no browser-side service token is configured. The agent chooses incidents,
+inventory, RAG or their combinations. Ticket/stock queries read the existing
+authenticated managers; documentary
+queries also require indexed Qdrant and the configured embedding/LLM services.
+The legacy knowledge endpoint remains available but is no longer used by this view.
+
+Agent errors with `detail.message` are displayed in the existing retry panel.
+Operational failures and missing tickets produce honest agent answers instead of
+invented states. The deployed desktop/mobile E2E report is in
+[`evidence/support-agent-e2e.json`](../../evidence/support-agent-e2e.json): real
+login, ticket, policy, mixed query, missing ticket, invalid JWT and recovery after
+an explicitly injected HTTP 503. The temporary normal-user account was deleted;
+incident storage was verified unchanged and no credentials are stored in the report.
+
+Inventory by ID, SKU or product name is available through the same view; ambiguous
+names request clarification rather than aggregating stock. Inventory E2E evidence
+is in [`evidence/support-agent-inventory-e2e.json`](../../evidence/support-agent-inventory-e2e.json),
+including all three sources together. Products, movements and incidents were
+verified unchanged. Stock retains the existing inventory API's 30-second cache,
+invalidated by its writes; the agent adds no cache.
 
 In Docker, the API uses `QDRANT_URL=http://qdrant:6333` and depends on the Qdrant
 service. A host-side `QDRANT_URL=http://localhost:6333` is not valid inside the

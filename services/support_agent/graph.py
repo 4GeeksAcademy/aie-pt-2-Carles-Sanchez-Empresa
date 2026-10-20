@@ -8,6 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from data.pipelines import rag
 
+from . import routing
+from .routing import RouteDecision
+from .tools import IncidentTool, TicketInput, TicketResult, InventoryTool, InventoryResult
+
 
 class AgentState(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
@@ -16,6 +20,11 @@ class AgentState(BaseModel):
     context: list[dict[str, Any]] = Field(default_factory=list)
     answer: str | None = None
     error: str | None = None
+    decision: RouteDecision | None = None
+    routing_failed: bool = False
+    ticket_result: TicketResult | None = None
+    inventory_result: InventoryResult | None = None
+    knowledge_failed: bool = False
 
 
 class GraphStructureError(ValueError):
@@ -23,11 +32,97 @@ class GraphStructureError(ValueError):
 
 
 def after_question(state: AgentState) -> str:
-    return END if state.error else "retrieve_context"
+    return END if state.error else "route_question"
+
+
+def after_routing(state: AgentState) -> str:
+    if state.routing_failed:
+        return "routing_fallback"
+    if state.decision.source == "rag":
+        return "retrieve_context"
+    if state.decision.uses_incidents:
+        return "lookup_incident" if state.decision.ticket_id else "clarify_ticket"
+    return "lookup_inventory" if state.decision.inventory_query else "clarify_inventory"
+
+
+def after_incident(state: AgentState) -> str:
+    if state.ticket_result.outcome != "found":
+        return "tool_fallback"
+    if state.decision.uses_inventory:
+        return after_tool_fallback(state)
+    return "retrieve_context" if state.decision.uses_rag else "ticket_response"
+
+
+def after_tool_fallback(state: AgentState) -> str:
+    if state.decision.uses_inventory:
+        return "lookup_inventory" if state.decision.inventory_query else "clarify_inventory"
+    return "retrieve_context" if state.decision.uses_rag else END
+
+
+def after_inventory(state: AgentState) -> str:
+    if state.inventory_result.outcome != "found":
+        return "inventory_fallback"
+    return "retrieve_context" if state.decision.uses_rag else "inventory_response"
+
+
+def after_inventory_fallback(state: AgentState) -> str:
+    return "retrieve_context" if state.decision.uses_rag else END
 
 
 def after_retrieval(state: AgentState) -> str:
     return "generate_response" if state.context else "no_information"
+
+
+def ticket_answer(state: AgentState) -> str:
+    result = state.ticket_result
+    ticket_id = state.decision.ticket_id
+    if result.outcome == "found":
+        incident = result.incident
+        return (f"Ticket {incident.id}: {incident.title}. Estado: {incident.status}. "
+                f"Categoria: {incident.category}. Origen: {incident.origin}. Sede: {incident.branch}. "
+                f"Creado: {incident.created_at}. Ultima actualizacion: {incident.updated_at}.")
+    if result.outcome == "not_found":
+        return f"No se encontro el ticket {ticket_id} en el gestor de incidentes."
+    if result.outcome == "unauthorized":
+        return f"No pude confirmar el estado del ticket {ticket_id}: se requiere una sesion valida con acceso a incidentes."
+    return f"No pude confirmar el estado del ticket {ticket_id} ahora mismo. Intentalo mas tarde."
+
+
+def inventory_answer(state: AgentState) -> str:
+    result = state.inventory_result
+    if result.outcome == "found":
+        product = result.products[0]
+        return (f"Producto {product.id}: {product.name}. SKU: {product.sku_code}. "
+                f"Almacen: {product.warehouse}. Stock informado: {product.current_stock} unidades. "
+                f"Categoria: {product.category}. Cliente: {product.client_name}.")
+    if result.outcome == "ambiguous":
+        candidates = "; ".join(f"{product.sku_code} (ID {product.id}, {product.warehouse})" for product in result.products)
+        return f"Hay varios productos coincidentes: {candidates}. Indica un ID o SKU y, si procede, el almacen; no he confirmado un stock unico."
+    if result.outcome == "not_found":
+        return "No se encontro un producto que coincida con la consulta en el gestor de inventario."
+    if result.outcome == "unauthorized":
+        return "No pude confirmar el stock: se requiere una sesion valida con acceso al inventario."
+    return "No pude confirmar el stock ahora mismo. Intentalo mas tarde."
+
+
+def operations_answer(state: AgentState) -> str:
+    parts = []
+    if state.ticket_result is not None:
+        parts.append(ticket_answer(state))
+    if state.inventory_result is not None:
+        parts.append(inventory_answer(state))
+    return "\n\n".join(parts)
+
+
+def combine_answer(state: AgentState, knowledge_answer: str) -> str:
+    operational = operations_answer(state)
+    if operational:
+        return f"{operational}\n\nDocumentacion: {knowledge_answer}"
+    return knowledge_answer
+
+
+def knowledge_question(state: AgentState) -> str:
+    return state.decision.knowledge_question if state.decision else state.question
 
 
 def compile_graph(builder: StateGraph, checkpointer=None, *, interrupt_after=None):
@@ -66,31 +161,119 @@ def build_graph(
     *,
     retrieve_fn: Callable | None = None,
     generate_fn: Callable | None = None,
+    route_fn: Callable | None = None,
+    incident_fn: Callable | None = None,
+    inventory_fn: Callable | None = None,
+    token_provider: Callable | None = None,
     instrument: Callable | None = None,
     interrupt_after: list[str] | None = None,
 ):
     retrieve = retrieve_fn or rag.retrieve
     generate = generate_fn or rag.generate_answer
+    route = route_fn or routing.decide_route
+    incidents = incident_fn or IncidentTool()
+    inventory = inventory_fn or InventoryTool()
+    credentials = token_provider or (lambda: None)
 
     def receive_question(state: AgentState) -> dict:
         question = state.question.strip()
         return {
             "question": question, "context": [], "answer": None,
             "error": None if question else "La pregunta no puede estar vacia.",
+            "decision": None, "routing_failed": False, "ticket_result": None,
+            "knowledge_failed": False, "inventory_result": None,
         }
 
+    def route_question(state: AgentState) -> dict:
+        try:
+            decision = routing.validate_decision(route(state.question), state.question)
+            return {"decision": decision.model_dump()}
+        except Exception:
+            return {"routing_failed": True}
+
+    def lookup_incident(state: AgentState) -> dict:
+        try:
+            result = TicketResult.model_validate(incidents(
+                TicketInput(ticket_id=state.decision.ticket_id), token=credentials(),
+            ))
+            if result.incident and result.incident.id != state.decision.ticket_id:
+                result = TicketResult(outcome="invalid_response")
+        except TimeoutError:
+            result = TicketResult(outcome="timeout")
+        except Exception:
+            result = TicketResult(outcome="unavailable")
+        return {"ticket_result": result.model_dump()}
+
+    def lookup_inventory(state: AgentState) -> dict:
+        try:
+            result = InventoryResult.model_validate(inventory(
+                state.decision.inventory_query, token=credentials(),
+            ))
+            query = state.decision.inventory_query
+            for product in result.products:
+                if ((query.product_id and product.id != query.product_id)
+                        or (query.sku_code and product.sku_code.casefold() != query.sku_code.casefold())
+                        or (query.product_name and query.product_name.casefold() not in product.name.casefold())
+                        or (query.warehouse and product.warehouse != query.warehouse)
+                        or (query.category and product.category != query.category)):
+                    result = InventoryResult(outcome="invalid_response")
+                    break
+        except TimeoutError:
+            result = InventoryResult(outcome="timeout")
+        except Exception:
+            result = InventoryResult(outcome="unavailable")
+        return {"inventory_result": result.model_dump()}
+
     def retrieve_context(state: AgentState) -> dict:
-        return {"context": retrieve(state.question)}
+        try:
+            return {"context": retrieve(knowledge_question(state))}
+        except Exception:
+            if state.decision is None or not (state.decision.uses_incidents or state.decision.uses_inventory):
+                raise
+            return {"context": [], "knowledge_failed": True}
 
     def generate_response(state: AgentState) -> dict:
-        return {"answer": generate(state.question, state.context)}
+        try:
+            answer = generate(knowledge_question(state), state.context)
+        except Exception:
+            if state.decision is None or not (state.decision.uses_incidents or state.decision.uses_inventory):
+                raise
+            return {"answer": combine_answer(state, "No pude consultar la documentacion ahora mismo."),
+                    "knowledge_failed": True}
+        return {"answer": combine_answer(state, answer)}
 
     def no_information(state: AgentState) -> dict:
-        return {"answer": rag.generate_answer(state.question, [])}
+        answer = ("No pude consultar la documentacion ahora mismo." if state.knowledge_failed
+                  else rag.generate_answer(knowledge_question(state), []))
+        return {"answer": combine_answer(state, answer)}
+
+    def operational_response(state: AgentState) -> dict:
+        return {"answer": operations_answer(state)}
+
+    def clarify_ticket(state: AgentState) -> dict:
+        return {"answer": "Indica el ID del ticket que quieres consultar. Solo puedo consultar tickets, no modificarlos."}
+
+    def clarify_inventory(state: AgentState) -> dict:
+        clarification = "Indica el ID, SKU o nombre del producto que quieres consultar. Solo puedo consultar inventario, no modificar existencias."
+        operational = operations_answer(state)
+        return {"answer": f"{operational}\n\n{clarification}" if operational else clarification}
+
+    def routing_fallback(state: AgentState) -> dict:
+        return {"answer": "No pude determinar que fuente consultar ahora mismo. Intentalo de nuevo; no he confirmado datos operativos."}
 
     builder = StateGraph(AgentState)
     for name, node in {
         "receive_question": receive_question,
+        "route_question": route_question,
+        "lookup_incident": lookup_incident,
+        "ticket_response": operational_response,
+        "tool_fallback": operational_response,
+        "clarify_ticket": clarify_ticket,
+        "routing_fallback": routing_fallback,
+        "lookup_inventory": lookup_inventory,
+        "inventory_response": operational_response,
+        "inventory_fallback": operational_response,
+        "clarify_inventory": clarify_inventory,
         "retrieve_context": retrieve_context,
         "generate_response": generate_response,
         "no_information": no_information,
@@ -98,6 +281,22 @@ def build_graph(
         builder.add_node(name, instrument(name, node) if instrument else node)
     builder.add_edge(START, "receive_question")
     builder.add_conditional_edges("receive_question", after_question, {
+        END: END, "route_question": "route_question",
+    })
+    builder.add_conditional_edges("route_question", after_routing, {
+        name: name for name in ["routing_fallback", "retrieve_context", "lookup_incident", "clarify_ticket", "lookup_inventory", "clarify_inventory"]
+    })
+    builder.add_conditional_edges("lookup_incident", after_incident, {
+        name: name for name in ["tool_fallback", "retrieve_context", "ticket_response", "lookup_inventory", "clarify_inventory"]
+    })
+    builder.add_conditional_edges("tool_fallback", after_tool_fallback, {
+        END: END, "retrieve_context": "retrieve_context",
+        "lookup_inventory": "lookup_inventory", "clarify_inventory": "clarify_inventory",
+    })
+    builder.add_conditional_edges("lookup_inventory", after_inventory, {
+        name: name for name in ["inventory_fallback", "retrieve_context", "inventory_response"]
+    })
+    builder.add_conditional_edges("inventory_fallback", after_inventory_fallback, {
         END: END, "retrieve_context": "retrieve_context",
     })
     builder.add_conditional_edges("retrieve_context", after_retrieval, {
@@ -105,4 +304,6 @@ def build_graph(
     })
     builder.add_edge("generate_response", END)
     builder.add_edge("no_information", END)
+    for name in ["ticket_response", "clarify_ticket", "routing_fallback", "inventory_response", "clarify_inventory"]:
+        builder.add_edge(name, END)
     return compile_graph(builder, checkpointer, interrupt_after=interrupt_after)

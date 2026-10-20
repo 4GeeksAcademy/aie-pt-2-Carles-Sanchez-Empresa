@@ -5,7 +5,8 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, FastAPI, Request, Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -13,6 +14,7 @@ from .runtime import AgentRunError, AgentRuntime
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Support Agent"])
+bearer = HTTPBearer(auto_error=False)
 
 
 def default_state_dir() -> Path:
@@ -52,9 +54,14 @@ class ErrorResponse(BaseModel):
 @router.post("/agent/query", response_model=QueryResponse, responses={
     400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}, 503: {"model": ErrorResponse},
 })
-def agent_query(payload: QueryRequest, request: Request):
+def agent_query(
+    payload: QueryRequest, request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+):
     try:
-        result = request.app.state.support_agent.run(payload.question)
+        result = request.app.state.support_agent.run(
+            payload.question, token=credentials.credentials if credentials else None,
+        )
         if result["error"]:
             return JSONResponse(status_code=400, content={
                 "detail": {"message": result["error"], "run_id": result["run_id"]},

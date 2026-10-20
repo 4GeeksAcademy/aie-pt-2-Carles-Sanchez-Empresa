@@ -48,6 +48,9 @@ export function invalidateCache(pattern?: string): void {
 
 function formatErrorDetail(detail: unknown, fallback: string): string {
   if (typeof detail === "string") return detail;
+  if (typeof detail === "object" && detail !== null && "message" in detail && typeof detail.message === "string") {
+    return detail.message;
+  }
   if (Array.isArray(detail)) {
     return detail
       .map((item) => {
@@ -131,6 +134,19 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   }
 
   return data;
+}
+
+export interface SupportAgentResponse {
+  answer: string;
+  run_id: string;
+  thread_id: string;
+}
+
+export async function querySupportAgent(question: string): Promise<SupportAgentResponse> {
+  return request<SupportAgentResponse>("/agent/query", {
+    method: "POST",
+    body: JSON.stringify({ question }),
+  });
 }
 
 // ── Suppliers ──
