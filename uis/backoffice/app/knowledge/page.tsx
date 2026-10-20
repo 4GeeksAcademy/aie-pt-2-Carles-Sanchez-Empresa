@@ -1,12 +1,8 @@
 "use client";
 
 import { useState, type FormEvent, type ReactElement } from "react";
-import { API_BASE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n";
-
-interface QueryResponse {
-  answer: string;
-}
+import { querySupportAgent } from "@/services/api";
 
 const FREQUENT_QUESTIONS = [
   "knowledge.suggested.returns",
@@ -34,25 +30,7 @@ export default function KnowledgePage(): ReactElement {
     setLastQuery(queryText);
 
     try {
-      const response = await fetch(`${API_BASE}/knowledge/query`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ question: queryText }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 503) {
-          throw new Error(t("knowledge.error_unavailable"));
-        }
-        let errMessage = `Error ${response.status}: ${response.statusText}`;
-        const errData: { detail?: unknown } | null = await response.json().catch(() => null);
-        if (typeof errData?.detail === "string") errMessage = errData.detail;
-        throw new Error(errMessage);
-      }
-
-      const data: QueryResponse = await response.json();
+      const data = await querySupportAgent(queryText);
       setAnswer(data.answer);
     } catch (err: unknown) {
       const msg = err instanceof Error && !(err instanceof TypeError)

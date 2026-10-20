@@ -96,7 +96,7 @@ const es: Record<string, string> = {
   "knowledge.suggested.storage": "¿Cómo se calculan las tarifas de almacenamiento y qué descuentos hay para más de 50 m³?",
   "knowledge.input_label": "Tu consulta",
   "knowledge.input_placeholder": "¿Cuál es el compromiso de entrega express en Zaragoza?",
-  "knowledge.disclaimer": "Respuestas basadas en la documentación oficial de TrackFlow.",
+  "knowledge.disclaimer": "Información oficial de TrackFlow.",
   "knowledge.clear": "Limpiar",
   "knowledge.ask_button": "Consultar",
   "knowledge.consulting": "Consultando...",
@@ -107,7 +107,7 @@ const es: Record<string, string> = {
   "knowledge.error_unavailable": "El servicio de consulta de conocimiento no está disponible temporalmente.",
   "knowledge.retry": "Reintentar consulta",
   "knowledge.official_answer": "Respuesta del asistente",
-  "knowledge.footer_note": "Fuente: documentación de TrackFlow sobre SLA, devoluciones, transportistas y almacenamiento.",
+  "knowledge.footer_note": "Documentación y datos operativos de TrackFlow.",
 
   // ─── Suppliers ───
   "suppliers.title": "Proveedores",

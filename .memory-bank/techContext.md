@@ -258,7 +258,9 @@ preparación, procesamiento, publicación y snapshot.
 
 - `services/support_agent/` reutiliza `data.pipelines.rag.retrieve` y
   `generate_answer` sin llamar al `query` monolitico ni duplicar embeddings.
-- `AgentState`: pregunta, contexto recuperado, respuesta y error; sin historial.
+- `AgentState`: pregunta, contexto recuperado, respuesta, error, decision tipada
+  de fuentes, resultado tipado de incidentes y flags de fallo; sin historial,
+  credenciales ni clientes persistidos.
 - La inicializacion valida conectividad y compila antes de servir peticiones;
   Pydantic valida los valores de estado durante la ejecucion.
 - `POST /agent/query` convive con `/knowledge/query`; el adaptador HTTP no
@@ -271,6 +273,47 @@ preparación, procesamiento, publicación y snapshot.
   las politicas oficiales. Las capturas iniciales simulan embeddings y LLM:
   no demuestran fidelidad del modelo real. El comando de captura real requiere
   Qdrant indexado y acceso al gateway; los tests RAG existentes se conservan.
+- Parte 2: clasificador LLM con salida JSON validada elige RAG, incidentes o ambos;
+  errores de clasificacion nunca fuerzan RAG como fuente operativa.
+- `IncidentTool` solo hace `GET /api/incidents/{id}` al backend real, sin cache
+  propia, con deadline total de 5.0 segundos y sin reintentos/redirecciones.
+  Configuracion: `SUPPORT_INCIDENTS_BASE_URL` (default loopback:8000).
+- HTTP reenvia el JWT del solicitante; CLI/capturas lo leen de
+  `SUPPORT_INCIDENTS_TOKEN`. No hay token compartido para peticiones anonimas,
+  ni credenciales en estado, checkpoints, configuracion del grafo o trazas.
+- Fallback explicito para timeout, 404, auth, respuesta invalida y fallo de red;
+  preguntas mixtas consultan incidentes antes del RAG y conservan respuestas
+  parciales. Los hechos del ticket no se pasan al generador documental.
+- Nueve evals persistidas: cinco originales y cuatro de rutas/fallback. Hashes
+  incluyen router y tool; capturas offline HTTP 404/503 etiquetadas simuladas,
+  sin dataset paralelo de tickets.
+- Backoffice `/knowledge` integrado con `querySupportAgent` del cliente compartido:
+  `POST /api/agent/query` via proxy existente, JWT de sesion y errores
+  `detail.message`. No requiere cambios en rewrites ni credenciales nuevas.
+- E2E de navegador real en 1440x1000 y 390x844: login normal temporal,
+  ticket/politica/ambos, 404, JWT invalido y reintento real tras 503 inyectado.
+  Cuenta temporal eliminada, incidencias sin cambios, sin credenciales en trazas
+  ni informe `evidence/support-agent-e2e.json`; capturas de referencia siguen
+  siendo simuladas y las trazas E2E viven en SQLite local.
+- Ampliacion de inventario: `InventoryTool` independiente con contratos Pydantic,
+  consulta por ID, SKU o nombre y filtros de almacen/categoria. Solo GET al gestor
+  existente, JWT de sesion, deadline total 5.0 s, fallback y ambiguedad explicitos.
+  No suma almacenes ni introduce dataset/cache propios. Se conserva el TTL 30 s
+  de la API, invalidado por sus escrituras.
+- Enrutamiento admite inventario, inventario+RAG, tickets+inventario y las tres
+  fuentes, en orden tickets -> inventario -> RAG; respuestas parciales y
+  operativas deterministas. Clasificador con 1024 tokens maximos, timeout HTTP
+  20 s sin reintentos; el timeout de tools sigue siendo 5.0 s.
+- `SUPPORT_INVENTORY_BASE_URL` opcional, por defecto origen de incidentes;
+  `SUPPORT_AGENT_TOKEN` para CLI/capturas, con compatibilidad para
+  `SUPPORT_INCIDENTS_TOKEN`. La vista sigue usando su JWT de sesion.
+- Trece evals y diez capturas offline etiquetadas simuladas; integracion del
+  router de inventario con JWT y SQLModel/SQLite temporal, verificando solo SELECT.
+- E2E inventario aprobado en navegador desktop/movil: ocho casos, incluido
+  nombre ambiguo real y las tres fuentes. Stock igual a API, hashes de tablas
+  operativas sin cambios, usuario temporal eliminado, evidencia sin credenciales
+  en `evidence/support-agent-inventory-e2e.json`. No se crearon productos ni stock
+  de prueba para la validacion desplegada.
 
 ### 1. Monorepo con separación por dominios
 

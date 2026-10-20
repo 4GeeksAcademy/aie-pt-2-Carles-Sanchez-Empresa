@@ -96,7 +96,7 @@ const en: Record<string, string> = {
   "knowledge.suggested.storage": "How are storage fees calculated and what discounts apply above 50 m³?",
   "knowledge.input_label": "Your question",
   "knowledge.input_placeholder": "What is the express delivery commitment in Zaragoza?",
-  "knowledge.disclaimer": "Answers based on TrackFlow's official documentation.",
+  "knowledge.disclaimer": "Official TrackFlow information.",
   "knowledge.clear": "Clear",
   "knowledge.ask_button": "Ask",
   "knowledge.consulting": "Searching...",
@@ -107,7 +107,7 @@ const en: Record<string, string> = {
   "knowledge.error_unavailable": "The knowledge query service is temporarily unavailable.",
   "knowledge.retry": "Try again",
   "knowledge.official_answer": "Assistant response",
-  "knowledge.footer_note": "Source: TrackFlow documentation on SLAs, returns, carriers and storage.",
+  "knowledge.footer_note": "TrackFlow documentation and operational data.",
 
   // ─── Suppliers ───
   "suppliers.title": "Suppliers",

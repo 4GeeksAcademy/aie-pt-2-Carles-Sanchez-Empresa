@@ -16,7 +16,11 @@ from langgraph.graph import END
 from openai import APIError
 from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
 
-from .graph import AgentState, after_question, after_retrieval, build_graph
+from .graph import (
+    AgentState, after_question, after_retrieval, after_routing,
+    after_incident, after_tool_fallback, build_graph,
+    after_inventory, after_inventory_fallback,
+)
 
 
 class AgentRunError(Exception):
@@ -58,6 +62,7 @@ class TraceStore:
 class AgentRuntime:
     def __init__(
         self, state_dir: Path, *, retrieve_fn=None, generate_fn=None,
+        route_fn=None, incident_fn=None, inventory_fn=None,
         interrupt_after=None, capture_kind: str = "live",
     ):
         state_dir = Path(state_dir)
@@ -66,11 +71,14 @@ class AgentRuntime:
         self.connection = sqlite3.connect(state_dir / "checkpoints.sqlite3", check_same_thread=False)
         self.checkpointer = SqliteSaver(self.connection)
         self.lock = threading.RLock()
-        self.capture_kind = "simulated" if retrieve_fn or generate_fn else capture_kind
+        self._token = None
+        self.capture_kind = "simulated" if any((retrieve_fn, generate_fn, route_fn, incident_fn, inventory_fn)) else capture_kind
         try:
             self.metadata = self._metadata()
             self.graph = build_graph(
                 self.checkpointer, retrieve_fn=retrieve_fn, generate_fn=generate_fn,
+                route_fn=route_fn, incident_fn=incident_fn, inventory_fn=inventory_fn,
+                token_provider=lambda: self._token,
                 instrument=self._instrument, interrupt_after=interrupt_after,
             )
         except Exception:
@@ -84,6 +92,8 @@ class AgentRuntime:
         sources = root / "docs" / "company-knowledge-base"
         return {
             "graph_sha256": hashlib.sha256(Path(__file__).with_name("graph.py").read_bytes()).hexdigest(),
+            "routing_sha256": hashlib.sha256(Path(__file__).with_name("routing.py").read_bytes()).hexdigest(),
+            "tools_sha256": hashlib.sha256(Path(__file__).with_name("tools.py").read_bytes()).hexdigest(),
             "rag_sha256": hashlib.sha256(Path(rag.__file__).read_bytes()).hexdigest(),
             "corpus_sha256": {
                 path.name: hashlib.sha256(path.read_bytes()).hexdigest()
@@ -104,6 +114,9 @@ class AgentRuntime:
                 "status": "running", "output": None, "next": None, "reason": None,
             }
             trace["events"].append(event)
+            if name in {"retrieve_context", "lookup_incident", "lookup_inventory"}:
+                event["source"] = {"retrieve_context": "rag", "lookup_incident": "incidents", "lookup_inventory": "inventory"}[name]
+                trace["sources"].append(event["source"])
             self.traces.put(trace)
             start = time.perf_counter()
             try:
@@ -114,7 +127,18 @@ class AgentRuntime:
                     reason = "empty_question" if updated.error else "valid_question"
                 elif name == "retrieve_context":
                     target = after_retrieval(updated)
-                    reason = "context_available" if updated.context else "empty_context"
+                    reason = "knowledge_unavailable" if updated.knowledge_failed else ("context_available" if updated.context else "empty_context")
+                elif name == "route_question":
+                    target = after_routing(updated)
+                    reason = "routing_failed" if updated.routing_failed else updated.decision.source
+                elif name == "lookup_incident":
+                    target, reason = after_incident(updated), updated.ticket_result.outcome
+                elif name == "tool_fallback":
+                    target, reason = after_tool_fallback(updated), updated.ticket_result.outcome
+                elif name == "lookup_inventory":
+                    target, reason = after_inventory(updated), updated.inventory_result.outcome
+                elif name == "inventory_fallback":
+                    target, reason = after_inventory_fallback(updated), updated.inventory_result.outcome
                 else:
                     target, reason = END, "response_ready"
                 event.update(status="completed", output=output, next=target, reason=reason)
@@ -128,18 +152,18 @@ class AgentRuntime:
 
         return recorded
 
-    def run(self, question: str) -> dict:
-        return self._execute({"question": question}, str(uuid4()))
+    def run(self, question: str, *, token: str | None = None) -> dict:
+        return self._execute({"question": question}, str(uuid4()), token=token)
 
-    def resume(self, thread_id: str) -> dict:
+    def resume(self, thread_id: str, *, token: str | None = None) -> dict:
         thread_id = validate_id(thread_id)
         with self.lock:
             snapshot = self.graph.get_state({"configurable": {"thread_id": thread_id}})
             if not snapshot.values or not snapshot.next:
                 raise ValueError("No pending checkpoint exists for this thread.")
-            return self._execute(None, thread_id)
+            return self._execute(None, thread_id, token=token)
 
-    def _execute(self, inputs: dict | None, thread_id: str) -> dict:
+    def _execute(self, inputs: dict | None, thread_id: str, *, token: str | None = None) -> dict:
         with self.lock:
             run_id = str(uuid4())
             config = {"configurable": {"thread_id": thread_id, "trace_run_id": run_id}}
@@ -148,10 +172,11 @@ class AgentRuntime:
             trace = {
                 "schema_version": 1, "run_id": run_id, "thread_id": thread_id,
                 "started_at": timestamp(), "status": "running", "question": question,
-                "resumed": inputs is None, "events": [], "answer": None, "error": None,
+                "resumed": inputs is None, "events": [], "sources": [], "answer": None, "error": None,
                 "metadata": self.metadata,
             }
             self.traces.put(trace)
+            self._token = token
             try:
                 result = AgentState.model_validate(self.graph.invoke(inputs, config))
                 pending = self.graph.get_state(config).next
@@ -172,6 +197,8 @@ class AgentRuntime:
                 trace.update(status="failed", error={"code": "dependency_unavailable" if unavailable else "internal_error"}, finished_at=timestamp())
                 self.traces.put(trace)
                 raise AgentRunError(run_id, message, 503 if unavailable else 500) from exc
+            finally:
+                self._token = None
 
     def history(self, thread_id: str) -> list:
         with self.lock:
