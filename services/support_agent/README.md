@@ -146,19 +146,27 @@ timeout with SDK retries disabled; classification failure has its own fallback.
 
 | Setting | Purpose |
 | --- | --- |
-| `SUPPORT_INCIDENTS_BASE_URL` | Backend origin, default `http://127.0.0.1:8000`. Loopback works for the unified API; use the reachable API origin for a separate deployment. |
-| `SUPPORT_INVENTORY_BASE_URL` | Optional inventory origin; defaults to the incidents origin. |
-| `SUPPORT_AGENT_TOKEN` | CLI/live-capture session JWT for either tool, supplied by environment/configuration. Never used as a shared HTTP credential. |
+| `SUPPORT_AGENT_MCP_URL` | Required MCP Streamable HTTP server URL for production graph construction without injected operational tools. |
+| `SUPPORT_INCIDENTS_BASE_URL` | Legacy direct API origin for isolated compatibility tests only; default `http://127.0.0.1:8000`. |
+| `SUPPORT_INVENTORY_BASE_URL` | Legacy optional inventory API origin for isolated compatibility tests only. |
+| `SUPPORT_AGENT_TOKEN` | CLI/live-capture user's TrackFlow OAuth access token. The adapter sends it only as the bearer to MCP, never directly to the API. |
 | `SUPPORT_INCIDENTS_TOKEN` | Backward-compatible CLI/capture fallback when `SUPPORT_AGENT_TOKEN` is absent. |
 
-Both operational routers **require JWT authentication**. HTTP requests forward only
-the caller's `Authorization: Bearer ...` to the selected backend, which validates
-it using its existing authentication. Without a token, no operational request is
-sent; invalid/expired tokens produce an honest access fallback. Public RAG access
-is unchanged. Never put a token in the question or store it in source control.
-Tokens are held only for the current locked runtime invocation and cleared in
-`finally`; they never enter LangGraph state/config, checkpoints, traces or CLI
-output. An environment token is read only by CLI/capture entry points.
+When `SUPPORT_AGENT_MCP_URL` is configured, the user's TrackFlow OAuth access token
+is sent only to MCP. MCP validates its signature, issuer, audience, expiry and
+per-tool scope, then calls the API with the independent `MCP_API_SERVICE_TOKEN`
+service credential. Inventory remains read-only. Without a user token, no MCP
+request is sent; invalid/expired tokens produce an honest access fallback. Public
+RAG access is unchanged. Never put a token in the question or store it in source
+control. Tokens are held only for the current locked runtime invocation and
+cleared in `finally`; they never enter LangGraph state/config, checkpoints,
+traces or CLI output. An environment token is read only by CLI/capture entry
+points. The legacy direct API adapters remain only for isolated compatibility
+tests. Falling back to them in production would bypass MCP bearer validation and
+per-tool OAuth scopes, and create a second operational path with different
+authentication semantics. `build_graph()` uses MCP when configured; if it is
+absent, operational lookups fail closed as unavailable while RAG-only questions
+continue to work. Explicitly injected tool doubles remain supported for tests.
 
 For an authenticated query (set the variable securely outside source files):
 

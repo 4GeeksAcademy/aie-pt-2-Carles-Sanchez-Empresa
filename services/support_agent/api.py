@@ -23,7 +23,10 @@ def default_state_dir() -> Path:
 
 @asynccontextmanager
 async def agent_lifespan(app: FastAPI):
-    runtime = AgentRuntime(getattr(app.state, "support_agent_state_dir", default_state_dir()))
+    runtime = AgentRuntime(
+        getattr(app.state, "support_agent_state_dir", default_state_dir()),
+        mcp_server_url=os.getenv("SUPPORT_AGENT_MCP_URL"),
+    )
     app.state.support_agent = runtime
     try:
         yield

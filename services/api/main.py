@@ -73,6 +73,7 @@ from routes import (
     telemetry_router,
     users_router,
 )
+from oauth_issuer import router as oauth_issuer_router
 
 # ──────────────────────────── Lifespan: init SQLModel tables ────────────────────────────
 
@@ -108,6 +109,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(agent_router)
+app.include_router(oauth_issuer_router)
 
 
 @app.get("/tasks/{task_id}", tags=["Tasks"])
