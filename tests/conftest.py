@@ -20,6 +20,11 @@ _SERVICES_API = Path(__file__).resolve().parent.parent / "services" / "api"
 sys.path.insert(0, str(_SERVICES_API))
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
+_SERVICES_DIR = _REPO_ROOT / "services"
+# Mirrors services/api/main.py, which adds `services/` so that the shared
+# telemetry package can be imported as `telemetry.analysis` in local tests.
+if str(_SERVICES_DIR) not in sys.path:
+    sys.path.insert(1, str(_SERVICES_DIR))
 sys.path.append(str(_REPO_ROOT))
 
 
