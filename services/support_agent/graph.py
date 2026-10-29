@@ -10,6 +10,10 @@ from data.pipelines import rag
 
 from . import routing
 from .routing import RouteDecision
+from .memory import (
+    MemoryDecision, MemoryProposal, MemoryStore, classify_pending_decision,
+    validate_memorizable, generate_structured_response,
+)
 from .tools import (
     IncidentTool, TicketInput, TicketResult, InventoryTool, InventoryResult,
     InventoryInput, MCPTrackFlowTools,
@@ -28,6 +32,12 @@ class AgentState(BaseModel):
     ticket_result: TicketResult | None = None
     inventory_result: InventoryResult | None = None
     knowledge_failed: bool = False
+    actor_id: str | None = None
+    conversation_id: str | None = None
+    memory_context: list[dict[str, Any]] = Field(default_factory=list)
+    memory_proposal: dict[str, Any] | None = None
+    pending_decision: dict[str, Any] | None = None
+    memory_result: str | None = None
 
 
 class GraphStructureError(ValueError):
@@ -46,6 +56,10 @@ class _UnavailableMCPTools:
 
 def after_question(state: AgentState) -> str:
     return END if state.error else "route_question"
+
+
+def after_memory_decision(state: AgentState) -> str:
+    return "route_question"
 
 
 def after_routing(state: AgentState) -> str:
@@ -178,6 +192,9 @@ def build_graph(
     incident_fn: Callable | None = None,
     inventory_fn: Callable | None = None,
     token_provider: Callable | None = None,
+    memory_store: MemoryStore | None = None,
+    memory_classifier: Callable | None = None,
+    memory_evaluator: Callable | None = None,
     mcp_server_url: str | None = None,
     instrument: Callable | None = None,
     interrupt_after: list[str] | None = None,
@@ -198,6 +215,23 @@ def build_graph(
         inventory = inventory_fn or InventoryTool()
         using_mcp = False
     credentials = token_provider or (lambda: None)
+    decide_memory = memory_classifier or classify_pending_decision
+
+    def prepare_memory(state: AgentState) -> dict:
+        if not memory_store or not state.actor_id or not state.conversation_id:
+            return {"memory_context": []}
+        pending = memory_store.pending(state.actor_id, state.conversation_id)
+        result = None
+        if pending:
+            proposal = MemoryProposal.model_validate_json(pending["proposal_json"])
+            try:
+                decision = MemoryDecision.model_validate(decide_memory(proposal, state.question))
+            except Exception:
+                decision = MemoryDecision(decision="unclear", confidence=0)
+            result = memory_store.resolve(state.actor_id, state.conversation_id, decision, state.question)
+        memories = memory_store.relevant(state.actor_id, state.question)
+        return {"pending_decision": {"result": result} if result else None,
+                "memory_result": result, "memory_context": memories}
 
     def receive_question(state: AgentState) -> dict:
         question = state.question.strip()
@@ -206,6 +240,9 @@ def build_graph(
             "error": None if question else "La pregunta no puede estar vacia.",
             "decision": None, "routing_failed": False, "ticket_result": None,
             "knowledge_failed": False, "inventory_result": None,
+            "actor_id": state.actor_id, "conversation_id": state.conversation_id,
+            "memory_context": [], "memory_proposal": None, "pending_decision": None,
+            "memory_result": None,
         }
 
     def route_question(state: AgentState) -> dict:
@@ -265,13 +302,34 @@ def build_graph(
 
     def generate_response(state: AgentState) -> dict:
         try:
+            if memory_store and state.actor_id and state.conversation_id and generate_fn is None:
+                answer = generate_structured_response(
+                    knowledge_question(state), state.context, state.memory_context,
+                    evaluator=memory_evaluator,
+                )
+            else:
+                answer = generate(knowledge_question(state), state.context)
+        except TypeError as exc:
+            # Preserve injected legacy doubles; production generator is the same RAG model.
+            if "unexpected keyword" not in str(exc):
+                raise
             answer = generate(knowledge_question(state), state.context)
         except Exception:
             if state.decision is None or not (state.decision.uses_incidents or state.decision.uses_inventory):
                 raise
             return {"answer": combine_answer(state, "No pude consultar la documentacion ahora mismo."),
                     "knowledge_failed": True}
-        return {"answer": combine_answer(state, answer)}
+        answer_text, proposal = answer if isinstance(answer, tuple) and len(answer) == 2 else (answer, None)
+        proposal_dump = None
+        if proposal and memory_store and state.actor_id and state.conversation_id:
+            try:
+                proposal = validate_memorizable(MemoryProposal.model_validate(proposal))
+                memory_store.propose(state.actor_id, state.conversation_id, proposal, state.question)
+                proposal_dump = proposal.model_dump()
+                answer_text = f"{answer_text}\n\n¿Quieres que recuerde esto para la próxima vez? {proposal.content}"
+            except (ValueError, TypeError, ValidationError):
+                proposal_dump = None
+        return {"answer": combine_answer(state, answer_text), "memory_proposal": proposal_dump}
 
     def no_information(state: AgentState) -> dict:
         answer = ("No pude consultar la documentacion ahora mismo." if state.knowledge_failed
@@ -295,6 +353,7 @@ def build_graph(
     builder = StateGraph(AgentState)
     for name, node in {
         "receive_question": receive_question,
+        "prepare_memory": prepare_memory,
         "route_question": route_question,
         "lookup_incident": lookup_incident,
         "ticket_response": operational_response,
@@ -312,8 +371,9 @@ def build_graph(
         builder.add_node(name, instrument(name, node) if instrument else node)
     builder.add_edge(START, "receive_question")
     builder.add_conditional_edges("receive_question", after_question, {
-        END: END, "route_question": "route_question",
+        END: END, "route_question": "prepare_memory",
     })
+    builder.add_edge("prepare_memory", "route_question")
     builder.add_conditional_edges("route_question", after_routing, {
         name: name for name in ["routing_fallback", "retrieve_context", "lookup_incident", "clarify_ticket", "lookup_inventory", "clarify_inventory"]
     })

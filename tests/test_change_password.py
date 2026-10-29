@@ -77,8 +77,15 @@ class TestChangePassword:
         # Verificar que change_password usa Depends(get_current_user)
         # Al llamar sin current_user, FastAPI lanzaría error porque falta el parámetro
         # En test unitario, simplemente verificamos que get_current_user rechaza sin token
+        from starlette.requests import Request
+
+        request = Request({
+            "type": "http", "method": "GET", "path": "/users/me",
+            "headers": [], "query_string": b"", "server": ("test", 80),
+            "client": ("test", 1234), "scheme": "http",
+        })
         with pytest.raises(HTTPException):
-            await get_current_user(token="invalid-token")
+            await get_current_user(request=request, token="invalid-token")
 
     @pytest.mark.asyncio
     async def test_change_password_user_not_found(self, mock_db):
