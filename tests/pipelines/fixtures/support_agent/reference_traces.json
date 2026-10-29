@@ -191,7 +191,7 @@
     "answer": "La tarifa estandar de almacenamiento en Zaragoza es de 16 EUR por metro cubico al mes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
@@ -344,7 +344,7 @@
     "answer": "Lo lamento, pero en los acuerdos estándar y la base de conocimiento oficial de TrackFlow no disponemos de información suficiente para responder a esta consulta. Para casos particulares o condiciones no documentadas, le sugiero consultar con el equipo correspondiente o con la dirección comercial.",
     "error": null,
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
@@ -407,7 +407,7 @@
     "answer": null,
     "error": "La pregunta no puede estar vacia.",
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
@@ -566,7 +566,7 @@
     "answer": "No se encontro el ticket 482 en el gestor de incidentes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
@@ -847,7 +847,7 @@
     "answer": "No se encontro el ticket 482 en el gestor de incidentes.\n\nDocumentacion: La tarifa estandar de almacenamiento en Zaragoza es de 16 EUR por metro cubico al mes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
@@ -1024,7 +1024,7 @@
     "answer": "No se encontro un producto que coincida con la consulta en el gestor de inventario.",
     "error": null,
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
@@ -1335,7 +1335,7 @@
     "answer": "No se encontro un producto que coincida con la consulta en el gestor de inventario.\n\nDocumentacion: La tarifa estandar de almacenamiento en Zaragoza es de 16 EUR por metro cubico al mes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
@@ -1736,7 +1736,7 @@
     "answer": "No se encontro el ticket 482 en el gestor de incidentes.\n\nNo se encontro un producto que coincida con la consulta en el gestor de inventario.\n\nDocumentacion: La tarifa estandar de almacenamiento en Zaragoza es de 16 EUR por metro cubico al mes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
@@ -1895,7 +1895,7 @@
     "answer": "No pude confirmar el estado del ticket 482 ahora mismo. Intentalo mas tarde.",
     "error": null,
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
@@ -2072,7 +2072,7 @@
     "answer": "No pude confirmar el stock ahora mismo. Intentalo mas tarde.",
     "error": null,
     "metadata": {
-      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
+      "graph_sha256": "55a5857c80766f3aab347fded32ad3ab10bdc409e2fada89c688baf61f7f02c5",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
       "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",

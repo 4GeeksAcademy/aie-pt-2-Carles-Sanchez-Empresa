@@ -543,8 +543,8 @@ def test_unified_api_registers_agent_and_preserves_legacy_rag(tmp_path, monkeypa
         assert "/knowledge/query" in paths
         assert "/agent/query" in paths
         response = client.post("/agent/query", json={"question": "   "})
-        assert response.status_code == 400
-        assert main.app.state.support_agent.traces.get(response.json()["detail"]["run_id"])["status"] == "rejected"
+        assert response.status_code == 401
+        assert "run_id" not in response.json().get("detail", {})
 
 
 def test_api_imports_when_root_services_package_was_loaded_first():
