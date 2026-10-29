@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from .api import default_state_dir
@@ -18,15 +19,16 @@ def main():
         result = TraceStore(args.state_dir / "traces.sqlite3").get(args.value)
     else:
         runtime = AgentRuntime(args.state_dir)
+        token = os.environ.get("SUPPORT_AGENT_TOKEN") or os.environ.get("SUPPORT_INCIDENTS_TOKEN")
         try:
             if args.command == "history":
                 result = [{"checkpoint": item.config["configurable"]["checkpoint_id"],
                            "next": list(item.next), "state": item.values}
                           for item in runtime.history(args.value)]
             elif args.command == "resume":
-                result = runtime.resume(args.value)
+                result = runtime.resume(args.value, token=token)
             else:
-                result = runtime.run(args.value)
+                result = runtime.run(args.value, token=token)
         finally:
             runtime.close()
     print(json.dumps(result, ensure_ascii=True, indent=2))

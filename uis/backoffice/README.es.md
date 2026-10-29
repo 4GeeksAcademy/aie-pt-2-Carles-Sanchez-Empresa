@@ -32,6 +32,39 @@ El script `dev` usa el puerto 3001. FastAPI debe estar ejecutándose en el puert
 
 El control `EN | ES` del navbar cambia inmediatamente toda la interfaz. El idioma seleccionado se guarda en `localStorage` con la clave `lang`, por lo que se conserva al navegar y recargar el navegador.
 
+## Base de conocimiento
+
+La vista `/knowledge` utiliza la paleta compartida de TrackFlow y traducciones
+ES/EN, incluidas preguntas sugeridas y estados de carga y reintento. Consulta
+`POST /api/agent/query` mediante el proxy existente de Next.js hacia
+`POST /agent/query`. El cliente HTTP compartido adjunta el JWT de la sesión;
+no se configura un token de servicio en el navegador. El agente decide entre
+incidencias, inventario, RAG o sus combinaciones. Los tickets y el stock se leen
+de los gestores autenticados existentes; las
+consultas documentales requieren además Qdrant indexado y embeddings/LLM.
+El endpoint de conocimiento anterior se conserva, pero esta vista ya no lo utiliza.
+
+Los errores estructurados con `detail.message` aparecen en el panel de reintento.
+Los fallos operativos y tickets inexistentes producen respuestas honestas, sin
+inventar estados. El informe E2E desplegado en escritorio y móvil está en
+[`evidence/support-agent-e2e.json`](../../evidence/support-agent-e2e.json): login
+real, ticket, política, consulta mixta, ticket inexistente, JWT inválido y
+recuperación tras un HTTP 503 inyectado explícitamente. La cuenta temporal normal
+se eliminó; se comprobó que las incidencias no cambiaron y el informe no guarda
+credenciales.
+
+El inventario por ID, SKU o nombre de producto se consulta desde la misma vista;
+los nombres ambiguos piden aclaracion, sin sumar existencias. La evidencia esta en
+[`evidence/support-agent-inventory-e2e.json`](../../evidence/support-agent-inventory-e2e.json),
+incluida la consulta de las tres fuentes. Se verifico que productos, movimientos
+e incidencias no cambiaron. El stock conserva la cache de 30 segundos de la API,
+invalidada por sus escrituras; el agente no anade cache propia.
+
+En Docker, la API utiliza `QDRANT_URL=http://qdrant:6333` y depende del servicio
+Qdrant. La dirección `QDRANT_URL=http://localhost:6333` del entorno local no sirve
+dentro del contenedor de la API: apunta al propio contenedor y provoca respuestas
+HTTP 503. Tras cambiar Compose, ejecutar `docker compose up -d api` para aplicarlo.
+
 ---
 
 ## Proxy API (rewrites)
@@ -61,6 +94,7 @@ Esto evita problemas de CORS en desarrollo y Codespaces.
 | `/suppliers` | JWT | CRUD de proveedores |
 | `/incidents` | JWT | Analizador CSV de incidencias |
 | `/incidents-manager` | JWT | Gestor centralizado: alta, listado, estados y métricas |
+| `/knowledge` | JWT | Asistente de conocimiento con preguntas sugeridas y respuestas generadas |
 | `/account/profile` | JWT | Gestión de perfil de usuario |
 
 > Las rutas protegidas requieren un JWT válido en `localStorage` (`trackflow_token`).
