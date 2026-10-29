@@ -2,11 +2,20 @@
 
 Unified backend for TrackFlow. This service exposes business APIs and also serves the backoffice pages.
 
+User/profile operations live in `user_services.py`. Routers import that module
+explicitly to avoid a collision with the repository-level `services` package.
+`services.py` remains as a compatibility facade for legacy imports; it contains
+no duplicate business logic.
+From the repository root, `uv sync` also installs the local `trackflow-shared`
+workspace package needed by the API.
+
 Includes:
 
 - Incident Analyzer (`/api/incidents/*`)
 - Supplier Directory (`/suppliers/*`)
 - Auth and Users (`/auth/*`, `/users/*`, `/profiles/*`)
+- LangGraph support agent (`POST /agent/query`), alongside the existing RAG
+  endpoint. See [execution, traces and evaluation](../support_agent/README.md).
 - Backoffice frontend pages (`/`, `/login`, `/register`, `/account/profile`, etc.)
 
 ---

@@ -8,6 +8,12 @@ Este documento describe la arquitectura, decisiones de diseño, estrategia de fr
 
 El sistema RAG de TrackFlow está diseñado con una arquitectura modular y desacoplada, sin frameworks de orquestación (sin LangChain ni LlamaIndex), operando directamente mediante el SDK de `qdrant-client` y el SDK de `openai` conectado al gateway de inferencia de 4Geeks.
 
+**Actualizacion de orquestacion:** el pipeline RAG descrito aqui se conserva sin
+reescribirlo. El [agente de soporte](../../services/support_agent/README.md)
+incorpora LangGraph como capa adicional, con llamadas separadas a `retrieve` y
+`generate_answer`, checkpoints y trazas. `POST /knowledge/query` sigue disponible;
+`POST /agent/query` utiliza el grafo compilado.
+
 ```mermaid
 flowchart TD
     subgraph Ingesta ["1. Ingestión e Indexación (data/process/rag.py)"]
