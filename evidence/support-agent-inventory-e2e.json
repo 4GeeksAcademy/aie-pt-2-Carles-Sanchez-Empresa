@@ -1,0 +1,155 @@
+{
+  "validated_at": "2026-10-19T21:41:27.768Z",
+  "kind": "deployed_inventory_browser_e2e",
+  "backoffice": "http://localhost:3001",
+  "product_id": 1,
+  "ticket_id": 1,
+  "temporary_account_cleanup": "verified_deleted",
+  "inventory_unchanged": true,
+  "incidents_unchanged": true,
+  "credentials_persisted": false,
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "checks": [
+    {
+      "case": "inventory_by_id_desktop",
+      "status": "PASS",
+      "sources": [
+        "inventory"
+      ],
+      "outcome": "found",
+      "run_id": "08e20ae5-b07b-43c2-9b9a-dfcde9724807",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_inventory",
+        "inventory_response"
+      ]
+    },
+    {
+      "case": "inventory_by_sku",
+      "status": "PASS",
+      "sources": [
+        "inventory"
+      ],
+      "outcome": "found",
+      "run_id": "bdc67517-d47e-4e33-a8b1-000c8a6c8ee6",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_inventory",
+        "inventory_response"
+      ]
+    },
+    {
+      "case": "inventory_by_name",
+      "status": "PASS",
+      "sources": [
+        "inventory"
+      ],
+      "outcome": "ambiguous",
+      "run_id": "ca9aa669-bdb5-46c9-bdff-427cdbd473a4",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_inventory",
+        "inventory_fallback"
+      ]
+    },
+    {
+      "case": "inventory_rag_mobile",
+      "status": "PASS",
+      "sources": [
+        "inventory",
+        "rag"
+      ],
+      "outcome": "found",
+      "run_id": "b8ae4215-dac8-41f7-8948-8ce0cb2a0eac",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_inventory",
+        "retrieve_context",
+        "generate_response"
+      ]
+    },
+    {
+      "case": "incidents_inventory",
+      "status": "PASS",
+      "sources": [
+        "incidents",
+        "inventory"
+      ],
+      "outcome": "found",
+      "run_id": "9cb06749-3545-4077-b4d3-75c2f8f417d7",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_incident",
+        "lookup_inventory",
+        "inventory_response"
+      ]
+    },
+    {
+      "case": "all_three_sources",
+      "status": "PASS",
+      "sources": [
+        "incidents",
+        "inventory",
+        "rag"
+      ],
+      "outcome": "found",
+      "run_id": "30ec90aa-c0ff-4838-8d97-fde7da55dccd",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_incident",
+        "lookup_inventory",
+        "retrieve_context",
+        "generate_response"
+      ]
+    },
+    {
+      "case": "inventory_not_found",
+      "status": "PASS",
+      "sources": [
+        "inventory"
+      ],
+      "outcome": "not_found",
+      "run_id": "03db7eeb-9358-478e-b26f-3309f6b1bda2",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_inventory",
+        "inventory_fallback"
+      ]
+    },
+    {
+      "case": "inventory_invalid_auth",
+      "status": "PASS",
+      "sources": [
+        "inventory"
+      ],
+      "outcome": "unauthorized",
+      "run_id": "d074f8d9-8959-4d7a-968c-3dfe8f839791",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_inventory",
+        "inventory_fallback"
+      ]
+    }
+  ],
+  "limitations": [
+    "Inventory retains the existing 30-second API cache, invalidated on writes.",
+    "Timeout, network failure and invalid-response paths are verified by focused tests, without disrupting the deployed backend."
+  ]
+}

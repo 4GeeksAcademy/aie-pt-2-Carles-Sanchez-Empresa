@@ -897,6 +897,49 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
 - [ ] Capturar y evaluar corridas con Qdrant y LLM reales antes de validar para
   produccion. Las capturas iniciales son simuladas y estan etiquetadas como tales.
 
+### Agente de soporte LangGraph - Parte 2 (2026-10-19)
+
+- [x] Contratos Pydantic de entrada, incidente y resultado; tool HTTP de solo
+  lectura contra `GET /api/incidents/{id}` existente, sin dataset paralelo.
+- [x] JWT del usuario por peticion HTTP; CLI/capturas leen configuracion de
+  entorno. Credenciales fuera de estado, checkpoints y trazas.
+- [x] Deadline total de 5.0 segundos y ruta explicita de fallback para timeout,
+  recurso inexistente, auth, red/servicio y respuesta invalida.
+- [x] Enrutamiento automatico RAG/tool/ambos con salida LLM validada, aclaracion
+  de ID ausente/ambiguo y fallback si falla el clasificador.
+- [x] Respuesta operativa determinista; fuentes separadas y respuestas mixtas
+  parciales sin inventar estados ni pasar tickets al generador del RAG.
+- [x] Trazas con fuentes ordenadas, intentos fallidos y hashes de router/tool;
+  reanudacion sin credenciales persistidas y compatibilidad con checkpoints RAG.
+- [x] Cuatro evals nuevas y capturas offline recapturadas explicitamente;
+  integracion con router real, autenticacion JWT y TinyDB temporal sin escrituras
+  de la tool. Modelo real probado con preguntas de las tres rutas.
+- [x] Verificacion final: `uv run python -m pytest tests/ -q`, 200 pruebas
+  correctas; cinco avisos de deprecacion en dependencias/codigo existente.
+- [x] Vista de backoffice integrada con `/agent/query` mediante cliente HTTP
+  compartido, JWT de sesion, errores estructurados y reintento.
+- [x] E2E desplegado de navegador: API y Qdrant reales, login normal temporal,
+  ticket existente, politica, consulta mixta, 404, JWT invalido, 503 controlado
+  y reintento real; escritorio 1440x1000 y movil 390x844, sin errores JS ni
+  desbordamiento horizontal. Cuenta temporal eliminada e incidencias sin cambios.
+- [x] Evidencia sin credenciales en `evidence/support-agent-e2e.json`, con IDs
+  de trazas live. Comprobacion TypeScript focalizada y cliente HTTP correctos.
+- [x] Tool de inventario independiente: GET real por ID/SKU/nombre, contrato
+  tipado, JWT, deadline total 5.0 s, producto inexistente/ambiguo y fallback.
+- [x] Rutas inventario, inventario+RAG, tickets+inventario y tres fuentes;
+  datos operativos separados del contexto documental, sin agregar almacenes.
+- [x] Cuatro evals de inventario adicionales, diez capturas simuladas y prueba
+  del router real con SQLModel, stock por almacen y solo SELECT.
+- [x] Suite ampliada: 237 pruebas correctas, cinco avisos de deprecacion existentes.
+- [x] E2E de inventario desde la vista con login normal y datos reales: ocho
+  casos correctos (ID, SKU, nombre ambiguo, RAG, tickets, tres fuentes, 404 y JWT
+  invalido), escritorio y movil sin errores JS ni desbordamiento. Tablas de
+  productos/movimientos e incidencias sin cambios y cuenta temporal eliminada.
+- [x] Evidencia de inventario sin credenciales en
+  `evidence/support-agent-inventory-e2e.json`, con IDs de trazas live y limites
+  de cache documentados. El timeout del clasificador se ajusto a 20 s tras
+  observar latencia real; el deadline de cada tool sigue siendo 5.0 s.
+
 ### 🧠 Base de Conocimiento RAG — Hito 7 (`trackflow_knowledge`)
 
 - [x] **Infraestructura**: servicio Qdrant en `docker-compose.yml` (`qdrant/qdrant:latest`, puertos 6333/6334, volumen `./data/qdrant:/qdrant/storage`).
@@ -915,9 +958,14 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
   - Endpoint `POST /knowledge/query` (y alias `POST /api/knowledge/query`) en FastAPI respondiendo `{ "answer": "..." }`.
   - Importa directamente `query()` desde el pipeline sin duplicar lógica y sin exponer fragmentos crudos al cliente.
 - [x] **Fase 4 — Interfaz de usuario (`uis/backoffice/app/knowledge/`)**:
-  - Página Next.js `/knowledge` en el Backoffice con soporte modo claro/oscuro y paleta TrackFlow.
+  - Página Next.js `/knowledge` en el Backoffice con la paleta corporativa TrackFlow, sin estilos de modo oscuro específicos que desentonen con el resto de vistas.
   - Manejo de estados de carga (spinner), error (reintento) y visualización de la respuesta oficial con preguntas frecuentes clicables.
   - Menú lateral actualizado (`Sidebar.tsx`) y traducciones en `es.ts` y `en.ts`.
+- [x] **Corrección operativa y visual (2026-10-18)**:
+  - Resuelto HTTP 503 por `QDRANT_URL=http://localhost:6333` dentro de la API: Compose utiliza `http://qdrant:6333` y arranca Qdrant como dependencia.
+  - Completadas las traducciones ES/EN de la vista y de las preguntas sugeridas; paneles y bordes dorados/anaranjados compartidos con el backoffice y controles responsive.
+  - Verificación: 12 pruebas RAG correctas y Playwright en 1440 y 390 px (ES/EN, colores, sin desbordamiento, carga, 503 simulado, reintento real HTTP 200 y limpieza del campo; sin errores JavaScript).
+  - TypeScript global sigue bloqueado por cinco errores ajenos a esta vista en `BackofficeClientLayout.tsx` y `app/telemetry/page.tsx`; sin errores detectados en los archivos de interfaz modificados.
 - [x] **Fase 5 — Pruebas unitarias (`tests/pipelines/test_rag.py`)**:
   - 8 pruebas unitarias de recuperación/generación y 4 casos de regresión offline de reindexación (uno por documento) con Qdrant en memoria: cambiar Markdown actualiza textos y vectores y elimina reglas obsoletas sin duplicar puntos.
   - Ejecución 100% exitosa con `python -m pytest tests/pipelines/test_rag.py`.

@@ -1,0 +1,117 @@
+{
+  "validated_at": "2026-10-19T20:46:58.507Z",
+  "kind": "deployed_browser_e2e",
+  "backoffice": "http://localhost:3001",
+  "api": "http://localhost:8000",
+  "ticket_id": 1,
+  "temporary_account_cleanup": "verified_deleted",
+  "incidents_unchanged": true,
+  "credentials_persisted": false,
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "checks": [
+    {
+      "case": "ticket_desktop",
+      "status": "PASS",
+      "transport": "browser -> Next proxy -> FastAPI -> LangGraph",
+      "sources": [
+        "incidents"
+      ],
+      "outcome": "found",
+      "run_id": "453652f6-2b02-44e5-88ae-015bd9e47755",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_incident",
+        "ticket_response"
+      ]
+    },
+    {
+      "case": "documentation_desktop",
+      "status": "PASS",
+      "transport": "browser -> Next proxy -> FastAPI -> LangGraph",
+      "sources": [
+        "rag"
+      ],
+      "run_id": "f1a2bfbe-ed2f-4461-9fe9-8e885222ae0a",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "retrieve_context",
+        "generate_response"
+      ]
+    },
+    {
+      "case": "mixed_mobile",
+      "status": "PASS",
+      "transport": "browser -> Next proxy -> FastAPI -> LangGraph",
+      "sources": [
+        "incidents",
+        "rag"
+      ],
+      "outcome": "found",
+      "run_id": "70761d7a-ad67-4b3a-a444-8bf7a698b166",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_incident",
+        "retrieve_context",
+        "generate_response"
+      ]
+    },
+    {
+      "case": "missing_ticket_mobile",
+      "status": "PASS",
+      "transport": "browser -> Next proxy -> FastAPI -> LangGraph",
+      "sources": [
+        "incidents"
+      ],
+      "outcome": "not_found",
+      "run_id": "e6b7eaa2-4f55-486d-8524-6dbd194a1038",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_incident",
+        "tool_fallback"
+      ]
+    },
+    {
+      "case": "invalid_auth_mobile",
+      "status": "PASS",
+      "transport": "browser -> Next proxy -> FastAPI -> LangGraph",
+      "sources": [
+        "incidents"
+      ],
+      "outcome": "unauthorized",
+      "run_id": "05eea501-8a40-427c-8879-00fe46530624",
+      "nodes": [
+        "receive_question",
+        "route_question",
+        "lookup_incident",
+        "tool_fallback"
+      ]
+    },
+    {
+      "case": "structured_503_ui",
+      "status": "PASS",
+      "kind": "explicitly_injected_http_failure"
+    },
+    {
+      "case": "retry_after_503",
+      "status": "PASS",
+      "kind": "real_http_after_injected_failure",
+      "run_id": "b25fac51-8a24-4b50-92d1-145177eaf4dc"
+    }
+  ],
+  "limitations": [
+    "Total timeout and stopped-service faults verified by focused tests, not injected into the deployed backend."
+  ]
+}

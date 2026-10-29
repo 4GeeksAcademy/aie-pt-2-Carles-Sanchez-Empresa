@@ -32,6 +32,38 @@ The `dev` script uses port 3001. FastAPI must be running on port 8000 or proxied
 
 The `EN | ES` control in the navbar changes the complete interface immediately. The selected language is stored in `localStorage` under `lang`, so it persists across routes and browser reloads.
 
+## Knowledge Base
+
+The `/knowledge` view uses the shared TrackFlow palette and ES/EN translations,
+including suggested questions, loading and retry states. It calls
+`POST /api/agent/query` through the existing Next.js proxy, which forwards to
+`POST /agent/query`. The shared API client attaches the current session JWT;
+no browser-side service token is configured. The agent chooses incidents,
+inventory, RAG or their combinations. Ticket/stock queries read the existing
+authenticated managers; documentary
+queries also require indexed Qdrant and the configured embedding/LLM services.
+The legacy knowledge endpoint remains available but is no longer used by this view.
+
+Agent errors with `detail.message` are displayed in the existing retry panel.
+Operational failures and missing tickets produce honest agent answers instead of
+invented states. The deployed desktop/mobile E2E report is in
+[`evidence/support-agent-e2e.json`](../../evidence/support-agent-e2e.json): real
+login, ticket, policy, mixed query, missing ticket, invalid JWT and recovery after
+an explicitly injected HTTP 503. The temporary normal-user account was deleted;
+incident storage was verified unchanged and no credentials are stored in the report.
+
+Inventory by ID, SKU or product name is available through the same view; ambiguous
+names request clarification rather than aggregating stock. Inventory E2E evidence
+is in [`evidence/support-agent-inventory-e2e.json`](../../evidence/support-agent-inventory-e2e.json),
+including all three sources together. Products, movements and incidents were
+verified unchanged. Stock retains the existing inventory API's 30-second cache,
+invalidated by its writes; the agent adds no cache.
+
+In Docker, the API uses `QDRANT_URL=http://qdrant:6333` and depends on the Qdrant
+service. A host-side `QDRANT_URL=http://localhost:6333` is not valid inside the
+API container: it points back to the API container and causes query responses
+with HTTP 503. After changing Compose, run `docker compose up -d api` to apply it.
+
 ---
 
 ## API proxy (rewrites)
@@ -60,7 +92,8 @@ The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls t
 | `/` | JWT | Dashboard — inventory, shipments & carriers |
 | `/suppliers` | JWT | Supplier directory CRUD |
 | `/incidents` | JWT | CSV incident analyzer |
-| `/sales-forecast` | JWT | TrackFlow consolidated revenue forecast, test metrics, variability band, annual filters, and training-series decomposition charts |
+| `/knowledge` | JWT | Knowledge assistant with suggested questions and generated answers |
+| `/sales-forecast` | JWT | TrackFlow consolidated revenue forecast, test metrics, variability band and annual filters |
 | `/account/profile` | JWT | User profile management |
 
 > Protected routes require a valid JWT stored in `localStorage` (`trackflow_token`).

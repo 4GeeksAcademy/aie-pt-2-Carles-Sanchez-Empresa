@@ -16,8 +16,8 @@ services:
       - "3000:3000"   # website
       - "3001:3001"   # backoffice
     command: >
-      sh -c "cd /app/uis/website && npx next dev --port 3000 &
-             cd /app/uis/backoffice && npx next dev --port 3001 &
+      sh -c "cd /app/uis/website && npx next dev --webpack --port 3000 &
+             cd /app/uis/backoffice && npx next dev --webpack --port 3001 &
              wait"
     volumes:
       # Bind mounts para recarga en caliente
@@ -57,10 +57,11 @@ services:
     environment:
       - TELEMETRY_ENDPOINT=/telemetry/events
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - QDRANT_URL=http://qdrant:6333
       - SUPPORT_AGENT_STATE_DIR=/var/lib/trackflow-agent
     depends_on:
       - redis
+      - qdrant
     networks:
       - trackflow-net
 

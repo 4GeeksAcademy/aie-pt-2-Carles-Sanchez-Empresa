@@ -1,16 +1,2 @@
-============================= test session starts ==============================
-platform linux -- Python 3.12.1, pytest-9.1.1, pluggy-1.6.0 -- /workspaces/aie-pt-2-Carles-Sanchez-Empresa/.venv/bin/python3
-cachedir: .pytest_cache
-rootdir: /workspaces/aie-pt-2-Carles-Sanchez-Empresa
-configfile: pyproject.toml
-plugins: anyio-4.15.1, langsmith-0.14.11, asyncio-1.4.0
-asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 5 items
-
-tests/pipelines/test_support_agent_evals.py::test_eval_retrieve_precedes_generation_and_context_is_not_retrieved_twice PASSED [ 20%]
-tests/pipelines/test_support_agent_evals.py::test_eval_answer_is_grounded_in_existing_storage_policy PASSED [ 40%]
-tests/pipelines/test_support_agent_evals.py::test_eval_empty_context_routes_to_honest_response_without_generation PASSED [ 60%]
-tests/pipelines/test_support_agent_evals.py::test_eval_empty_question_ends_without_retrieval PASSED [ 80%]
-tests/pipelines/test_support_agent_evals.py::test_eval_perfect_routing_does_not_excuse_wrong_policy_answer PASSED [100%]
-
-============================== 5 passed in 0.57s ===============================
+........................................................................ [ 65%]
+......................................                                   [100%]
