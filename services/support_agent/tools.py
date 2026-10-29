@@ -1,4 +1,4 @@
-"""Read-only access to the existing authenticated incidents API."""
+"""Strict operational result models and legacy HTTP tools used by tests."""
 
 import asyncio
 import os
@@ -192,4 +192,108 @@ class InventoryTool:
         except (ValidationError, ValueError):
             return InventoryResult(outcome="invalid_response")
         except httpx.HTTPError:
+            return InventoryResult(outcome="unavailable")
+
+
+class MCPTrackFlowTools:
+    """Synchronous LangGraph adapter over an authenticated MCP client session.
+
+    The request's OAuth bearer is provided only to the MCP transport. It is not
+    persisted in graph state/checkpoints or forwarded directly to the TrackFlow API.
+    """
+
+    def __init__(self, server_url: str, *, token_provider, timeout: float = 10.0):
+        self.server_url = server_url
+        self.token_provider = token_provider
+        self.timeout = timeout
+
+    def _call(self, tool_name: str, arguments: dict, *, token: str | None = None):
+        import anyio
+        import httpx2
+        from mcp import ClientSession
+        from mcp.client.streamable_http import streamable_http_client
+
+        token = token if token is not None else self.token_provider()
+        if not token:
+            raise PermissionError("A user OAuth access token is required for MCP")
+
+        async def invoke():
+            async with httpx2.AsyncClient(
+                headers={"Authorization": f"Bearer {token}"}, timeout=self.timeout,
+            ) as http_client:
+                async with streamable_http_client(self.server_url, http_client=http_client) as (read_stream, write_stream, _):
+                    async with ClientSession(read_stream, write_stream) as session:
+                        await session.initialize()
+                        return await session.call_tool(tool_name, arguments)
+
+        return anyio.run(invoke)
+
+    @staticmethod
+    def _structured(result):
+        if getattr(result, "isError", False):
+            raise RuntimeError("MCP tool returned a controlled error")
+        content = getattr(result, "structuredContent", None)
+        if content is None:
+            content = getattr(result, "structured_content", None)
+        if content is None:
+            raise ValueError("MCP tool response did not include structured content")
+        return content
+
+    def incident(self, payload: TicketInput, *, token: str | None = None) -> TicketResult:
+        payload = TicketInput.model_validate(payload)
+        if token is not None and not token:
+            return TicketResult(outcome="unauthorized")
+        try:
+            raw = self._structured(self._call(
+                "incidents_get", {"incident_id": payload.ticket_id}, token=token,
+            ))
+            result = TicketResult(outcome="found", incident=Incident.model_validate(raw))
+            if result.incident.id != payload.ticket_id:
+                return TicketResult(outcome="invalid_response")
+            return result
+        except PermissionError:
+            return TicketResult(outcome="unauthorized")
+        except TimeoutError:
+            return TicketResult(outcome="timeout")
+        except ValueError:
+            return TicketResult(outcome="invalid_response")
+        except Exception:
+            return TicketResult(outcome="unavailable")
+
+    def inventory(self, payload: InventoryInput, *, token: str | None = None) -> InventoryResult:
+        payload = InventoryInput.model_validate(payload)
+        if token is not None and not token:
+            return InventoryResult(outcome="unauthorized")
+        try:
+            if payload.product_id:
+                raw = self._structured(self._call(
+                    "inventory_get_product", {"product_id": payload.product_id}, token=token,
+                ))
+                products = [InventoryProduct.model_validate(raw)]
+            else:
+                raw = self._structured(self._call(
+                    "inventory_list_products", {
+                        key: value for key, value in {"warehouse": payload.warehouse, "category": payload.category}.items()
+                        if value is not None
+                    }, token=token,
+                ))
+                products = TypeAdapter(list[InventoryProduct]).validate_python(raw["result"])
+            products = [product for product in products
+                        if (not payload.warehouse or product.warehouse == payload.warehouse)
+                        and (not payload.category or product.category == payload.category)]
+            if payload.sku_code:
+                products = [product for product in products if product.sku_code.casefold() == payload.sku_code.casefold()]
+            if payload.product_name:
+                exact = [product for product in products if product.name.casefold() == payload.product_name.casefold()]
+                products = exact or [product for product in products if payload.product_name.casefold() in product.name.casefold()]
+            if not products:
+                return InventoryResult(outcome="not_found")
+            return InventoryResult(outcome="found" if len(products) == 1 else "ambiguous", products=products[:10])
+        except PermissionError:
+            return InventoryResult(outcome="unauthorized")
+        except TimeoutError:
+            return InventoryResult(outcome="timeout")
+        except ValidationError:
+            return InventoryResult(outcome="invalid_response")
+        except Exception:
             return InventoryResult(outcome="unavailable")

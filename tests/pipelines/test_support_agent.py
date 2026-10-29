@@ -654,6 +654,56 @@ def test_invalid_router_never_falls_back_to_rag(decision):
     tool.assert_not_called()
 
 
+def test_graph_without_mcp_fails_closed_for_operations_but_keeps_rag():
+    retrieve = Mock(return_value=[{"text": "Policy"}])
+    route = lambda question: RouteDecision(source="incidents", ticket_id=482)
+    result = build_graph(route_fn=route, retrieve_fn=retrieve).invoke({"question": "Estado del ticket 482?"})
+    assert result["ticket_result"]["outcome"] == "unavailable"
+    retrieve.assert_not_called()
+
+    rag_result = build_graph(
+        route_fn=lambda question: RouteDecision(source="rag", knowledge_question=question),
+        retrieve_fn=retrieve, generate_fn=lambda question, chunks: "Policy answer",
+    ).invoke({"question": "Politica de devoluciones?"})
+    assert rag_result["answer"] == "Policy answer"
+    retrieve.assert_called_once()
+
+
+def test_graph_routes_operational_lookup_through_mcp_when_configured(monkeypatch):
+    from types import SimpleNamespace
+    from support_agent.tools import MCPTrackFlowTools
+
+    calls = []
+    incident = incident_payload(482)
+
+    def fake_mcp_call(self, name, arguments, *, token=None):
+        calls.append(("mcp", name, arguments, token))
+        return SimpleNamespace(isError=False, structuredContent=incident)
+
+    def retrieve(question):
+        calls.append(("rag", question))
+        return [{"text": "Return policy"}]
+
+    monkeypatch.setattr(MCPTrackFlowTools, "_call", fake_mcp_call)
+    graph = build_graph(
+        retrieve_fn=retrieve,
+        generate_fn=lambda question, chunks: "Policy answer",
+        route_fn=lambda question: RouteDecision(source="both", ticket_id=482, knowledge_question="Politica?"),
+        mcp_server_url="https://mcp.trackflow.test/mcp",
+        token_provider=lambda: "request-oauth-token",
+    )
+
+    result = graph.invoke({"question": "Estado del ticket 482 y politica?"})
+
+    assert result["ticket_result"]["outcome"] == "found"
+    assert "Estado: in_progress" in result["answer"]
+    assert "Documentacion: Policy answer" in result["answer"]
+    assert calls == [
+        ("mcp", "incidents_get", {"incident_id": 482}, "request-oauth-token"),
+        ("rag", "Politica?"),
+    ]
+
+
 def test_http_forwards_only_callers_token(tmp_path):
     tool = Mock(return_value=TicketResult(outcome="unauthorized"))
     runtime = AgentRuntime(tmp_path, incident_fn=tool, route_fn=lambda question: RouteDecision(source="incidents", ticket_id=482))

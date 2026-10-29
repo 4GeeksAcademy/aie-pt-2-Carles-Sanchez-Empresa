@@ -62,7 +62,7 @@ class TraceStore:
 class AgentRuntime:
     def __init__(
         self, state_dir: Path, *, retrieve_fn=None, generate_fn=None,
-        route_fn=None, incident_fn=None, inventory_fn=None,
+        route_fn=None, incident_fn=None, inventory_fn=None, mcp_server_url: str | None = None,
         interrupt_after=None, capture_kind: str = "live",
     ):
         state_dir = Path(state_dir)
@@ -78,6 +78,7 @@ class AgentRuntime:
             self.graph = build_graph(
                 self.checkpointer, retrieve_fn=retrieve_fn, generate_fn=generate_fn,
                 route_fn=route_fn, incident_fn=incident_fn, inventory_fn=inventory_fn,
+                mcp_server_url=mcp_server_url,
                 token_provider=lambda: self._token,
                 instrument=self._instrument, interrupt_after=interrupt_after,
             )
