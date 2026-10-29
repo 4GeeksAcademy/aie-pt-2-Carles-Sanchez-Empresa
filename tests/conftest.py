@@ -91,8 +91,8 @@ def mock_db(tmp_db_path, request):
          patch("database.IncidentQuery", Query()), \
          patch("auth.users_table", users_table), \
          patch("auth.used_tokens_table", used_tokens_table), \
-         patch("services.users_table", users_table), \
-         patch("services.profiles_table", profiles_table), \
+         patch("user_services.users_table", users_table), \
+         patch("user_services.profiles_table", profiles_table), \
          patch("routes.auth.users_table", users_table), \
          patch("routes.suppliers.suppliers_table", suppliers_table), \
          patch("routes.incidents.incidents_table", incidents_table):

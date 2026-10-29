@@ -1,0 +1,284 @@
+{
+  "storage": {
+    "schema_version": 1,
+    "run_id": "2d0f43b4-26c1-41dc-b4d2-0b43368e1219",
+    "thread_id": "9733a949-52d5-447c-8027-d2fa998bc13e",
+    "started_at": "2026-10-17T15:43:48.848700+00:00",
+    "status": "completed",
+    "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
+    "resumed": false,
+    "events": [
+      {
+        "sequence": 1,
+        "node": "receive_question",
+        "started_at": "2026-10-17T15:43:48.856164+00:00",
+        "input": {
+          "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
+          "context": [],
+          "answer": null,
+          "error": null
+        },
+        "status": "completed",
+        "output": {
+          "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
+          "context": [],
+          "answer": null,
+          "error": null
+        },
+        "next": "retrieve_context",
+        "reason": "valid_question",
+        "finished_at": "2026-10-17T15:43:48.857974+00:00",
+        "duration_ms": 0.047
+      },
+      {
+        "sequence": 2,
+        "node": "retrieve_context",
+        "started_at": "2026-10-17T15:43:48.861210+00:00",
+        "input": {
+          "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
+          "context": [],
+          "answer": null,
+          "error": null
+        },
+        "status": "completed",
+        "output": {
+          "context": [
+            {
+              "company": "trackflow",
+              "source_document": "storage-pricing",
+              "section": "Tarifas de Almacenamiento / bloque 1",
+              "language": "es",
+              "chunk_index": 0,
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "score": 0.5788
+            },
+            {
+              "company": "trackflow",
+              "source_document": "carrier-coverage",
+              "section": "Cobertura de Transportistas / bloque 2",
+              "language": "es",
+              "chunk_index": 1,
+              "text": "Cobertura de Transportistas\n\nEspa\u00f1a (Zaragoza): MRW, SEUR, DHL, y dos transportistas locales de \u00faltima\nmilla en zona metropolitana de Zaragoza.\n- SEUR: mejor cobertura en zonas rurales de Arag\u00f3n.\n- MRW: tarifas m\u00e1s competitivas para paquetes peque\u00f1os (menores a 2 kg).\n- Transportistas locales: solo disponibles dentro del \u00e1rea metropolitana de\n  Zaragoza, no cubren el resto de Espa\u00f1a.",
+              "score": 0.4307
+            },
+            {
+              "company": "trackflow",
+              "source_document": "storage-pricing",
+              "section": "Tarifas de Almacenamiento / bloque 3",
+              "language": "es",
+              "chunk_index": 2,
+              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "score": 0.4218
+            }
+          ]
+        },
+        "next": "generate_response",
+        "reason": "context_available",
+        "finished_at": "2026-10-17T15:43:49.610838+00:00",
+        "duration_ms": 748.626
+      },
+      {
+        "sequence": 3,
+        "node": "generate_response",
+        "started_at": "2026-10-17T15:43:49.612885+00:00",
+        "input": {
+          "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
+          "context": [
+            {
+              "company": "trackflow",
+              "source_document": "storage-pricing",
+              "section": "Tarifas de Almacenamiento / bloque 1",
+              "language": "es",
+              "chunk_index": 0,
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "score": 0.5788
+            },
+            {
+              "company": "trackflow",
+              "source_document": "carrier-coverage",
+              "section": "Cobertura de Transportistas / bloque 2",
+              "language": "es",
+              "chunk_index": 1,
+              "text": "Cobertura de Transportistas\n\nEspa\u00f1a (Zaragoza): MRW, SEUR, DHL, y dos transportistas locales de \u00faltima\nmilla en zona metropolitana de Zaragoza.\n- SEUR: mejor cobertura en zonas rurales de Arag\u00f3n.\n- MRW: tarifas m\u00e1s competitivas para paquetes peque\u00f1os (menores a 2 kg).\n- Transportistas locales: solo disponibles dentro del \u00e1rea metropolitana de\n  Zaragoza, no cubren el resto de Espa\u00f1a.",
+              "score": 0.4307
+            },
+            {
+              "company": "trackflow",
+              "source_document": "storage-pricing",
+              "section": "Tarifas de Almacenamiento / bloque 3",
+              "language": "es",
+              "chunk_index": 2,
+              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "score": 0.4218
+            }
+          ],
+          "answer": null,
+          "error": null
+        },
+        "status": "completed",
+        "output": {
+          "answer": "La tarifa est\u00e1ndar de almacenamiento en Zaragoza es de 16 EUR por metro c\u00fabico al mes."
+        },
+        "next": "__end__",
+        "reason": "response_ready",
+        "finished_at": "2026-10-17T15:44:01.006899+00:00",
+        "duration_ms": 11392.464
+      }
+    ],
+    "answer": "La tarifa est\u00e1ndar de almacenamiento en Zaragoza es de 16 EUR por metro c\u00fabico al mes.",
+    "error": null,
+    "metadata": {
+      "graph_sha256": "77de7511ad26a8d0246ebee90e0bcca50564187eb85d73691014cf0b0bde0d39",
+      "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
+      "corpus_sha256": {
+        "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
+        "trackflow-returns-policy.es.md": "6a6eccd83a6e087785a42eeb10e47f8ba89f02a8ae4415ca68cb2f78f17897e8",
+        "trackflow-sla-delivery.es.md": "c759eff9ebfa957c96feb1c73965817f64aafdb35d7ec1fe6c0aa25f08ab75bb",
+        "trackflow-storage-pricing.es.md": "061cc66725309116b144c6afc8c14f781cfc2d1638696a872bb984da50f364e2"
+      },
+      "generation_model": "madrid-spain/openrouter/deepseek/deepseek-v4-flash",
+      "top_k": 5,
+      "min_score": 0.35,
+      "capture_kind": "live"
+    },
+    "finished_at": "2026-10-17T15:44:01.010641+00:00"
+  },
+  "out_of_domain": {
+    "schema_version": 1,
+    "run_id": "de6de468-4486-46d4-8e74-a7b1a465c558",
+    "thread_id": "0f781c2f-ef1c-41da-b877-bcf90ce95497",
+    "started_at": "2026-10-17T15:44:01.011846+00:00",
+    "status": "completed",
+    "question": "Como reparo una bicicleta?",
+    "resumed": false,
+    "events": [
+      {
+        "sequence": 1,
+        "node": "receive_question",
+        "started_at": "2026-10-17T15:44:01.014636+00:00",
+        "input": {
+          "question": "Como reparo una bicicleta?",
+          "context": [],
+          "answer": null,
+          "error": null
+        },
+        "status": "completed",
+        "output": {
+          "question": "Como reparo una bicicleta?",
+          "context": [],
+          "answer": null,
+          "error": null
+        },
+        "next": "retrieve_context",
+        "reason": "valid_question",
+        "finished_at": "2026-10-17T15:44:01.015700+00:00",
+        "duration_ms": 0.054
+      },
+      {
+        "sequence": 2,
+        "node": "retrieve_context",
+        "started_at": "2026-10-17T15:44:01.017629+00:00",
+        "input": {
+          "question": "Como reparo una bicicleta?",
+          "context": [],
+          "answer": null,
+          "error": null
+        },
+        "status": "completed",
+        "output": {
+          "context": []
+        },
+        "next": "no_information",
+        "reason": "empty_context",
+        "finished_at": "2026-10-17T15:44:01.529050+00:00",
+        "duration_ms": 509.769
+      },
+      {
+        "sequence": 3,
+        "node": "no_information",
+        "started_at": "2026-10-17T15:44:01.534608+00:00",
+        "input": {
+          "question": "Como reparo una bicicleta?",
+          "context": [],
+          "answer": null,
+          "error": null
+        },
+        "status": "completed",
+        "output": {
+          "answer": "Lo lamento, pero en los acuerdos est\u00e1ndar y la base de conocimiento oficial de TrackFlow no disponemos de informaci\u00f3n suficiente para responder a esta consulta. Para casos particulares o condiciones no documentadas, le sugiero consultar con el equipo correspondiente o con la direcci\u00f3n comercial."
+        },
+        "next": "__end__",
+        "reason": "response_ready",
+        "finished_at": "2026-10-17T15:44:01.536286+00:00",
+        "duration_ms": 0.057
+      }
+    ],
+    "answer": "Lo lamento, pero en los acuerdos est\u00e1ndar y la base de conocimiento oficial de TrackFlow no disponemos de informaci\u00f3n suficiente para responder a esta consulta. Para casos particulares o condiciones no documentadas, le sugiero consultar con el equipo correspondiente o con la direcci\u00f3n comercial.",
+    "error": null,
+    "metadata": {
+      "graph_sha256": "77de7511ad26a8d0246ebee90e0bcca50564187eb85d73691014cf0b0bde0d39",
+      "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
+      "corpus_sha256": {
+        "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
+        "trackflow-returns-policy.es.md": "6a6eccd83a6e087785a42eeb10e47f8ba89f02a8ae4415ca68cb2f78f17897e8",
+        "trackflow-sla-delivery.es.md": "c759eff9ebfa957c96feb1c73965817f64aafdb35d7ec1fe6c0aa25f08ab75bb",
+        "trackflow-storage-pricing.es.md": "061cc66725309116b144c6afc8c14f781cfc2d1638696a872bb984da50f364e2"
+      },
+      "generation_model": "madrid-spain/openrouter/deepseek/deepseek-v4-flash",
+      "top_k": 5,
+      "min_score": 0.35,
+      "capture_kind": "live"
+    },
+    "finished_at": "2026-10-17T15:44:01.540546+00:00"
+  },
+  "empty": {
+    "schema_version": 1,
+    "run_id": "8b1d6a70-3f4d-4cb3-9178-83af66aea90a",
+    "thread_id": "9cfdde0d-7e1e-4d9e-a5bf-f898a4abd7ac",
+    "started_at": "2026-10-17T15:44:01.542006+00:00",
+    "status": "rejected",
+    "question": "   ",
+    "resumed": false,
+    "events": [
+      {
+        "sequence": 1,
+        "node": "receive_question",
+        "started_at": "2026-10-17T15:44:01.545564+00:00",
+        "input": {
+          "question": "   ",
+          "context": [],
+          "answer": null,
+          "error": null
+        },
+        "status": "completed",
+        "output": {
+          "question": "",
+          "context": [],
+          "answer": null,
+          "error": "La pregunta no puede estar vacia."
+        },
+        "next": "__end__",
+        "reason": "empty_question",
+        "finished_at": "2026-10-17T15:44:01.547259+00:00",
+        "duration_ms": 0.045
+      }
+    ],
+    "answer": null,
+    "error": "La pregunta no puede estar vacia.",
+    "metadata": {
+      "graph_sha256": "77de7511ad26a8d0246ebee90e0bcca50564187eb85d73691014cf0b0bde0d39",
+      "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
+      "corpus_sha256": {
+        "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
+        "trackflow-returns-policy.es.md": "6a6eccd83a6e087785a42eeb10e47f8ba89f02a8ae4415ca68cb2f78f17897e8",
+        "trackflow-sla-delivery.es.md": "c759eff9ebfa957c96feb1c73965817f64aafdb35d7ec1fe6c0aa25f08ab75bb",
+        "trackflow-storage-pricing.es.md": "061cc66725309116b144c6afc8c14f781cfc2d1638696a872bb984da50f364e2"
+      },
+      "generation_model": "madrid-spain/openrouter/deepseek/deepseek-v4-flash",
+      "top_k": 5,
+      "min_score": 0.35,
+      "capture_kind": "live"
+    },
+    "finished_at": "2026-10-17T15:44:01.550766+00:00"
+  }
+}
