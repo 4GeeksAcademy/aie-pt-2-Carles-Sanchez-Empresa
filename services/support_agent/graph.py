@@ -10,7 +10,10 @@ from data.pipelines import rag
 
 from . import routing
 from .routing import RouteDecision
-from .tools import IncidentTool, TicketInput, TicketResult, InventoryTool, InventoryResult
+from .tools import (
+    IncidentTool, TicketInput, TicketResult, InventoryTool, InventoryResult,
+    InventoryInput, MCPTrackFlowTools,
+)
 
 
 class AgentState(BaseModel):
@@ -29,6 +32,16 @@ class AgentState(BaseModel):
 
 class GraphStructureError(ValueError):
     pass
+
+
+class _UnavailableMCPTools:
+    """Fail-closed operational adapter when the MCP endpoint is not configured."""
+
+    def incident(self, _payload: TicketInput, *, token: str | None = None) -> TicketResult:
+        return TicketResult(outcome="unavailable")
+
+    def inventory(self, _payload: InventoryInput, *, token: str | None = None) -> InventoryResult:
+        return InventoryResult(outcome="unavailable")
 
 
 def after_question(state: AgentState) -> str:
@@ -165,14 +178,25 @@ def build_graph(
     incident_fn: Callable | None = None,
     inventory_fn: Callable | None = None,
     token_provider: Callable | None = None,
+    mcp_server_url: str | None = None,
     instrument: Callable | None = None,
     interrupt_after: list[str] | None = None,
 ):
     retrieve = retrieve_fn or rag.retrieve
     generate = generate_fn or rag.generate_answer
     route = route_fn or routing.decide_route
-    incidents = incident_fn or IncidentTool()
-    inventory = inventory_fn or InventoryTool()
+    if incident_fn is None and inventory_fn is None:
+        mcp_tools = (
+            MCPTrackFlowTools(mcp_server_url, token_provider=token_provider or (lambda: None))
+            if mcp_server_url else _UnavailableMCPTools()
+        )
+        incidents = mcp_tools
+        inventory = mcp_tools
+        using_mcp = True
+    else:
+        incidents = incident_fn or IncidentTool()
+        inventory = inventory_fn or InventoryTool()
+        using_mcp = False
     credentials = token_provider or (lambda: None)
 
     def receive_question(state: AgentState) -> dict:
@@ -193,9 +217,12 @@ def build_graph(
 
     def lookup_incident(state: AgentState) -> dict:
         try:
-            result = TicketResult.model_validate(incidents(
-                TicketInput(ticket_id=state.decision.ticket_id), token=credentials(),
-            ))
+            ticket_input = TicketInput(ticket_id=state.decision.ticket_id)
+            if using_mcp:
+                raw_result = incidents.incident(ticket_input, token=credentials())
+            else:
+                raw_result = incidents(ticket_input, token=credentials())
+            result = TicketResult.model_validate(raw_result)
             if result.incident and result.incident.id != state.decision.ticket_id:
                 result = TicketResult(outcome="invalid_response")
         except TimeoutError:
@@ -206,9 +233,13 @@ def build_graph(
 
     def lookup_inventory(state: AgentState) -> dict:
         try:
-            result = InventoryResult.model_validate(inventory(
-                state.decision.inventory_query, token=credentials(),
-            ))
+            query = state.decision.inventory_query
+            if using_mcp:
+                result = InventoryResult.model_validate(inventory.inventory(query, token=credentials()))
+            else:
+                # The unified MCP inventory tools query by ID or list filters;
+                # keep legacy tool compatibility for SKU/name lookup.
+                result = InventoryResult.model_validate(inventory(query, token=credentials()))
             query = state.decision.inventory_query
             for product in result.products:
                 if ((query.product_id and product.id != query.product_id)

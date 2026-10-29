@@ -14,13 +14,15 @@ Configuración vía variables de entorno (.env):
 """
 
 import hashlib
+import hmac
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.hash import bcrypt
@@ -83,7 +85,24 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 # ───────────────────── Dependencia: get_current_user ─────────────────────
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
+def _service_route_allowed(request: Request) -> bool:
+    """Allow the MCP service principal only the exact operational API surface."""
+    method = request.method.upper()
+    path = request.url.path
+    if path == "/api/incidents":
+        return method in {"GET", "POST"}
+    if re.fullmatch(r"/api/incidents/[1-9][0-9]*", path):
+        return method == "GET"
+    if re.fullmatch(r"/api/incidents/[1-9][0-9]*/status", path):
+        return method == "PATCH"
+    if path == "/inventory/products":
+        return method == "GET"
+    if re.fullmatch(r"/inventory/products/[1-9][0-9]*", path):
+        return method == "GET"
+    return False
+
+
+async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)) -> dict:
     """
     Dependencia de FastAPI que extrae y valida el token JWT,
     busca el usuario en TinyDB y lo devuelve.
@@ -99,6 +118,24 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    # MCP→API authentication is deliberately separate from end-user JWTs. The
+    # service credential is accepted only on a narrow read/incident allowlist;
+    # arbitrary identity headers are never consulted.
+    service_token = os.getenv("MCP_API_SERVICE_TOKEN", "")
+    if service_token and hmac.compare_digest(token.encode(), service_token.encode()):
+        if not _service_route_allowed(request):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Service principal is not allowed on this endpoint")
+        return {"id": "mcp-service", "role": "service", "is_service": True}
+
+    # OAuth access tokens for MCP are RS256, explicitly audience-bound and must
+    # never be treated as legacy HS256 backoffice sessions.
+    try:
+        header = jwt.get_unverified_header(token)
+    except JWTError:
+        header = {}
+    if header.get("alg") == "RS256":
+        raise credentials_exception
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
@@ -111,7 +148,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
         raise credentials_exception
 
     user = users_table.get(doc_id=user_id_int)
-    if user is None:
+    if user is None or not user.get("is_active", True):
         raise credentials_exception
 
     # Sanitizar: eliminar hashed_password del dict inyectado

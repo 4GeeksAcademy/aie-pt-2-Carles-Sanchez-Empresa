@@ -1,9 +1,9 @@
 {
   "storage": {
     "schema_version": 1,
-    "run_id": "5ffe1472-ef58-4432-8475-175a097424f7",
-    "thread_id": "2e9951ab-0909-42f6-813e-1aa682025b2a",
-    "started_at": "2026-10-19T21:31:26.103654+00:00",
+    "run_id": "cdfe3975-c4d1-44d2-bfbd-5d327a413beb",
+    "thread_id": "996c2727-7bd7-42a6-ab77-914d3d74219e",
+    "started_at": "2026-10-28T17:29:18.423886+00:00",
     "status": "completed",
     "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
     "resumed": false,
@@ -11,7 +11,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.116481+00:00",
+        "started_at": "2026-10-28T17:29:18.433140+00:00",
         "input": {
           "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
           "context": [],
@@ -37,13 +37,13 @@
         },
         "next": "route_question",
         "reason": "valid_question",
-        "finished_at": "2026-10-19T21:31:26.117891+00:00",
-        "duration_ms": 0.091
+        "finished_at": "2026-10-28T17:29:18.435071+00:00",
+        "duration_ms": 0.059
       },
       {
         "sequence": 2,
         "node": "route_question",
-        "started_at": "2026-10-19T21:31:26.121105+00:00",
+        "started_at": "2026-10-28T17:29:18.437808+00:00",
         "input": {
           "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
           "context": [],
@@ -66,13 +66,13 @@
         },
         "next": "retrieve_context",
         "reason": "rag",
-        "finished_at": "2026-10-19T21:31:26.123044+00:00",
-        "duration_ms": 0.487
+        "finished_at": "2026-10-28T17:29:18.440005+00:00",
+        "duration_ms": 0.349
       },
       {
         "sequence": 3,
         "node": "retrieve_context",
-        "started_at": "2026-10-19T21:31:26.127550+00:00",
+        "started_at": "2026-10-28T17:29:18.442040+00:00",
         "input": {
           "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
           "context": [],
@@ -98,7 +98,7 @@
               "section": "Tarifas de Almacenamiento / bloque 3",
               "language": "es",
               "chunk_index": 2,
-              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "text": "Tarifas de Almacenamiento\n\nClientes con más de 50 metros cúbicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociación siempre debe pasar\npor Miguel Torres — un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
               "score": 1.0
             },
             {
@@ -107,7 +107,7 @@
               "section": "Tarifas de Almacenamiento / bloque 2",
               "language": "es",
               "chunk_index": 1,
-              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antig\u00fcedad de inventario en\ncualquier momento a trav\u00e9s de su account manager; este reporte no est\u00e1\nautomatizado actualmente para el cliente final, solo internamente.",
+              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antigüedad de inventario en\ncualquier momento a través de su account manager; este reporte no está\nautomatizado actualmente para el cliente final, solo internamente.",
               "score": 1.0
             },
             {
@@ -116,7 +116,7 @@
               "section": "Tarifas de Almacenamiento / bloque 1",
               "language": "es",
               "chunk_index": 0,
-              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente según volumen ocupado,\nno según número de unidades:\n\n- Tarifa estándar: 18 USD por metro cúbico al mes (Los Ángeles) o 16 EUR por\n  metro cúbico al mes (Zaragoza).\n- Los primeros 30 días de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con más de 180 días sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duración\" del 150% sobre la\n  tarifa estándar, a partir del día 181.",
               "score": 1.0
             }
           ]
@@ -124,13 +124,13 @@
         "next": "generate_response",
         "reason": "context_available",
         "source": "rag",
-        "finished_at": "2026-10-19T21:31:26.135791+00:00",
-        "duration_ms": 7.382
+        "finished_at": "2026-10-28T17:29:18.444597+00:00",
+        "duration_ms": 0.992
       },
       {
         "sequence": 4,
         "node": "generate_response",
-        "started_at": "2026-10-19T21:31:26.139196+00:00",
+        "started_at": "2026-10-28T17:29:18.448232+00:00",
         "input": {
           "question": "Cual es la tarifa estandar de almacenamiento en Zaragoza?",
           "context": [
@@ -140,7 +140,7 @@
               "section": "Tarifas de Almacenamiento / bloque 3",
               "language": "es",
               "chunk_index": 2,
-              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "text": "Tarifas de Almacenamiento\n\nClientes con más de 50 metros cúbicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociación siempre debe pasar\npor Miguel Torres — un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
               "score": 1.0
             },
             {
@@ -149,7 +149,7 @@
               "section": "Tarifas de Almacenamiento / bloque 2",
               "language": "es",
               "chunk_index": 1,
-              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antig\u00fcedad de inventario en\ncualquier momento a trav\u00e9s de su account manager; este reporte no est\u00e1\nautomatizado actualmente para el cliente final, solo internamente.",
+              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antigüedad de inventario en\ncualquier momento a través de su account manager; este reporte no está\nautomatizado actualmente para el cliente final, solo internamente.",
               "score": 1.0
             },
             {
@@ -158,7 +158,7 @@
               "section": "Tarifas de Almacenamiento / bloque 1",
               "language": "es",
               "chunk_index": 0,
-              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente según volumen ocupado,\nno según número de unidades:\n\n- Tarifa estándar: 18 USD por metro cúbico al mes (Los Ángeles) o 16 EUR por\n  metro cúbico al mes (Zaragoza).\n- Los primeros 30 días de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con más de 180 días sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duración\" del 150% sobre la\n  tarifa estándar, a partir del día 181.",
               "score": 1.0
             }
           ],
@@ -181,8 +181,8 @@
         },
         "next": "__end__",
         "reason": "response_ready",
-        "finished_at": "2026-10-19T21:31:26.143437+00:00",
-        "duration_ms": 0.255
+        "finished_at": "2026-10-28T17:29:18.449922+00:00",
+        "duration_ms": 0.187
       }
     ],
     "sources": [
@@ -191,9 +191,9 @@
     "answer": "La tarifa estandar de almacenamiento en Zaragoza es de 16 EUR por metro cubico al mes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -206,13 +206,13 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.151588+00:00"
+    "finished_at": "2026-10-28T17:29:18.453843+00:00"
   },
   "out_of_domain": {
     "schema_version": 1,
-    "run_id": "fde8a8a8-d707-43e8-a699-ecf9b5d02831",
-    "thread_id": "9d436409-bba1-49da-972b-9a91bc9be8ee",
-    "started_at": "2026-10-19T21:31:26.153648+00:00",
+    "run_id": "614afb89-fe16-4955-a084-03a4c447d4c5",
+    "thread_id": "09cbe9c0-7c55-4ec8-8be1-fc69c4c0c1f5",
+    "started_at": "2026-10-28T17:29:18.455422+00:00",
     "status": "completed",
     "question": "Como reparo una bicicleta?",
     "resumed": false,
@@ -220,7 +220,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.160064+00:00",
+        "started_at": "2026-10-28T17:29:18.458881+00:00",
         "input": {
           "question": "Como reparo una bicicleta?",
           "context": [],
@@ -246,13 +246,13 @@
         },
         "next": "route_question",
         "reason": "valid_question",
-        "finished_at": "2026-10-19T21:31:26.162045+00:00",
-        "duration_ms": 0.081
+        "finished_at": "2026-10-28T17:29:18.460854+00:00",
+        "duration_ms": 0.047
       },
       {
         "sequence": 2,
         "node": "route_question",
-        "started_at": "2026-10-19T21:31:26.165103+00:00",
+        "started_at": "2026-10-28T17:29:18.463013+00:00",
         "input": {
           "question": "Como reparo una bicicleta?",
           "context": [],
@@ -275,13 +275,13 @@
         },
         "next": "retrieve_context",
         "reason": "rag",
-        "finished_at": "2026-10-19T21:31:26.167563+00:00",
-        "duration_ms": 0.291
+        "finished_at": "2026-10-28T17:29:18.465671+00:00",
+        "duration_ms": 0.204
       },
       {
         "sequence": 3,
         "node": "retrieve_context",
-        "started_at": "2026-10-19T21:31:26.169973+00:00",
+        "started_at": "2026-10-28T17:29:18.467881+00:00",
         "input": {
           "question": "Como reparo una bicicleta?",
           "context": [],
@@ -305,13 +305,13 @@
         "next": "no_information",
         "reason": "empty_context",
         "source": "rag",
-        "finished_at": "2026-10-19T21:31:26.171859+00:00",
-        "duration_ms": 0.824
+        "finished_at": "2026-10-28T17:29:18.470147+00:00",
+        "duration_ms": 0.477
       },
       {
         "sequence": 4,
         "node": "no_information",
-        "started_at": "2026-10-19T21:31:26.174473+00:00",
+        "started_at": "2026-10-28T17:29:18.472564+00:00",
         "input": {
           "question": "Como reparo una bicicleta?",
           "context": [],
@@ -330,23 +330,23 @@
         },
         "status": "completed",
         "output": {
-          "answer": "Lo lamento, pero en los acuerdos est\u00e1ndar y la base de conocimiento oficial de TrackFlow no disponemos de informaci\u00f3n suficiente para responder a esta consulta. Para casos particulares o condiciones no documentadas, le sugiero consultar con el equipo correspondiente o con la direcci\u00f3n comercial."
+          "answer": "Lo lamento, pero en los acuerdos estándar y la base de conocimiento oficial de TrackFlow no disponemos de información suficiente para responder a esta consulta. Para casos particulares o condiciones no documentadas, le sugiero consultar con el equipo correspondiente o con la dirección comercial."
         },
         "next": "__end__",
         "reason": "response_ready",
-        "finished_at": "2026-10-19T21:31:26.178484+00:00",
-        "duration_ms": 0.083
+        "finished_at": "2026-10-28T17:29:18.474271+00:00",
+        "duration_ms": 0.063
       }
     ],
     "sources": [
       "rag"
     ],
-    "answer": "Lo lamento, pero en los acuerdos est\u00e1ndar y la base de conocimiento oficial de TrackFlow no disponemos de informaci\u00f3n suficiente para responder a esta consulta. Para casos particulares o condiciones no documentadas, le sugiero consultar con el equipo correspondiente o con la direcci\u00f3n comercial.",
+    "answer": "Lo lamento, pero en los acuerdos estándar y la base de conocimiento oficial de TrackFlow no disponemos de información suficiente para responder a esta consulta. Para casos particulares o condiciones no documentadas, le sugiero consultar con el equipo correspondiente o con la dirección comercial.",
     "error": null,
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -359,13 +359,13 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.184000+00:00"
+    "finished_at": "2026-10-28T17:29:18.477918+00:00"
   },
   "empty": {
     "schema_version": 1,
-    "run_id": "e60abb45-8c18-4ecc-9036-901a5fac43de",
-    "thread_id": "f3a7f619-7a09-4a03-a945-a9cf41f53fee",
-    "started_at": "2026-10-19T21:31:26.185450+00:00",
+    "run_id": "e2b20cc3-489a-4a0a-8e9c-6efdc4532de5",
+    "thread_id": "dfdbad3f-b3d9-4fc8-a8cb-e23dc1d6a8dd",
+    "started_at": "2026-10-28T17:29:18.479591+00:00",
     "status": "rejected",
     "question": "   ",
     "resumed": false,
@@ -373,7 +373,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.189265+00:00",
+        "started_at": "2026-10-28T17:29:18.483324+00:00",
         "input": {
           "question": "   ",
           "context": [],
@@ -399,17 +399,17 @@
         },
         "next": "__end__",
         "reason": "empty_question",
-        "finished_at": "2026-10-19T21:31:26.191920+00:00",
-        "duration_ms": 0.066
+        "finished_at": "2026-10-28T17:29:18.485282+00:00",
+        "duration_ms": 0.045
       }
     ],
     "sources": [],
     "answer": null,
     "error": "La pregunta no puede estar vacia.",
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -422,13 +422,13 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.197507+00:00"
+    "finished_at": "2026-10-28T17:29:18.489170+00:00"
   },
   "ticket": {
     "schema_version": 1,
-    "run_id": "bee3e8c8-bbe5-4544-a359-b397ca7e8067",
-    "thread_id": "43f9db3e-0d29-4b18-b5dc-a2dff19d16f4",
-    "started_at": "2026-10-19T21:31:26.199971+00:00",
+    "run_id": "64fc0e6d-71a0-4823-bd0e-c014ff7099f2",
+    "thread_id": "e5523a98-0227-4fe7-869a-3fbb853bbe02",
+    "started_at": "2026-10-28T17:29:18.490732+00:00",
     "status": "completed",
     "question": "En que estado esta el ticket 482?",
     "resumed": false,
@@ -436,7 +436,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.206859+00:00",
+        "started_at": "2026-10-28T17:29:18.494367+00:00",
         "input": {
           "question": "En que estado esta el ticket 482?",
           "context": [],
@@ -462,13 +462,13 @@
         },
         "next": "route_question",
         "reason": "valid_question",
-        "finished_at": "2026-10-19T21:31:26.214180+00:00",
-        "duration_ms": 0.094
+        "finished_at": "2026-10-28T17:29:18.496313+00:00",
+        "duration_ms": 0.051
       },
       {
         "sequence": 2,
         "node": "route_question",
-        "started_at": "2026-10-19T21:31:26.216920+00:00",
+        "started_at": "2026-10-28T17:29:18.499084+00:00",
         "input": {
           "question": "En que estado esta el ticket 482?",
           "context": [],
@@ -491,13 +491,13 @@
         },
         "next": "lookup_incident",
         "reason": "incidents",
-        "finished_at": "2026-10-19T21:31:26.219168+00:00",
-        "duration_ms": 0.434
+        "finished_at": "2026-10-28T17:29:18.501889+00:00",
+        "duration_ms": 0.383
       },
       {
         "sequence": 3,
         "node": "lookup_incident",
-        "started_at": "2026-10-19T21:31:26.221701+00:00",
+        "started_at": "2026-10-28T17:29:18.504304+00:00",
         "input": {
           "question": "En que estado esta el ticket 482?",
           "context": [],
@@ -524,13 +524,13 @@
         "next": "tool_fallback",
         "reason": "not_found",
         "source": "incidents",
-        "finished_at": "2026-10-19T21:31:26.225674+00:00",
-        "duration_ms": 2.312
+        "finished_at": "2026-10-28T17:29:18.508560+00:00",
+        "duration_ms": 1.779
       },
       {
         "sequence": 4,
         "node": "tool_fallback",
-        "started_at": "2026-10-19T21:31:26.228669+00:00",
+        "started_at": "2026-10-28T17:29:18.511114+00:00",
         "input": {
           "question": "En que estado esta el ticket 482?",
           "context": [],
@@ -556,8 +556,8 @@
         },
         "next": "__end__",
         "reason": "not_found",
-        "finished_at": "2026-10-19T21:31:26.230132+00:00",
-        "duration_ms": 0.087
+        "finished_at": "2026-10-28T17:29:18.514428+00:00",
+        "duration_ms": 0.104
       }
     ],
     "sources": [
@@ -566,9 +566,9 @@
     "answer": "No se encontro el ticket 482 en el gestor de incidentes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -581,13 +581,13 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.235191+00:00"
+    "finished_at": "2026-10-28T17:29:18.518475+00:00"
   },
   "mixed": {
     "schema_version": 1,
-    "run_id": "a36a23c4-4f2f-4474-a68e-05b9966c4cb3",
-    "thread_id": "ac0c3b4b-fe47-4704-87f5-8cd621d9e149",
-    "started_at": "2026-10-19T21:31:26.236619+00:00",
+    "run_id": "74b90c28-ae68-44ea-beca-6a3428e6ea90",
+    "thread_id": "64b00cf4-a6d6-4706-a83c-98d87d5ab453",
+    "started_at": "2026-10-28T17:29:18.519874+00:00",
     "status": "completed",
     "question": "En que estado esta el ticket 482 y cual es la tarifa de almacenamiento en Zaragoza?",
     "resumed": false,
@@ -595,7 +595,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.242095+00:00",
+        "started_at": "2026-10-28T17:29:18.522997+00:00",
         "input": {
           "question": "En que estado esta el ticket 482 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -621,13 +621,13 @@
         },
         "next": "route_question",
         "reason": "valid_question",
-        "finished_at": "2026-10-19T21:31:26.243217+00:00",
-        "duration_ms": 0.097
+        "finished_at": "2026-10-28T17:29:18.524948+00:00",
+        "duration_ms": 0.047
       },
       {
         "sequence": 2,
         "node": "route_question",
-        "started_at": "2026-10-19T21:31:26.245263+00:00",
+        "started_at": "2026-10-28T17:29:18.527326+00:00",
         "input": {
           "question": "En que estado esta el ticket 482 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -650,13 +650,13 @@
         },
         "next": "lookup_incident",
         "reason": "both",
-        "finished_at": "2026-10-19T21:31:26.247433+00:00",
-        "duration_ms": 0.305
+        "finished_at": "2026-10-28T17:29:18.530412+00:00",
+        "duration_ms": 0.239
       },
       {
         "sequence": 3,
         "node": "lookup_incident",
-        "started_at": "2026-10-19T21:31:26.251089+00:00",
+        "started_at": "2026-10-28T17:29:18.532671+00:00",
         "input": {
           "question": "En que estado esta el ticket 482 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -683,13 +683,13 @@
         "next": "tool_fallback",
         "reason": "not_found",
         "source": "incidents",
-        "finished_at": "2026-10-19T21:31:26.255486+00:00",
-        "duration_ms": 1.588
+        "finished_at": "2026-10-28T17:29:18.535498+00:00",
+        "duration_ms": 0.953
       },
       {
         "sequence": 4,
         "node": "tool_fallback",
-        "started_at": "2026-10-19T21:31:26.258752+00:00",
+        "started_at": "2026-10-28T17:29:18.537891+00:00",
         "input": {
           "question": "En que estado esta el ticket 482 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -715,13 +715,13 @@
         },
         "next": "retrieve_context",
         "reason": "not_found",
-        "finished_at": "2026-10-19T21:31:26.260052+00:00",
-        "duration_ms": 0.085
+        "finished_at": "2026-10-28T17:29:18.540140+00:00",
+        "duration_ms": 0.067
       },
       {
         "sequence": 5,
         "node": "retrieve_context",
-        "started_at": "2026-10-19T21:31:26.262941+00:00",
+        "started_at": "2026-10-28T17:29:18.542492+00:00",
         "input": {
           "question": "En que estado esta el ticket 482 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -750,7 +750,7 @@
               "section": "Tarifas de Almacenamiento / bloque 3",
               "language": "es",
               "chunk_index": 2,
-              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "text": "Tarifas de Almacenamiento\n\nClientes con más de 50 metros cúbicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociación siempre debe pasar\npor Miguel Torres — un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
               "score": 1.0
             },
             {
@@ -759,7 +759,7 @@
               "section": "Tarifas de Almacenamiento / bloque 2",
               "language": "es",
               "chunk_index": 1,
-              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antig\u00fcedad de inventario en\ncualquier momento a trav\u00e9s de su account manager; este reporte no est\u00e1\nautomatizado actualmente para el cliente final, solo internamente.",
+              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antigüedad de inventario en\ncualquier momento a través de su account manager; este reporte no está\nautomatizado actualmente para el cliente final, solo internamente.",
               "score": 1.0
             },
             {
@@ -768,7 +768,7 @@
               "section": "Tarifas de Almacenamiento / bloque 1",
               "language": "es",
               "chunk_index": 0,
-              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente según volumen ocupado,\nno según número de unidades:\n\n- Tarifa estándar: 18 USD por metro cúbico al mes (Los Ángeles) o 16 EUR por\n  metro cúbico al mes (Zaragoza).\n- Los primeros 30 días de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con más de 180 días sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duración\" del 150% sobre la\n  tarifa estándar, a partir del día 181.",
               "score": 1.0
             }
           ]
@@ -776,13 +776,13 @@
         "next": "generate_response",
         "reason": "context_available",
         "source": "rag",
-        "finished_at": "2026-10-19T21:31:26.264628+00:00",
-        "duration_ms": 0.708
+        "finished_at": "2026-10-28T17:29:18.544881+00:00",
+        "duration_ms": 0.513
       },
       {
         "sequence": 6,
         "node": "generate_response",
-        "started_at": "2026-10-19T21:31:26.267806+00:00",
+        "started_at": "2026-10-28T17:29:18.547149+00:00",
         "input": {
           "question": "En que estado esta el ticket 482 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [
@@ -792,7 +792,7 @@
               "section": "Tarifas de Almacenamiento / bloque 3",
               "language": "es",
               "chunk_index": 2,
-              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "text": "Tarifas de Almacenamiento\n\nClientes con más de 50 metros cúbicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociación siempre debe pasar\npor Miguel Torres — un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
               "score": 1.0
             },
             {
@@ -801,7 +801,7 @@
               "section": "Tarifas de Almacenamiento / bloque 2",
               "language": "es",
               "chunk_index": 1,
-              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antig\u00fcedad de inventario en\ncualquier momento a trav\u00e9s de su account manager; este reporte no est\u00e1\nautomatizado actualmente para el cliente final, solo internamente.",
+              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antigüedad de inventario en\ncualquier momento a través de su account manager; este reporte no está\nautomatizado actualmente para el cliente final, solo internamente.",
               "score": 1.0
             },
             {
@@ -810,7 +810,7 @@
               "section": "Tarifas de Almacenamiento / bloque 1",
               "language": "es",
               "chunk_index": 0,
-              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente según volumen ocupado,\nno según número de unidades:\n\n- Tarifa estándar: 18 USD por metro cúbico al mes (Los Ángeles) o 16 EUR por\n  metro cúbico al mes (Zaragoza).\n- Los primeros 30 días de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con más de 180 días sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duración\" del 150% sobre la\n  tarifa estándar, a partir del día 181.",
               "score": 1.0
             }
           ],
@@ -836,8 +836,8 @@
         },
         "next": "__end__",
         "reason": "response_ready",
-        "finished_at": "2026-10-19T21:31:26.270923+00:00",
-        "duration_ms": 0.245
+        "finished_at": "2026-10-28T17:29:18.550119+00:00",
+        "duration_ms": 0.168
       }
     ],
     "sources": [
@@ -847,9 +847,9 @@
     "answer": "No se encontro el ticket 482 en el gestor de incidentes.\n\nDocumentacion: La tarifa estandar de almacenamiento en Zaragoza es de 16 EUR por metro cubico al mes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -862,13 +862,13 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.274736+00:00"
+    "finished_at": "2026-10-28T17:29:18.554066+00:00"
   },
   "inventory": {
     "schema_version": 1,
-    "run_id": "82a4c278-0a1f-4d86-9cde-fdb0316fdfc0",
-    "thread_id": "5ecca906-9334-4dfd-b689-5dbd20844873",
-    "started_at": "2026-10-19T21:31:26.276155+00:00",
+    "run_id": "3b1bc174-9bf1-427b-80ea-40a6d48de506",
+    "thread_id": "ef145539-4614-4dfb-939d-66d51e07ba3a",
+    "started_at": "2026-10-28T17:29:18.555671+00:00",
     "status": "completed",
     "question": "Cuanto stock tiene el producto con ID 7?",
     "resumed": false,
@@ -876,7 +876,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.279487+00:00",
+        "started_at": "2026-10-28T17:29:18.558549+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7?",
           "context": [],
@@ -902,13 +902,13 @@
         },
         "next": "route_question",
         "reason": "valid_question",
-        "finished_at": "2026-10-19T21:31:26.280933+00:00",
-        "duration_ms": 0.259
+        "finished_at": "2026-10-28T17:29:18.560502+00:00",
+        "duration_ms": 0.046
       },
       {
         "sequence": 2,
         "node": "route_question",
-        "started_at": "2026-10-19T21:31:26.282568+00:00",
+        "started_at": "2026-10-28T17:29:18.562611+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7?",
           "context": [],
@@ -937,13 +937,13 @@
         },
         "next": "lookup_inventory",
         "reason": "inventory",
-        "finished_at": "2026-10-19T21:31:26.283888+00:00",
-        "duration_ms": 0.331
+        "finished_at": "2026-10-28T17:29:18.564764+00:00",
+        "duration_ms": 0.334
       },
       {
         "sequence": 3,
         "node": "lookup_inventory",
-        "started_at": "2026-10-19T21:31:26.285702+00:00",
+        "started_at": "2026-10-28T17:29:18.567328+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7?",
           "context": [],
@@ -976,13 +976,13 @@
         "next": "inventory_fallback",
         "reason": "not_found",
         "source": "inventory",
-        "finished_at": "2026-10-19T21:31:26.287688+00:00",
-        "duration_ms": 0.896
+        "finished_at": "2026-10-28T17:29:18.571111+00:00",
+        "duration_ms": 0.916
       },
       {
         "sequence": 4,
         "node": "inventory_fallback",
-        "started_at": "2026-10-19T21:31:26.289383+00:00",
+        "started_at": "2026-10-28T17:29:18.573361+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7?",
           "context": [],
@@ -1014,8 +1014,8 @@
         },
         "next": "__end__",
         "reason": "not_found",
-        "finished_at": "2026-10-19T21:31:26.290391+00:00",
-        "duration_ms": 0.064
+        "finished_at": "2026-10-28T17:29:18.575232+00:00",
+        "duration_ms": 0.078
       }
     ],
     "sources": [
@@ -1024,9 +1024,9 @@
     "answer": "No se encontro un producto que coincida con la consulta en el gestor de inventario.",
     "error": null,
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -1039,13 +1039,13 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.293176+00:00"
+    "finished_at": "2026-10-28T17:29:18.579099+00:00"
   },
   "inventory_mixed": {
     "schema_version": 1,
-    "run_id": "ecf89c05-3f82-41cc-88b5-592a2b4b0e1c",
-    "thread_id": "ea083cb2-37b0-4d30-8a44-72e71a908e43",
-    "started_at": "2026-10-19T21:31:26.294178+00:00",
+    "run_id": "27273488-0dec-4f32-9a95-032e3c790d66",
+    "thread_id": "529e1a92-f797-463c-9cf9-d201e0e9a53d",
+    "started_at": "2026-10-28T17:29:18.580643+00:00",
     "status": "completed",
     "question": "Cuanto stock tiene el producto con ID 7 y cual es la tarifa de almacenamiento en Zaragoza?",
     "resumed": false,
@@ -1053,7 +1053,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.296594+00:00",
+        "started_at": "2026-10-28T17:29:18.583587+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1079,13 +1079,13 @@
         },
         "next": "route_question",
         "reason": "valid_question",
-        "finished_at": "2026-10-19T21:31:26.297606+00:00",
-        "duration_ms": 0.039
+        "finished_at": "2026-10-28T17:29:18.586366+00:00",
+        "duration_ms": 0.059
       },
       {
         "sequence": 2,
         "node": "route_question",
-        "started_at": "2026-10-19T21:31:26.300542+00:00",
+        "started_at": "2026-10-28T17:29:18.589986+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1114,13 +1114,13 @@
         },
         "next": "lookup_inventory",
         "reason": "inventory_rag",
-        "finished_at": "2026-10-19T21:31:26.301609+00:00",
-        "duration_ms": 0.216
+        "finished_at": "2026-10-28T17:29:18.591519+00:00",
+        "duration_ms": 0.237
       },
       {
         "sequence": 3,
         "node": "lookup_inventory",
-        "started_at": "2026-10-19T21:31:26.303272+00:00",
+        "started_at": "2026-10-28T17:29:18.593894+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1153,13 +1153,13 @@
         "next": "inventory_fallback",
         "reason": "not_found",
         "source": "inventory",
-        "finished_at": "2026-10-19T21:31:26.305023+00:00",
-        "duration_ms": 0.869
+        "finished_at": "2026-10-28T17:29:18.596875+00:00",
+        "duration_ms": 1.075
       },
       {
         "sequence": 4,
         "node": "inventory_fallback",
-        "started_at": "2026-10-19T21:31:26.306929+00:00",
+        "started_at": "2026-10-28T17:29:18.599198+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1191,13 +1191,13 @@
         },
         "next": "retrieve_context",
         "reason": "not_found",
-        "finished_at": "2026-10-19T21:31:26.307991+00:00",
-        "duration_ms": 0.065
+        "finished_at": "2026-10-28T17:29:18.600929+00:00",
+        "duration_ms": 0.1
       },
       {
         "sequence": 5,
         "node": "retrieve_context",
-        "started_at": "2026-10-19T21:31:26.309615+00:00",
+        "started_at": "2026-10-28T17:29:18.603953+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1232,7 +1232,7 @@
               "section": "Tarifas de Almacenamiento / bloque 3",
               "language": "es",
               "chunk_index": 2,
-              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "text": "Tarifas de Almacenamiento\n\nClientes con más de 50 metros cúbicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociación siempre debe pasar\npor Miguel Torres — un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
               "score": 1.0
             },
             {
@@ -1241,7 +1241,7 @@
               "section": "Tarifas de Almacenamiento / bloque 2",
               "language": "es",
               "chunk_index": 1,
-              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antig\u00fcedad de inventario en\ncualquier momento a trav\u00e9s de su account manager; este reporte no est\u00e1\nautomatizado actualmente para el cliente final, solo internamente.",
+              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antigüedad de inventario en\ncualquier momento a través de su account manager; este reporte no está\nautomatizado actualmente para el cliente final, solo internamente.",
               "score": 1.0
             },
             {
@@ -1250,7 +1250,7 @@
               "section": "Tarifas de Almacenamiento / bloque 1",
               "language": "es",
               "chunk_index": 0,
-              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente según volumen ocupado,\nno según número de unidades:\n\n- Tarifa estándar: 18 USD por metro cúbico al mes (Los Ángeles) o 16 EUR por\n  metro cúbico al mes (Zaragoza).\n- Los primeros 30 días de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con más de 180 días sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duración\" del 150% sobre la\n  tarifa estándar, a partir del día 181.",
               "score": 1.0
             }
           ]
@@ -1258,13 +1258,13 @@
         "next": "generate_response",
         "reason": "context_available",
         "source": "rag",
-        "finished_at": "2026-10-19T21:31:26.311089+00:00",
-        "duration_ms": 0.547
+        "finished_at": "2026-10-28T17:29:18.606975+00:00",
+        "duration_ms": 0.652
       },
       {
         "sequence": 6,
         "node": "generate_response",
-        "started_at": "2026-10-19T21:31:26.313071+00:00",
+        "started_at": "2026-10-28T17:29:18.610291+00:00",
         "input": {
           "question": "Cuanto stock tiene el producto con ID 7 y cual es la tarifa de almacenamiento en Zaragoza?",
           "context": [
@@ -1274,7 +1274,7 @@
               "section": "Tarifas de Almacenamiento / bloque 3",
               "language": "es",
               "chunk_index": 2,
-              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "text": "Tarifas de Almacenamiento\n\nClientes con más de 50 metros cúbicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociación siempre debe pasar\npor Miguel Torres — un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
               "score": 1.0
             },
             {
@@ -1283,7 +1283,7 @@
               "section": "Tarifas de Almacenamiento / bloque 2",
               "language": "es",
               "chunk_index": 1,
-              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antig\u00fcedad de inventario en\ncualquier momento a trav\u00e9s de su account manager; este reporte no est\u00e1\nautomatizado actualmente para el cliente final, solo internamente.",
+              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antigüedad de inventario en\ncualquier momento a través de su account manager; este reporte no está\nautomatizado actualmente para el cliente final, solo internamente.",
               "score": 1.0
             },
             {
@@ -1292,7 +1292,7 @@
               "section": "Tarifas de Almacenamiento / bloque 1",
               "language": "es",
               "chunk_index": 0,
-              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente según volumen ocupado,\nno según número de unidades:\n\n- Tarifa estándar: 18 USD por metro cúbico al mes (Los Ángeles) o 16 EUR por\n  metro cúbico al mes (Zaragoza).\n- Los primeros 30 días de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con más de 180 días sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duración\" del 150% sobre la\n  tarifa estándar, a partir del día 181.",
               "score": 1.0
             }
           ],
@@ -1324,8 +1324,8 @@
         },
         "next": "__end__",
         "reason": "response_ready",
-        "finished_at": "2026-10-19T21:31:26.314452+00:00",
-        "duration_ms": 0.16
+        "finished_at": "2026-10-28T17:29:18.612583+00:00",
+        "duration_ms": 0.246
       }
     ],
     "sources": [
@@ -1335,9 +1335,9 @@
     "answer": "No se encontro un producto que coincida con la consulta en el gestor de inventario.\n\nDocumentacion: La tarifa estandar de almacenamiento en Zaragoza es de 16 EUR por metro cubico al mes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -1350,13 +1350,13 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.317449+00:00"
+    "finished_at": "2026-10-28T17:29:18.616666+00:00"
   },
   "all_sources": {
     "schema_version": 1,
-    "run_id": "0906aae1-a3cd-4328-b435-1c0c8975fe06",
-    "thread_id": "9f42a634-5ee8-4218-8e44-8d66cd1bc6a0",
-    "started_at": "2026-10-19T21:31:26.318703+00:00",
+    "run_id": "fc074d23-d1ff-4d5e-bc37-71c4170ad588",
+    "thread_id": "daac86af-cfee-43a6-893f-8a3fae7ab1f3",
+    "started_at": "2026-10-28T17:29:18.618522+00:00",
     "status": "completed",
     "question": "Estado del ticket 482, stock del producto con ID 7 y tarifa de almacenamiento en Zaragoza?",
     "resumed": false,
@@ -1364,7 +1364,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.321369+00:00",
+        "started_at": "2026-10-28T17:29:18.621489+00:00",
         "input": {
           "question": "Estado del ticket 482, stock del producto con ID 7 y tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1390,13 +1390,13 @@
         },
         "next": "route_question",
         "reason": "valid_question",
-        "finished_at": "2026-10-19T21:31:26.322702+00:00",
-        "duration_ms": 0.055
+        "finished_at": "2026-10-28T17:29:18.623599+00:00",
+        "duration_ms": 0.043
       },
       {
         "sequence": 2,
         "node": "route_question",
-        "started_at": "2026-10-19T21:31:26.324684+00:00",
+        "started_at": "2026-10-28T17:29:18.626397+00:00",
         "input": {
           "question": "Estado del ticket 482, stock del producto con ID 7 y tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1425,13 +1425,13 @@
         },
         "next": "lookup_incident",
         "reason": "all",
-        "finished_at": "2026-10-19T21:31:26.326054+00:00",
-        "duration_ms": 0.225
+        "finished_at": "2026-10-28T17:29:18.628713+00:00",
+        "duration_ms": 0.211
       },
       {
         "sequence": 3,
         "node": "lookup_incident",
-        "started_at": "2026-10-19T21:31:26.328578+00:00",
+        "started_at": "2026-10-28T17:29:18.630809+00:00",
         "input": {
           "question": "Estado del ticket 482, stock del producto con ID 7 y tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1464,13 +1464,13 @@
         "next": "tool_fallback",
         "reason": "not_found",
         "source": "incidents",
-        "finished_at": "2026-10-19T21:31:26.330576+00:00",
-        "duration_ms": 0.85
+        "finished_at": "2026-10-28T17:29:18.633551+00:00",
+        "duration_ms": 0.842
       },
       {
         "sequence": 4,
         "node": "tool_fallback",
-        "started_at": "2026-10-19T21:31:26.332296+00:00",
+        "started_at": "2026-10-28T17:29:18.635587+00:00",
         "input": {
           "question": "Estado del ticket 482, stock del producto con ID 7 y tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1502,13 +1502,13 @@
         },
         "next": "lookup_inventory",
         "reason": "not_found",
-        "finished_at": "2026-10-19T21:31:26.333756+00:00",
-        "duration_ms": 0.09
+        "finished_at": "2026-10-28T17:29:18.637527+00:00",
+        "duration_ms": 0.093
       },
       {
         "sequence": 5,
         "node": "lookup_inventory",
-        "started_at": "2026-10-19T21:31:26.335445+00:00",
+        "started_at": "2026-10-28T17:29:18.639731+00:00",
         "input": {
           "question": "Estado del ticket 482, stock del producto con ID 7 y tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1544,13 +1544,13 @@
         "next": "inventory_fallback",
         "reason": "not_found",
         "source": "inventory",
-        "finished_at": "2026-10-19T21:31:26.338634+00:00",
-        "duration_ms": 1.969
+        "finished_at": "2026-10-28T17:29:18.643256+00:00",
+        "duration_ms": 1.543
       },
       {
         "sequence": 6,
         "node": "inventory_fallback",
-        "started_at": "2026-10-19T21:31:26.343242+00:00",
+        "started_at": "2026-10-28T17:29:18.645565+00:00",
         "input": {
           "question": "Estado del ticket 482, stock del producto con ID 7 y tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1585,13 +1585,13 @@
         },
         "next": "retrieve_context",
         "reason": "not_found",
-        "finished_at": "2026-10-19T21:31:26.346585+00:00",
-        "duration_ms": 0.104
+        "finished_at": "2026-10-28T17:29:18.648680+00:00",
+        "duration_ms": 0.077
       },
       {
         "sequence": 7,
         "node": "retrieve_context",
-        "started_at": "2026-10-19T21:31:26.349436+00:00",
+        "started_at": "2026-10-28T17:29:18.651052+00:00",
         "input": {
           "question": "Estado del ticket 482, stock del producto con ID 7 y tarifa de almacenamiento en Zaragoza?",
           "context": [],
@@ -1629,7 +1629,7 @@
               "section": "Tarifas de Almacenamiento / bloque 3",
               "language": "es",
               "chunk_index": 2,
-              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "text": "Tarifas de Almacenamiento\n\nClientes con más de 50 metros cúbicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociación siempre debe pasar\npor Miguel Torres — un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
               "score": 1.0
             },
             {
@@ -1638,7 +1638,7 @@
               "section": "Tarifas de Almacenamiento / bloque 2",
               "language": "es",
               "chunk_index": 1,
-              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antig\u00fcedad de inventario en\ncualquier momento a trav\u00e9s de su account manager; este reporte no est\u00e1\nautomatizado actualmente para el cliente final, solo internamente.",
+              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antigüedad de inventario en\ncualquier momento a través de su account manager; este reporte no está\nautomatizado actualmente para el cliente final, solo internamente.",
               "score": 1.0
             },
             {
@@ -1647,7 +1647,7 @@
               "section": "Tarifas de Almacenamiento / bloque 1",
               "language": "es",
               "chunk_index": 0,
-              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente según volumen ocupado,\nno según número de unidades:\n\n- Tarifa estándar: 18 USD por metro cúbico al mes (Los Ángeles) o 16 EUR por\n  metro cúbico al mes (Zaragoza).\n- Los primeros 30 días de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con más de 180 días sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duración\" del 150% sobre la\n  tarifa estándar, a partir del día 181.",
               "score": 1.0
             }
           ]
@@ -1655,13 +1655,13 @@
         "next": "generate_response",
         "reason": "context_available",
         "source": "rag",
-        "finished_at": "2026-10-19T21:31:26.352770+00:00",
-        "duration_ms": 0.709
+        "finished_at": "2026-10-28T17:29:18.654050+00:00",
+        "duration_ms": 0.547
       },
       {
         "sequence": 8,
         "node": "generate_response",
-        "started_at": "2026-10-19T21:31:26.355479+00:00",
+        "started_at": "2026-10-28T17:29:18.656222+00:00",
         "input": {
           "question": "Estado del ticket 482, stock del producto con ID 7 y tarifa de almacenamiento en Zaragoza?",
           "context": [
@@ -1671,7 +1671,7 @@
               "section": "Tarifas de Almacenamiento / bloque 3",
               "language": "es",
               "chunk_index": 2,
-              "text": "Tarifas de Almacenamiento\n\nClientes con m\u00e1s de 50 metros c\u00fabicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociaci\u00f3n siempre debe pasar\npor Miguel Torres \u2014 un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
+              "text": "Tarifas de Almacenamiento\n\nClientes con más de 50 metros cúbicos de volumen promedio mensual pueden\nnegociar una tarifa preferencial, pero esa negociación siempre debe pasar\npor Miguel Torres — un account manager no puede ofrecer descuentos de\nalmacenamiento por su cuenta.",
               "score": 1.0
             },
             {
@@ -1680,7 +1680,7 @@
               "section": "Tarifas de Almacenamiento / bloque 2",
               "language": "es",
               "chunk_index": 1,
-              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antig\u00fcedad de inventario en\ncualquier momento a trav\u00e9s de su account manager; este reporte no est\u00e1\nautomatizado actualmente para el cliente final, solo internamente.",
+              "text": "Tarifas de Almacenamiento\n\nEl cliente puede solicitar un reporte de antigüedad de inventario en\ncualquier momento a través de su account manager; este reporte no está\nautomatizado actualmente para el cliente final, solo internamente.",
               "score": 1.0
             },
             {
@@ -1689,7 +1689,7 @@
               "section": "Tarifas de Almacenamiento / bloque 1",
               "language": "es",
               "chunk_index": 0,
-              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente seg\u00fan volumen ocupado,\nno seg\u00fan n\u00famero de unidades:\n\n- Tarifa est\u00e1ndar: 18 USD por metro c\u00fabico al mes (Los \u00c1ngeles) o 16 EUR por\n  metro c\u00fabico al mes (Zaragoza).\n- Los primeros 30 d\u00edas de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con m\u00e1s de 180 d\u00edas sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duraci\u00f3n\" del 150% sobre la\n  tarifa est\u00e1ndar, a partir del d\u00eda 181.",
+              "text": "Tarifas de Almacenamiento\n\nTrackFlow cobra almacenamiento a las marcas cliente según volumen ocupado,\nno según número de unidades:\n\n- Tarifa estándar: 18 USD por metro cúbico al mes (Los Ángeles) o 16 EUR por\n  metro cúbico al mes (Zaragoza).\n- Los primeros 30 días de cualquier producto nuevo en inventario no generan\n  cargo de almacenamiento (periodo de gracia).\n- Inventario con más de 180 días sin movimiento (sin ventas ni salidas)\n  paga una tarifa de \"inventario de larga duración\" del 150% sobre la\n  tarifa estándar, a partir del día 181.",
               "score": 1.0
             }
           ],
@@ -1724,8 +1724,8 @@
         },
         "next": "__end__",
         "reason": "response_ready",
-        "finished_at": "2026-10-19T21:31:26.357793+00:00",
-        "duration_ms": 0.238
+        "finished_at": "2026-10-28T17:29:18.658940+00:00",
+        "duration_ms": 0.216
       }
     ],
     "sources": [
@@ -1736,9 +1736,9 @@
     "answer": "No se encontro el ticket 482 en el gestor de incidentes.\n\nNo se encontro un producto que coincida con la consulta en el gestor de inventario.\n\nDocumentacion: La tarifa estandar de almacenamiento en Zaragoza es de 16 EUR por metro cubico al mes.",
     "error": null,
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -1751,13 +1751,13 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.361015+00:00"
+    "finished_at": "2026-10-28T17:29:18.662841+00:00"
   },
   "ticket_unavailable": {
     "schema_version": 1,
-    "run_id": "cfbe79ea-cd64-43be-ab2a-b0cea1ba2188",
-    "thread_id": "18a82859-f65f-4a63-a30a-c11d8635144e",
-    "started_at": "2026-10-19T21:31:26.362211+00:00",
+    "run_id": "97fb08a1-b930-44f8-9bc1-a5ba022f70c5",
+    "thread_id": "6e80ccbf-56bf-41fe-baae-d3465f4d28d4",
+    "started_at": "2026-10-28T17:29:18.664489+00:00",
     "status": "completed",
     "question": "Puedo consultar el estado del ticket 482?",
     "resumed": false,
@@ -1765,7 +1765,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.364947+00:00",
+        "started_at": "2026-10-28T17:29:18.667523+00:00",
         "input": {
           "question": "Puedo consultar el estado del ticket 482?",
           "context": [],
@@ -1791,13 +1791,13 @@
         },
         "next": "route_question",
         "reason": "valid_question",
-        "finished_at": "2026-10-19T21:31:26.366437+00:00",
-        "duration_ms": 0.042
+        "finished_at": "2026-10-28T17:29:18.669929+00:00",
+        "duration_ms": 0.044
       },
       {
         "sequence": 2,
         "node": "route_question",
-        "started_at": "2026-10-19T21:31:26.368089+00:00",
+        "started_at": "2026-10-28T17:29:18.672126+00:00",
         "input": {
           "question": "Puedo consultar el estado del ticket 482?",
           "context": [],
@@ -1820,13 +1820,13 @@
         },
         "next": "lookup_incident",
         "reason": "incidents",
-        "finished_at": "2026-10-19T21:31:26.369694+00:00",
-        "duration_ms": 0.195
+        "finished_at": "2026-10-28T17:29:18.674315+00:00",
+        "duration_ms": 0.186
       },
       {
         "sequence": 3,
         "node": "lookup_incident",
-        "started_at": "2026-10-19T21:31:26.371415+00:00",
+        "started_at": "2026-10-28T17:29:18.676431+00:00",
         "input": {
           "question": "Puedo consultar el estado del ticket 482?",
           "context": [],
@@ -1853,13 +1853,13 @@
         "next": "tool_fallback",
         "reason": "unavailable",
         "source": "incidents",
-        "finished_at": "2026-10-19T21:31:26.373824+00:00",
-        "duration_ms": 1.014
+        "finished_at": "2026-10-28T17:29:18.679188+00:00",
+        "duration_ms": 0.801
       },
       {
         "sequence": 4,
         "node": "tool_fallback",
-        "started_at": "2026-10-19T21:31:26.375936+00:00",
+        "started_at": "2026-10-28T17:29:18.681433+00:00",
         "input": {
           "question": "Puedo consultar el estado del ticket 482?",
           "context": [],
@@ -1885,8 +1885,8 @@
         },
         "next": "__end__",
         "reason": "unavailable",
-        "finished_at": "2026-10-19T21:31:26.377172+00:00",
-        "duration_ms": 0.058
+        "finished_at": "2026-10-28T17:29:18.683441+00:00",
+        "duration_ms": 0.08
       }
     ],
     "sources": [
@@ -1895,9 +1895,9 @@
     "answer": "No pude confirmar el estado del ticket 482 ahora mismo. Intentalo mas tarde.",
     "error": null,
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -1910,13 +1910,13 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.380171+00:00"
+    "finished_at": "2026-10-28T17:29:18.687352+00:00"
   },
   "inventory_unavailable": {
     "schema_version": 1,
-    "run_id": "effb9e99-810c-4edb-b496-beb1106149f4",
-    "thread_id": "8ddd9d93-ab23-4e44-89b3-1dc475a41e9a",
-    "started_at": "2026-10-19T21:31:26.381202+00:00",
+    "run_id": "40715323-3cdd-4f31-a972-be86ed6a98ce",
+    "thread_id": "607cfbfd-b600-4d8f-9fff-43a1d9c6ce13",
+    "started_at": "2026-10-28T17:29:18.688939+00:00",
     "status": "completed",
     "question": "Puedo consultar el stock del producto con ID 7?",
     "resumed": false,
@@ -1924,7 +1924,7 @@
       {
         "sequence": 1,
         "node": "receive_question",
-        "started_at": "2026-10-19T21:31:26.384003+00:00",
+        "started_at": "2026-10-28T17:29:18.692288+00:00",
         "input": {
           "question": "Puedo consultar el stock del producto con ID 7?",
           "context": [],
@@ -1950,13 +1950,13 @@
         },
         "next": "route_question",
         "reason": "valid_question",
-        "finished_at": "2026-10-19T21:31:26.385326+00:00",
-        "duration_ms": 0.054
+        "finished_at": "2026-10-28T17:29:18.694217+00:00",
+        "duration_ms": 0.047
       },
       {
         "sequence": 2,
         "node": "route_question",
-        "started_at": "2026-10-19T21:31:26.388637+00:00",
+        "started_at": "2026-10-28T17:29:18.698219+00:00",
         "input": {
           "question": "Puedo consultar el stock del producto con ID 7?",
           "context": [],
@@ -1985,13 +1985,13 @@
         },
         "next": "lookup_inventory",
         "reason": "inventory",
-        "finished_at": "2026-10-19T21:31:26.390362+00:00",
-        "duration_ms": 0.241
+        "finished_at": "2026-10-28T17:29:18.700660+00:00",
+        "duration_ms": 0.414
       },
       {
         "sequence": 3,
         "node": "lookup_inventory",
-        "started_at": "2026-10-19T21:31:26.392193+00:00",
+        "started_at": "2026-10-28T17:29:18.703902+00:00",
         "input": {
           "question": "Puedo consultar el stock del producto con ID 7?",
           "context": [],
@@ -2024,13 +2024,13 @@
         "next": "inventory_fallback",
         "reason": "unavailable",
         "source": "inventory",
-        "finished_at": "2026-10-19T21:31:26.394155+00:00",
-        "duration_ms": 0.865
+        "finished_at": "2026-10-28T17:29:18.707172+00:00",
+        "duration_ms": 1.053
       },
       {
         "sequence": 4,
         "node": "inventory_fallback",
-        "started_at": "2026-10-19T21:31:26.396062+00:00",
+        "started_at": "2026-10-28T17:29:18.709787+00:00",
         "input": {
           "question": "Puedo consultar el stock del producto con ID 7?",
           "context": [],
@@ -2062,8 +2062,8 @@
         },
         "next": "__end__",
         "reason": "unavailable",
-        "finished_at": "2026-10-19T21:31:26.397348+00:00",
-        "duration_ms": 0.067
+        "finished_at": "2026-10-28T17:29:18.712045+00:00",
+        "duration_ms": 0.091
       }
     ],
     "sources": [
@@ -2072,9 +2072,9 @@
     "answer": "No pude confirmar el stock ahora mismo. Intentalo mas tarde.",
     "error": null,
     "metadata": {
-      "graph_sha256": "3f6071c2bcefe8db9c2b99a1938d4077c044194937f2a7935e046733fde3e6af",
+      "graph_sha256": "9041de2431aba41f94aeaf6b50386008123f89c891a78bbb15297036913fec80",
       "routing_sha256": "c33fc7cc5f6bd7fed4426e9268e835002e7be6b73d1ae6d4f0a69b0ca64b6f4e",
-      "tools_sha256": "d9dc129b29917ea72fdfa9941e466215a995ff9ca1514b8937aeb0984103dca4",
+      "tools_sha256": "b066ecd5d7bb3a76e1ca77a4be7a9452d7bd9859702a1ea47e2c8866756c38d9",
       "rag_sha256": "cd6b4c7f95025ef569e52ad7d842682ef4cfb912903470b6840c55dfdf8be9e2",
       "corpus_sha256": {
         "trackflow-carrier-coverage.es.md": "465f39d9db5de2629ef76d620c7744453029c6f87bed221fa6885e38baa28d73",
@@ -2087,6 +2087,6 @@
       "min_score": 0.35,
       "capture_kind": "simulated"
     },
-    "finished_at": "2026-10-19T21:31:26.400935+00:00"
+    "finished_at": "2026-10-28T17:29:18.716718+00:00"
   }
 }
