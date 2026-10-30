@@ -14,11 +14,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from cachetools import TTLCache
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import ValidationError
 from sqlmodel import Session
 
 from database import engine
+from auth import get_current_user
 from models import TelemetryEventRecord
 from pydantic_models import TelemetryEvent
 from telemetry.analysis import (
@@ -66,6 +67,7 @@ def _get_cache_key(start_date: str, end_date: str) -> tuple[str, str]:
 async def get_telemetry_report(
     start_date: Optional[str] = Query(None, description="Fecha inicio ISO 8601 (UTC)"),
     end_date: Optional[str] = Query(None, description="Fecha fin ISO 8601 (UTC)"),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Endpoint de reporte técnico de telemetría — Fase 4.

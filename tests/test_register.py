@@ -59,6 +59,17 @@ class TestRegisterHappyPath:
         assert stored["hashed_password"] != "MyPassword123!"
 
     @pytest.mark.asyncio
+    async def test_public_registration_cannot_assign_privileged_role(self, mock_db):
+        result = await call_register({
+            "email": "self-registered-admin@trackflow.com",
+            "password": "MyPassword123!",
+            "role": "admin",
+        })
+
+        assert result.user.role == "user"
+        assert mock_db["users"].get(doc_id=result.user.id)["role"] == "user"
+
+    @pytest.mark.asyncio
     async def test_register_with_profile(self, mock_db):
         """
         R-H2: register_with_profile

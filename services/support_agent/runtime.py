@@ -21,6 +21,7 @@ from .graph import (
     after_incident, after_tool_fallback, build_graph,
     after_inventory, after_inventory_fallback,
 )
+from .memory import MemoryStore
 
 
 class AgentRunError(Exception):
@@ -36,6 +37,26 @@ def timestamp() -> str:
 
 def validate_id(value: str) -> str:
     return str(UUID(value))
+
+
+def summarize_guardrails(events: list[dict]) -> dict:
+    """Build deterministic per-run activation counts without exposing user data."""
+    by_guardrail: dict[str, int] = {}
+    by_failure_type: dict[str, int] = {}
+    by_action: dict[str, int] = {}
+    for event in events:
+        guardrail = str(event.get("guardrail", "unknown"))
+        failure_type = str(event.get("failure_type", "unknown"))
+        action = str(event.get("action", "unknown"))
+        by_guardrail[guardrail] = by_guardrail.get(guardrail, 0) + 1
+        by_failure_type[failure_type] = by_failure_type.get(failure_type, 0) + 1
+        by_action[action] = by_action.get(action, 0) + 1
+    return {
+        "total": len(events),
+        "by_guardrail": dict(sorted(by_guardrail.items())),
+        "by_failure_type": dict(sorted(by_failure_type.items())),
+        "by_action": dict(sorted(by_action.items())),
+    }
 
 
 class TraceStore:
@@ -63,11 +84,13 @@ class AgentRuntime:
     def __init__(
         self, state_dir: Path, *, retrieve_fn=None, generate_fn=None,
         route_fn=None, incident_fn=None, inventory_fn=None, mcp_server_url: str | None = None,
-        interrupt_after=None, capture_kind: str = "live",
+        interrupt_after=None, capture_kind: str = "live", memory_classifier=None,
+        memory_evaluator=None,
     ):
         state_dir = Path(state_dir)
         state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.traces = TraceStore(state_dir / "traces.sqlite3")
+        self.memory = MemoryStore(state_dir / "agent_memory.sqlite3")
         self.connection = sqlite3.connect(state_dir / "checkpoints.sqlite3", check_same_thread=False)
         self.checkpointer = SqliteSaver(self.connection)
         self.lock = threading.RLock()
@@ -80,6 +103,8 @@ class AgentRuntime:
                 route_fn=route_fn, incident_fn=incident_fn, inventory_fn=inventory_fn,
                 mcp_server_url=mcp_server_url,
                 token_provider=lambda: self._token,
+                memory_store=self.memory, memory_classifier=memory_classifier,
+                memory_evaluator=memory_evaluator,
                 instrument=self._instrument, interrupt_after=interrupt_after,
             )
         except Exception:
@@ -106,6 +131,12 @@ class AgentRuntime:
         }
 
     def _instrument(self, name, node):
+        # Memory preparation is an internal, side-effect-bounded step. Keep it
+        # out of the public execution trace so the trace continues to describe
+        # user-visible routing and data-source operations.
+        if name == "prepare_memory":
+            return node
+
         def recorded(state: AgentState, config: RunnableConfig):
             run_id = config["configurable"]["trace_run_id"]
             trace = self.traces.get(run_id)
@@ -153,8 +184,16 @@ class AgentRuntime:
 
         return recorded
 
-    def run(self, question: str, *, token: str | None = None) -> dict:
-        return self._execute({"question": question}, str(uuid4()), token=token)
+    def run(self, question: str, *, token: str | None = None, actor_id: str | None = None,
+            conversation_id: str | None = None) -> dict:
+        thread_id = conversation_id or str(uuid4())
+        try:
+            thread_id = validate_id(thread_id)
+        except ValueError as exc:
+            raise ValueError("Invalid conversation_id") from exc
+        inputs = {"question": question, "actor_id": str(actor_id) if actor_id is not None else None,
+                  "conversation_id": thread_id}
+        return self._execute(inputs, thread_id, token=token)
 
     def resume(self, thread_id: str, *, token: str | None = None) -> dict:
         thread_id = validate_id(thread_id)
@@ -174,6 +213,7 @@ class AgentRuntime:
                 "schema_version": 1, "run_id": run_id, "thread_id": thread_id,
                 "started_at": timestamp(), "status": "running", "question": question,
                 "resumed": inputs is None, "events": [], "sources": [], "answer": None, "error": None,
+                "guardrail_summary": summarize_guardrails([]),
                 "metadata": self.metadata,
             }
             self.traces.put(trace)
@@ -185,6 +225,7 @@ class AgentRuntime:
                 trace.update(
                     status="paused" if pending else ("rejected" if result.error else "completed"),
                     answer=result.answer, error=result.error, finished_at=timestamp(),
+                    guardrail_summary=summarize_guardrails(result.guardrail_events),
                 )
                 self.traces.put(trace)
                 return {**result.model_dump(), "run_id": run_id, "thread_id": thread_id, "status": trace["status"]}
@@ -207,4 +248,5 @@ class AgentRuntime:
 
     def close(self) -> None:
         with self.lock:
+            self.memory.close()
             self.connection.close()

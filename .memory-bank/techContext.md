@@ -315,6 +315,68 @@ preparación, procesamiento, publicación y snapshot.
   en `evidence/support-agent-inventory-e2e.json`. No se crearon productos ni stock
   de prueba para la validacion desplegada.
 
+### Parte 3: memoria persistente y consentimiento (2026-10-29)
+
+- `services/support_agent/memory.py` implementa `MemoryStore`, modelos estrictos
+  `MemoryProposal`/`MemoryDecision`, validación de contenido, clasificador de
+  consentimiento y generación de respuesta estructurada con propuesta opcional.
+- Almacén SQLite `agent_memory.sqlite3` bajo `SUPPORT_AGENT_STATE_DIR`, separado
+  de checkpoints (`checkpoints.sqlite3`), trazas (`traces.sqlite3`) y Qdrant.
+  El directorio se crea con modo privado; el store mantiene propuestas pendientes,
+  recuerdos activos y auditoría. La resolución usa transacción `BEGIN IMMEDIATE`.
+- Aislamiento por `actor_id` autenticado y `conversation_id` UUID; solo se acepta
+  actor de la identidad validada por la API, nunca del body. El JWT sólo se usa
+  durante la petición operativa y no se persiste en memoria, checkpoints o trazas.
+- Categorías permitidas: `carrier_rule` (máximo 90 días),
+  `recurring_incident` (30 días) y `b2b_report_preference` (180 días). Las claves
+  se consolidan por actor/categoría/clave; las expiradas se eliminan al leer.
+  Recuperación textual acotada a cinco recuerdos del actor, como contexto auxiliar;
+  la documentación oficial RAG sigue siendo fuente de verdad.
+- El usuario debe consentir en un turno posterior. Solo confianza >= 0.8 puede
+  aprobar; rechazo, ambigüedad, error del modelo o edición inválida no activan
+  memoria. Validación y redacción defensivas excluyen direcciones exactas,
+  ubicaciones/rutas internas, incidencias aisladas y contratos en negociación.
+- La auditoría conserva propuesta estructurada, resultado y mensajes/contenido
+  redactados; las propuestas pendientes no se recuperan como recuerdos activos.
+  La retención indefinida de auditoría es una decisión de producto documentada.
+- Evaluación de propuestas semánticas descrita en `docs/AGENT_MEMORY.md`; las
+  pruebas unitarias deterministas no validan calidad del LLM. Evidencia de ciclos
+  aprobados/rechazados en `evidence/support-agent-memory-cycles.md`.
+
+### Guardrails del agente y autenticación (2026-10-30)
+
+- `services/support_agent/guardrails.py` inspecciona las entradas antes de
+  preparar memoria, clasificar rutas, recuperar documentos o invocar herramientas.
+  Los intentos de cambiar instrucciones y las tareas personales se rechazan;
+  small talk/logística general se redirigen brevemente al propósito del agente.
+- El tracking falla de forma cerrada mientras no exista una herramienta que
+  compruebe la titularidad del envío para el usuario autenticado. El caso `#45821`
+  no provoca lookup ni divulgación. Los intentos de cambiar el país de la política
+  se rechazan conforme al país real indicado para el pedido.
+- La validación de salida bloquea patrones conocidos de prompt/instrucciones
+  internas, tarifas negociadas y ubicaciones o rutas de almacén. Es defensa en
+  profundidad, no sustituto de autorización en el servidor ni de clasificadores
+  resistentes a variantes adversariales no cubiertas.
+- Las trazas registran conteos de guardrails por tipo de fallo y acción, sin
+  añadir el contenido de preguntas/respuestas al resumen. Los cuatro casos
+  requeridos y los límites de alcance están en `docs/Trackflow_Guardarailes.md`;
+  regresiones en `tests/pipelines/test_support_agent.py`.
+- La API unificada depende de Authlib para importar el emisor OAuth/OIDC desde
+  `services/api/oauth_issuer.py`. Mantener `authlib>=1.3.2` en
+  `services/api/requirements.txt` (fuente del build Docker) y `pyproject.toml`,
+  con `uv.lock` actualizado. Si el módulo falta en la imagen, FastAPI no arranca
+  y las peticiones proxificadas pueden aparecer como 500/ECONNREFUSED.
+- El guard de páginas privadas del backoffice, `uis/backoffice/components/AuthGuard.tsx`,
+  valida el token contra `/auth/me` antes de renderizar datos. La API no confía
+  en el rol enviado por el cliente durante el registro: `services/api/routes/users.py`
+  fija el rol público como `user`. La ingesta de `/telemetry/events` es pública;
+  los endpoints que consultan informes de telemetría requieren autenticación.
+- Validación live 2026-10-30: login y `/auth/me` correctos mediante proxy Next;
+  guardrails del agente probados con modelo real vía API autenticada directamente.
+  Una llamada a `/agent/query` a través de Next dio respuesta vacía, por lo que
+  ese tramo de proxy requiere diagnóstico separado. El health check `/api/health`
+  y un lote válido de telemetría respondieron HTTP 200.
+
 ### 1. Monorepo con separación por dominios
 
 Se ha optado por una estructura de monorepo donde cada área funcional tiene su propia carpeta raíz (`src/`, `uis/`, `services/`, `agents/`, `workflows/`, etc.). Esto permite:

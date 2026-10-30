@@ -142,10 +142,10 @@ export interface SupportAgentResponse {
   thread_id: string;
 }
 
-export async function querySupportAgent(question: string): Promise<SupportAgentResponse> {
+export async function querySupportAgent(question: string, conversationId?: string): Promise<SupportAgentResponse> {
   return request<SupportAgentResponse>("/agent/query", {
     method: "POST",
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, ...(conversationId ? { conversation_id: conversationId } : {}) }),
   });
 }
 
