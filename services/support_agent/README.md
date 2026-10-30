@@ -136,6 +136,12 @@ scores. Empty questions produce a traced `400`; invalid request bodies produce
 `422`. Dependency failures produce `503`, internal graph failures `500`, with
 sanitized messages and the run ID. Empty retrieval is a successful, honest
 response, not an HTTP error. The adapter contains no retrieval or prompt logic.
+The unified `/agent/query` endpoint requires a valid bearer for an active,
+registered user; anonymous requests receive `401` before the graph runs. The
+standalone adapter also fails closed unless its host injects the authenticated
+user into request state. This login gate is separate from authorization to a
+particular shipment: the current agent still refuses tracking lookups because
+ownership verification is not available yet.
 
 Every nonempty question needs the configured LLM for routing. Documentation also
 needs the existing indexed Qdrant collection; operational-only questions do not query
@@ -193,7 +199,8 @@ recreation. Do not delete that directory if runs must remain inspectable.
   superstep boundaries (one node per step in this graph).
 - `traces.sqlite3`: persistent JSON documents with run/thread IDs, input,
   ordered node events, node inputs/outputs, branch destinations/reasons,
-  timing, final answer and sanitized errors. Node start is persisted before
+  timing, final answer, sanitized errors and a `guardrail_summary` with per-run
+  activation counts by guardrail, failure category and action. Node start is persisted before
   its execution. Each resume attempt has its own run ID and the same thread ID.
 - Trace metadata records graph/router/tool/RAG/corpus hashes, generation model, retrieval
   settings and whether external services were simulated.
@@ -217,6 +224,22 @@ credentials are never recovered. A resume after a completed lookup uses its
 saved result, not a freshness guarantee: submit a new question for a current read.
 The ordered `sources` array and per-node `source` fields include attempted source
 calls even when they fail; outcomes and explicit `next` branches explain recovery.
+The trace summary counts input rejections/redirections and output blocks without
+including extra question or answer content in the summary.
+
+### TrackFlow guardrails
+
+The harness applies deterministic input policy before memory, routing, retrieval
+or tools. It rejects instruction-change attempts and personal tasks, redirects
+small talk/general logistics, and fails closed on tracking requests because the
+current tools do not verify shipment ownership against the authenticated actor.
+This includes the briefing's unauthorized order `#45821` case: no tracking
+lookup is attempted and no status is disclosed. An explicit request to apply
+Spain's policy to a Los Angeles order is rejected and redirected to the actual
+United States policy. Output validation blocks known internal-instruction,
+carrier-rate and warehouse-location patterns. These checks are defense-in-depth;
+they are not a substitute for server-side per-order authorization or a future
+tracking tool that proves ownership.
 
 Traces/checkpoints include questions, internal knowledge, ticket and product data. They are
 local-only, not exposed by a public trace endpoint. Restrict directory access
