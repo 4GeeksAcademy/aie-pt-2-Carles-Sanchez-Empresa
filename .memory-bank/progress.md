@@ -966,6 +966,41 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
   desplegar cambios del prompt/clasificador; las pruebas de memoria son deterministas
   y no demuestran calidad semántica externa.
 
+### Guardrails de soporte y verificación de autenticación (2026-10-30)
+
+- [x] Añadidos guardrails deterministas de entrada antes de memoria, routing,
+  RAG y herramientas: rechazo de cambios de instrucciones y tareas personales,
+  redirección de small talk/logística general y bloqueo fail-closed de consultas
+  de tracking sin verificación de titularidad.
+- [x] Rechazo de solicitudes que intentan aplicar la política de devoluciones de
+  un país distinto al real del pedido; guardrail de salida para patrones de
+  instrucciones internas, tarifas comerciales y ubicaciones/rutas de almacén.
+- [x] Trazas con resumen agregado de activaciones por guardrail, categoría y
+  acción. El briefing con los cuatro casos obligatorios está en
+  `docs/Trackflow_Guardarailes.md`.
+- [x] Pruebas de regresión para jailbreak, uso personal, pedido `#45821` sin
+  autorización, mezcla de políticas, redirecciones y bloqueo de datos sensibles.
+- [x] Corregido el arranque de la API al declarar `authlib>=1.3.2` en
+  `services/api/requirements.txt` y `pyproject.toml`, y actualizar `uv.lock`;
+  imagen Docker reconstruida y API reiniciada.
+- [x] Backoffice: `AuthGuard` comprueba la sesión llamando a `/auth/me` antes
+  de renderizar vistas privadas; el registro público asigna siempre rol `user`
+  en el servidor. Se mantiene protegida la consulta de reportes de telemetría;
+  la ingesta de eventos continúa siendo pública para instrumentación.
+- [x] Verificación operativa: API `/api/health` HTTP 200, evento de telemetría
+  válido HTTP 200; tests focalizados de login/OAuth: 15 pasaron; `git diff
+  --check` correcto.
+- [x] Login live con cuenta temporal de rol `user` a través del proxy del
+  backoffice y comprobación de `/auth/me` (201/200/200); cuenta eliminada.
+- [x] Guardrails probados en vivo con el modelo configurado: consulta logística
+  dentro de dominio y los cuatro casos obligatorios devolvieron el resultado
+  esperado; cuenta temporal eliminada. Esta comprobación no reemplaza la
+  evaluación semántica de propuestas de memoria indicada en Parte 3.
+- [ ] El POST del agente a través del proxy Next no quedó validado: una llamada
+  devolvió respuesta vacía; las comprobaciones live del agente se repitieron
+  autenticadas directamente contra la API. Revisar el proxy del agente antes de
+  afirmar E2E completo desde la UI.
+
 ### 🧠 Base de Conocimiento RAG — Hito 7 (`trackflow_knowledge`)
 
 - [x] **Infraestructura**: servicio Qdrant en `docker-compose.yml` (`qdrant/qdrant:latest`, puertos 6333/6334, volumen `./data/qdrant:/qdrant/storage`).
