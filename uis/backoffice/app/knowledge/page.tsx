@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactElement } from "react";
+import { useRef, useState, type FormEvent, type ReactElement } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { querySupportAgent } from "@/services/api";
 
@@ -18,6 +18,7 @@ export default function KnowledgePage(): ReactElement {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastQuery, setLastQuery] = useState<string | null>(null);
+  const conversationId = useRef<string | undefined>(undefined);
 
   const handleSubmit = async (event?: FormEvent<HTMLFormElement>, customQuestion?: string): Promise<void> => {
     if (event) event.preventDefault();
@@ -30,7 +31,8 @@ export default function KnowledgePage(): ReactElement {
     setLastQuery(queryText);
 
     try {
-      const data = await querySupportAgent(queryText);
+      const data = await querySupportAgent(queryText, conversationId.current);
+      conversationId.current = data.thread_id;
       setAnswer(data.answer);
     } catch (err: unknown) {
       const msg = err instanceof Error && !(err instanceof TypeError)

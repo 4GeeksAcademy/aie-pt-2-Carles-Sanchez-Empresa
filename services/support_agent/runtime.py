@@ -21,6 +21,7 @@ from .graph import (
     after_incident, after_tool_fallback, build_graph,
     after_inventory, after_inventory_fallback,
 )
+from .memory import MemoryStore
 
 
 class AgentRunError(Exception):
@@ -63,11 +64,13 @@ class AgentRuntime:
     def __init__(
         self, state_dir: Path, *, retrieve_fn=None, generate_fn=None,
         route_fn=None, incident_fn=None, inventory_fn=None, mcp_server_url: str | None = None,
-        interrupt_after=None, capture_kind: str = "live",
+        interrupt_after=None, capture_kind: str = "live", memory_classifier=None,
+        memory_evaluator=None,
     ):
         state_dir = Path(state_dir)
         state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.traces = TraceStore(state_dir / "traces.sqlite3")
+        self.memory = MemoryStore(state_dir / "agent_memory.sqlite3")
         self.connection = sqlite3.connect(state_dir / "checkpoints.sqlite3", check_same_thread=False)
         self.checkpointer = SqliteSaver(self.connection)
         self.lock = threading.RLock()
@@ -80,6 +83,8 @@ class AgentRuntime:
                 route_fn=route_fn, incident_fn=incident_fn, inventory_fn=inventory_fn,
                 mcp_server_url=mcp_server_url,
                 token_provider=lambda: self._token,
+                memory_store=self.memory, memory_classifier=memory_classifier,
+                memory_evaluator=memory_evaluator,
                 instrument=self._instrument, interrupt_after=interrupt_after,
             )
         except Exception:
@@ -106,6 +111,12 @@ class AgentRuntime:
         }
 
     def _instrument(self, name, node):
+        # Memory preparation is an internal, side-effect-bounded step. Keep it
+        # out of the public execution trace so the trace continues to describe
+        # user-visible routing and data-source operations.
+        if name == "prepare_memory":
+            return node
+
         def recorded(state: AgentState, config: RunnableConfig):
             run_id = config["configurable"]["trace_run_id"]
             trace = self.traces.get(run_id)
@@ -153,8 +164,16 @@ class AgentRuntime:
 
         return recorded
 
-    def run(self, question: str, *, token: str | None = None) -> dict:
-        return self._execute({"question": question}, str(uuid4()), token=token)
+    def run(self, question: str, *, token: str | None = None, actor_id: str | None = None,
+            conversation_id: str | None = None) -> dict:
+        thread_id = conversation_id or str(uuid4())
+        try:
+            thread_id = validate_id(thread_id)
+        except ValueError as exc:
+            raise ValueError("Invalid conversation_id") from exc
+        inputs = {"question": question, "actor_id": str(actor_id) if actor_id is not None else None,
+                  "conversation_id": thread_id}
+        return self._execute(inputs, thread_id, token=token)
 
     def resume(self, thread_id: str, *, token: str | None = None) -> dict:
         thread_id = validate_id(thread_id)
@@ -207,4 +226,5 @@ class AgentRuntime:
 
     def close(self) -> None:
         with self.lock:
+            self.memory.close()
             self.connection.close()

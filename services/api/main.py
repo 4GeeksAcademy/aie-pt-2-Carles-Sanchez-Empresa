@@ -108,7 +108,11 @@ app = FastAPI(
     version="3.0.0",
     lifespan=lifespan,
 )
-app.include_router(agent_router)
+async def authenticate_support_agent(request: Request, current_user: dict = Depends(get_current_user)):
+    request.state.current_user = current_user
+
+
+app.include_router(agent_router, dependencies=[Depends(authenticate_support_agent)])
 app.include_router(oauth_issuer_router)
 
 
