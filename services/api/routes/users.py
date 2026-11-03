@@ -101,7 +101,8 @@ async def register_user(payload: UserCreate):
         user = create_user(
             email=payload.email,
             password=payload.password,
-            role=payload.role.value if isinstance(payload.role, UserRole) else payload.role,
+            # Public self-registration must never allow role elevation.
+            role=UserRole.USER.value,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))

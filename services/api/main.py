@@ -117,7 +117,7 @@ app.include_router(oauth_issuer_router)
 
 
 @app.get("/tasks/{task_id}", tags=["Tasks"])
-async def get_task_status(task_id: str):
+async def get_task_status(task_id: str, current_user: dict = Depends(get_current_user)):
     """Devuelve el estado y resultado de una tarea Celery."""
     result = celery_app.AsyncResult(task_id)
     payload = {"task_id": task_id, "status": result.status.lower(), "result": None}
@@ -294,8 +294,8 @@ app.include_router(inventory_router, dependencies=[Depends(get_current_user)])
 app.include_router(users_router)
 app.include_router(profiles_router)
 app.include_router(auth_router)
-app.include_router(knowledge_router)
-app.include_router(telemetry_router)  # Stub — sin autenticación, sin persistencia (Fase 2)
+app.include_router(knowledge_router, dependencies=[Depends(get_current_user)])
+app.include_router(telemetry_router)  # La vista de reportes aplica autenticación en su endpoint.
 app.include_router(reporting_router, dependencies=[Depends(get_current_user)])
 
 

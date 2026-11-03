@@ -265,7 +265,7 @@ class TestQueryAndGeneration:
         mock_openai_client.chat.completions.create.assert_called_once()
         call_kwargs = mock_openai_client.chat.completions.create.call_args.kwargs
         assert len(call_kwargs["messages"]) == 2
-        assert "Eres un Account Manager y Asistente Comercial" in call_kwargs["messages"][0]["content"]
+        assert "agente de primera línea de CX de TrackFlow" in call_kwargs["messages"][0]["content"]
         assert raw_chunk_text in call_kwargs["messages"][1]["content"]
 
     def test_query_when_retrieve_finds_nothing(self, monkeypatch):
