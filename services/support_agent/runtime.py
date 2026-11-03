@@ -39,6 +39,26 @@ def validate_id(value: str) -> str:
     return str(UUID(value))
 
 
+def summarize_guardrails(events: list[dict]) -> dict:
+    """Build deterministic per-run activation counts without exposing user data."""
+    by_guardrail: dict[str, int] = {}
+    by_failure_type: dict[str, int] = {}
+    by_action: dict[str, int] = {}
+    for event in events:
+        guardrail = str(event.get("guardrail", "unknown"))
+        failure_type = str(event.get("failure_type", "unknown"))
+        action = str(event.get("action", "unknown"))
+        by_guardrail[guardrail] = by_guardrail.get(guardrail, 0) + 1
+        by_failure_type[failure_type] = by_failure_type.get(failure_type, 0) + 1
+        by_action[action] = by_action.get(action, 0) + 1
+    return {
+        "total": len(events),
+        "by_guardrail": dict(sorted(by_guardrail.items())),
+        "by_failure_type": dict(sorted(by_failure_type.items())),
+        "by_action": dict(sorted(by_action.items())),
+    }
+
+
 class TraceStore:
     def __init__(self, path: Path):
         self.path = path
@@ -193,6 +213,7 @@ class AgentRuntime:
                 "schema_version": 1, "run_id": run_id, "thread_id": thread_id,
                 "started_at": timestamp(), "status": "running", "question": question,
                 "resumed": inputs is None, "events": [], "sources": [], "answer": None, "error": None,
+                "guardrail_summary": summarize_guardrails([]),
                 "metadata": self.metadata,
             }
             self.traces.put(trace)
@@ -204,6 +225,7 @@ class AgentRuntime:
                 trace.update(
                     status="paused" if pending else ("rejected" if result.error else "completed"),
                     answer=result.answer, error=result.error, finished_at=timestamp(),
+                    guardrail_summary=summarize_guardrails(result.guardrail_events),
                 )
                 self.traces.put(trace)
                 return {**result.model_dump(), "run_id": run_id, "thread_id": thread_id, "status": trace["status"]}

@@ -56,7 +56,8 @@ class ErrorResponse(BaseModel):
 
 
 @router.post("/agent/query", response_model=QueryResponse, responses={
-    400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}, 503: {"model": ErrorResponse},
+    400: {"model": ErrorResponse}, 401: {"model": ErrorResponse},
+    500: {"model": ErrorResponse}, 503: {"model": ErrorResponse},
 })
 def agent_query(
     payload: QueryRequest, request: Request,
@@ -64,9 +65,16 @@ def agent_query(
 ):
     try:
         current_user = getattr(request.state, "current_user", None)
+        # The unified API injects this only after get_current_user has validated
+        # the bearer and confirmed the account is active. A bearer by itself is
+        # not proof of authentication, so standalone deployments fail closed.
+        if not isinstance(current_user, dict) or current_user.get("id") is None:
+            return JSONResponse(status_code=401, content={
+                "detail": {"message": "Debes iniciar sesión con una cuenta activa para consultar datos de TrackFlow.", "run_id": None},
+            }, headers={"WWW-Authenticate": "Bearer"})
         result = request.app.state.support_agent.run(
             payload.question, token=credentials.credentials if credentials else None,
-            actor_id=str(current_user["id"]) if current_user and current_user.get("id") is not None else None,
+            actor_id=str(current_user["id"]),
             conversation_id=payload.conversation_id,
         )
         if result["error"]:

@@ -5,6 +5,7 @@ from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, ConfigDict, Field
+import logging
 
 from data.pipelines import rag
 
@@ -18,6 +19,9 @@ from .tools import (
     IncidentTool, TicketInput, TicketResult, InventoryTool, InventoryResult,
     InventoryInput, MCPTrackFlowTools,
 )
+from .guardrails import inspect_input, validate_output
+
+logger = logging.getLogger(__name__)
 
 
 class AgentState(BaseModel):
@@ -38,6 +42,7 @@ class AgentState(BaseModel):
     memory_proposal: dict[str, Any] | None = None
     pending_decision: dict[str, Any] | None = None
     memory_result: str | None = None
+    guardrail_events: list[dict[str, str]] = Field(default_factory=list)
 
 
 class GraphStructureError(ValueError):
@@ -55,7 +60,7 @@ class _UnavailableMCPTools:
 
 
 def after_question(state: AgentState) -> str:
-    return END if state.error else "route_question"
+    return END if state.error or state.answer else "route_question"
 
 
 def after_memory_decision(state: AgentState) -> str:
@@ -235,14 +240,24 @@ def build_graph(
 
     def receive_question(state: AgentState) -> dict:
         question = state.question.strip()
+        decision = inspect_input(question)
+        events = []
+        if decision.action != "allow":
+            event = {"guardrail": decision.guardrail or "input_policy",
+                     "failure_type": decision.failure_type or "content",
+                     "action": decision.action}
+            events.append(event)
+            logger.warning("support_agent_guardrail guardrail=%s failure_type=%s action=%s",
+                           event["guardrail"], event["failure_type"], event["action"])
         return {
-            "question": question, "context": [], "answer": None,
+            "question": question, "context": [],
             "error": None if question else "La pregunta no puede estar vacia.",
             "decision": None, "routing_failed": False, "ticket_result": None,
             "knowledge_failed": False, "inventory_result": None,
             "actor_id": state.actor_id, "conversation_id": state.conversation_id,
             "memory_context": [], "memory_proposal": None, "pending_decision": None,
-            "memory_result": None,
+            "memory_result": None, "guardrail_events": events,
+            "answer": decision.answer if question and decision.action != "allow" else None,
         }
 
     def route_question(state: AgentState) -> dict:
@@ -347,6 +362,24 @@ def build_graph(
         operational = operations_answer(state)
         return {"answer": f"{operational}\n\n{clarification}" if operational else clarification}
 
+    def protect_output(node):
+        def protected(state: AgentState) -> dict:
+            output = node(state)
+            if output.get("answer") is None:
+                return output
+            answer, failure_type, guardrail = validate_output(output["answer"])
+            output["answer"] = answer
+            if failure_type:
+                event = {"guardrail": guardrail or "output_validation",
+                         "failure_type": failure_type, "action": "block"}
+                output["guardrail_events"] = [*state.guardrail_events, event]
+                logger.warning(
+                    "support_agent_guardrail guardrail=%s failure_type=%s action=block",
+                    event["guardrail"], event["failure_type"],
+                )
+            return output
+        return protected
+
     def routing_fallback(state: AgentState) -> dict:
         return {"answer": "No pude determinar que fuente consultar ahora mismo. Intentalo de nuevo; no he confirmado datos operativos."}
 
@@ -368,7 +401,8 @@ def build_graph(
         "generate_response": generate_response,
         "no_information": no_information,
     }.items():
-        builder.add_node(name, instrument(name, node) if instrument else node)
+        guarded_node = protect_output(node)
+        builder.add_node(name, instrument(name, guarded_node) if instrument else guarded_node)
     builder.add_edge(START, "receive_question")
     builder.add_conditional_edges("receive_question", after_question, {
         END: END, "route_question": "prepare_memory",
