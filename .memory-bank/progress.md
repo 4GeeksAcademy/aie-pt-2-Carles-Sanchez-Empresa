@@ -940,6 +940,32 @@ El primer seed solo contenía 3 salidas, 2 alertas y 1 discrepancia. Algunos eve
   de cache documentados. El timeout del clasificador se ajusto a 20 s tras
   observar latencia real; el deadline de cada tool sigue siendo 5.0 s.
 
+### Agente de soporte LangGraph - Parte 3: memoria y auto-mejora (2026-10-29)
+
+- [x] Memoria persistente explícita por usuario en SQLite dedicado
+  (`agent_memory.sqlite3`), separada de checkpoints, trazas y Qdrant.
+- [x] Propuestas limitadas a reglas de cobertura/asignación de carrier, patrones
+  recurrentes de incidencias y preferencias de informes B2B; requieren consentimiento
+  explícito. Aprobación, rechazo, ambigüedad y edición se resuelven con clasificador
+  estructurado; confianza menor a 0.8, error o edición inválida fallan de forma segura.
+- [x] Validación de contenido prohibido antes de persistir; mensajes y contenido de
+  auditoría se redactan defensivamente. Las memorias activas tienen caducidad por
+  categoría, consolidación por usuario/categoría/clave y recuperación pertinente
+  limitada a cinco resultados, como contexto auxiliar (no sustituye el RAG oficial).
+- [x] Integración en el grafo del agente, identidad obtenida de la sesión JWT y
+  `conversation_id` UUID para enlazar la respuesta de consentimiento; sin almacenar
+  tokens en memoria/checkpoints/trazas. Backoffice mantiene el identificador de hilo.
+- [x] Documentación funcional y límites en `docs/AGENT_MEMORY.md`, briefing en
+  `docs/Trackflow_BRIEFING.md` y evidencia determinista de ciclo aprobado/rechazado
+  en `evidence/support-agent-memory-cycles.md`; fixtures y pruebas del agente
+  actualizados.
+- [x] Validación local focalizada el 2026-10-29:
+  `uv run --no-sync python -m pytest tests/pipelines/test_support_agent_memory.py tests/pipelines/test_support_agent.py -q`
+  — 93 pruebas correctas; un aviso de deprecación de Starlette/AnyIO.
+- [ ] Evaluar los ejemplos semánticos con LLM real y servicio disponible antes de
+  desplegar cambios del prompt/clasificador; las pruebas de memoria son deterministas
+  y no demuestran calidad semántica externa.
+
 ### 🧠 Base de Conocimiento RAG — Hito 7 (`trackflow_knowledge`)
 
 - [x] **Infraestructura**: servicio Qdrant en `docker-compose.yml` (`qdrant/qdrant:latest`, puertos 6333/6334, volumen `./data/qdrant:/qdrant/storage`).
