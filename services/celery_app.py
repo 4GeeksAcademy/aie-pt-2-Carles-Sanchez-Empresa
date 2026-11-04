@@ -87,3 +87,53 @@ def run_weekly_pipeline(self, week_start: str | None = None) -> str:
             raise self.retry(exc=exc, countdown=countdown)
         _record_dlq(task_id, attempt, exc)
         raise
+
+
+def _record_rfp_operational_error(ticket_id: str, error: Exception, *, failed: bool) -> None:
+    """Actualiza solo telemetría operativa; conserva el estado de negocio del ticket."""
+    try:
+        from services.api.database import engine
+        from services.api.models import RfpTicket
+    except ModuleNotFoundError:
+        from database import engine
+        from models import RfpTicket
+
+    with Session(engine) as session:
+        ticket = session.get(RfpTicket, ticket_id)
+        if ticket is None:
+            logger.error("RFP ticket desapareció mientras se procesaba: %s", ticket_id)
+            return
+        if ticket.status != "analizando":
+            logger.info(
+                "Se omite registrar error de RFP %s: el ticket ya está en estado terminal (%s)",
+                ticket_id,
+                ticket.status,
+            )
+            return
+        ticket.retry_count += 1
+        ticket.last_error = str(error)[:2000]
+        if failed:
+            ticket.failed_at = datetime.now(timezone.utc)
+        ticket.updated_at = datetime.now(timezone.utc)
+        session.add(ticket)
+        session.commit()
+
+
+@app.task(bind=True, name="trackflow.process_rfp_ticket", max_retries=3)
+def process_rfp_ticket(self, ticket_id: str) -> dict:
+    """Execute the RFP graph with three retries after the initial attempt."""
+    try:
+        # La API de recepción ya persiste el ticket y el fichero. En Fase 2 el
+        # trabajo queda encolado con ID únicamente; la ejecución real del grafo
+        # se conecta en la fase dedicada de pipeline.
+        from data.pipelines.rfp_intake import process_ticket
+
+        return process_ticket(ticket_id)
+    except Exception as exc:
+        # Celery retries=3 means up to four total executions (initial + 3 retries).
+        exhausted = self.request.retries >= self.max_retries
+        _record_rfp_operational_error(ticket_id, exc, failed=exhausted)
+        logger.exception("Fallo en ticket RFP %s; intento %s", ticket_id, self.request.retries + 1)
+        if not exhausted:
+            raise self.retry(exc=exc, countdown=10 * (2 ** self.request.retries))
+        raise

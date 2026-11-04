@@ -32,6 +32,8 @@ dependencies = [
     "sqlmodel>=0.0.42",
     "tinydb>=4.9.0",
     "trackflow-shared",
+    "markitdown[pdf]>=0.1.9",
+    "py-readability-metrics>=1.4.5",
 ]
 
 [tool.pytest.ini_options]

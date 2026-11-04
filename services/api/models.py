@@ -11,9 +11,10 @@ Archivos relacionados:
 """
 
 from datetime import datetime, timezone
+from uuid import uuid4
 from typing import Optional
 
-from sqlalchemy import Column, Index, JSON
+from sqlalchemy import CheckConstraint, Column, DateTime, Index, JSON, UniqueConstraint, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import SQLModel, Field, Relationship
 
@@ -133,3 +134,96 @@ class TaskFailure(SQLModel, table=True):
     attempt: int = Field(nullable=False)
     error_message: str = Field(nullable=False)
     failed_at: str = Field(nullable=False)
+
+
+# ════════════════════════════════════════════════════════════
+#  TrackFlow RFP intake (Parte 1)
+# ════════════════════════════════════════════════════════════
+
+_JSONB = JSON().with_variant(JSONB, "postgresql")
+
+
+class RfpTicket(SQLModel, table=True):
+    """Ticket de recepción. El estado de negocio no se mezcla con Celery."""
+
+    __tablename__ = "rfp_tickets"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('analizando', 'descartado', 'analisis_completo')",
+            name="ck_rfp_tickets_part1_status",
+        ),
+        Index("ix_rfp_tickets_status_created_at", "status", "created_at"),
+    )
+
+    ticket_id: str = Field(default_factory=lambda: str(uuid4()), sa_type=Uuid(as_uuid=False), primary_key=True)
+    rfp_id: str = Field(default_factory=lambda: str(uuid4()), sa_type=Uuid(as_uuid=False), unique=True, index=True, nullable=False)
+    status: str = Field(default="analizando", nullable=False, index=True)
+    raw_pdf_path: str = Field(nullable=False)
+    markdown_path: Optional[str] = Field(default=None, nullable=True)
+    created_by_user_id: Optional[str] = Field(default=None, nullable=True, index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True), nullable=False)
+
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True), nullable=False)
+
+    # Operación/reintentos: no alteran el estado de negocio requerido en Parte 1.
+    celery_task_id: Optional[str] = Field(default=None, nullable=True, unique=True)
+    retry_count: int = Field(default=0, nullable=False)
+    last_error: Optional[str] = Field(default=None, nullable=True)
+    failed_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True), nullable=True)
+
+    # Contrato durable para Parte 2; solo se completa tras síntesis correcta.
+    handoff_schema_version: Optional[str] = Field(default=None, nullable=True)
+    handoff_payload: Optional[dict] = Field(default=None, sa_column=Column(_JSONB, nullable=True))
+
+
+class RfpMetadata(SQLModel, table=True):
+    """Metadatos extraídos; valores ausentes permanecen nulos y no se inventan."""
+
+    __tablename__ = "rfp_metadata"
+    __table_args__ = (
+        CheckConstraint("client_country IS NULL OR client_country IN ('US', 'Spain')", name="ck_rfp_metadata_country"),
+        CheckConstraint("currency IS NULL OR currency IN ('USD', 'EUR')", name="ck_rfp_metadata_currency"),
+        Index("ix_rfp_metadata_client_country", "client_country"),
+    )
+
+    ticket_id: str = Field(foreign_key="rfp_tickets.ticket_id", sa_type=Uuid(as_uuid=False), primary_key=True, ondelete="CASCADE")
+    client_name: Optional[str] = Field(default=None, nullable=True)
+    client_country: Optional[str] = Field(default=None, nullable=True)
+    services_requested: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+    monthly_volume: Optional[int] = Field(default=None, nullable=True, ge=0)
+    deadline: Optional[str] = Field(default=None, nullable=True)
+    budget_range: Optional[str] = Field(default=None, nullable=True)
+    departments_needed: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+    unassigned_scope: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+    currency: Optional[str] = Field(default=None, nullable=True)
+    readability_metrics: dict = Field(default_factory=dict, sa_type=_JSONB, nullable=False)
+    is_rfp: Optional[bool] = Field(default=None, nullable=True)
+    classification_reason: Optional[str] = Field(default=None, nullable=True)
+    classification_evidence: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+    manual_review_required: bool = Field(default=False, nullable=False)
+    manual_review_reason: Optional[str] = Field(default=None, nullable=True)
+    open_questions: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+
+
+class DepartmentSection(SQLModel, table=True):
+    """Aporte Parte 1 de un workstream activo del ticket."""
+
+    __tablename__ = "rfp_department_sections"
+    __table_args__ = (
+        UniqueConstraint("ticket_id", "department_id", name="uq_rfp_department_section_ticket_department"),
+        CheckConstraint(
+            "department_id IN ('warehouse', 'lastmile', 'reverse')",
+            name="ck_rfp_department_sections_department",
+        ),
+        Index("ix_rfp_department_sections_ticket", "ticket_id"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    ticket_id: str = Field(foreign_key="rfp_tickets.ticket_id", sa_type=Uuid(as_uuid=False), nullable=False, ondelete="CASCADE")
+    department_id: str = Field(nullable=False)
+    owner: str = Field(nullable=False)
+    relevant_extracts: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+    key_aspects: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+    open_questions: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+    evidence: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True), nullable=False)
