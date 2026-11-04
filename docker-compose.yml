@@ -51,6 +51,7 @@ services:
       # Exponemos también el módulo Celery para que la API pueda encolar.
       - ./services/celery_app.py:/app/api/celery_app.py:ro
       - ./packages/shared-py:/app/packages/shared-py
+      - ./data/raw:/app/data/raw
       - ./data/support_agent:/var/lib/trackflow-agent
     env_file:
       - .env
@@ -59,6 +60,7 @@ services:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - QDRANT_URL=http://qdrant:6333
       - SUPPORT_AGENT_STATE_DIR=/var/lib/trackflow-agent
+      - TRACKFLOW_RAW_DATA_DIR=/app/data/raw
     depends_on:
       - redis
       - qdrant
@@ -84,6 +86,9 @@ services:
       - .env
     environment:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - TRACKFLOW_RAW_DATA_DIR=/app/data/raw
+    volumes:
+      - ./data/raw:/app/data/raw
     depends_on:
       - redis
     networks:

@@ -93,6 +93,7 @@ The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls t
 | `/suppliers` | JWT | Supplier directory CRUD |
 | `/incidents` | JWT | CSV incident analyzer |
 | `/knowledge` | JWT | Knowledge assistant with suggested questions and generated answers |
+| `/rfp-intake` | JWT | RFP PDF intake, ticket status, analysis and departmental handoff |
 | `/sales-forecast` | JWT | TrackFlow consolidated revenue forecast, test metrics, variability band and annual filters |
 | `/account/profile` | JWT | User profile management |
 
