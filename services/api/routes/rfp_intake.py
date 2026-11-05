@@ -83,6 +83,10 @@ def _section_payload(section: DepartmentSection) -> dict:
         "key_aspects": section.key_aspects,
         "open_questions": section.open_questions,
         "evidence": section.evidence,
+        "draft_content": section.draft_content,
+        "evaluation_results": section.evaluation_results,
+        "needs_human_review": section.needs_human_review,
+        "generation_iterations": section.generation_iterations,
     }
 
 
@@ -207,6 +211,47 @@ def get_rfp_ticket(
     summary = _summary(ticket, metadata).model_dump()
     return TicketDetail(
         **summary,
+        retry_count=ticket.retry_count,
+        last_error=ticket.last_error,
+        failed_at=_iso(ticket.failed_at),
+        metadata=_metadata_payload(metadata),
+        sections=[_section_payload(section) for section in sections],
+        handoff_schema_version=ticket.handoff_schema_version,
+        handoff_payload=ticket.handoff_payload,
+    )
+
+
+@router.post("/tickets/{ticket_id}/generate-response", response_model=TicketDetail)
+def generate_rfp_response(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_db),
+):
+    """Reanuda la Parte 2 sobre el handoff almacenado; no acepta/reprocesa el PDF."""
+    try:
+        UUID(ticket_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Ticket RFP no encontrado.") from exc
+    ticket = session.get(RfpTicket, ticket_id)
+    if ticket is None:
+        raise HTTPException(status_code=404, detail="Ticket RFP no encontrado.")
+    if ticket.status not in {"analisis_completo", "generando_borrador", "en_evaluación", "needs_human_review"}:
+        raise HTTPException(status_code=409, detail="El ticket aún no tiene un handoff listo para generar respuesta.")
+    try:
+        from data.pipelines.rfp_response_generation import generate_ticket_responses
+        generate_ticket_responses(ticket_id, db_engine=session.get_bind())
+    except (ValueError, RuntimeError) as exc:
+        logger.exception("No se pudo generar respuesta RFP %s", ticket_id)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Falló la generación de respuesta RFP %s", ticket_id)
+        raise HTTPException(status_code=503, detail="No se pudo generar la respuesta RFP.") from exc
+    # La petición inyectada puede no apuntar al engine global en pruebas; releer con la misma sesión.
+    session.refresh(ticket)
+    metadata = session.get(RfpMetadata, ticket_id)
+    sections = session.exec(select(DepartmentSection).where(DepartmentSection.ticket_id == ticket_id)).all()
+    return TicketDetail(
+        **_summary(ticket, metadata).model_dump(),
         retry_count=ticket.retry_count,
         last_error=ticket.last_error,
         failed_at=_iso(ticket.failed_at),
