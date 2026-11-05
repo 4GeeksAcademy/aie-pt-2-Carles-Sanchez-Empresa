@@ -69,6 +69,7 @@ from routes import (
     knowledge_router,
     profiles_router,
     reporting_router,
+    rfp_intake_router,
     suppliers_router,
     telemetry_router,
     users_router,
@@ -297,6 +298,7 @@ app.include_router(auth_router)
 app.include_router(knowledge_router, dependencies=[Depends(get_current_user)])
 app.include_router(telemetry_router)  # La vista de reportes aplica autenticación en su endpoint.
 app.include_router(reporting_router, dependencies=[Depends(get_current_user)])
+app.include_router(rfp_intake_router)
 
 
 # ──────────────────────────── Root health-check ────────────────────────────

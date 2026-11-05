@@ -87,3 +87,66 @@ def run_weekly_pipeline(self, week_start: str | None = None) -> str:
             raise self.retry(exc=exc, countdown=countdown)
         _record_dlq(task_id, attempt, exc)
         raise
+
+
+def _record_rfp_operational_error(ticket_id: str, error: Exception, *, failed: bool) -> None:
+    """Actualiza solo telemetría operativa; conserva el estado de negocio del ticket."""
+    try:
+        from services.api.database import engine
+        from services.api.models import RfpTicket
+    except ModuleNotFoundError:
+        from database import engine
+        from models import RfpTicket
+
+    with Session(engine) as session:
+        ticket = session.get(RfpTicket, ticket_id)
+        if ticket is None:
+            logger.error("RFP ticket desapareció mientras se procesaba: %s", ticket_id)
+            return
+        if ticket.status != "analizando":
+            logger.info(
+                "Se omite registrar error de RFP %s: el ticket ya está en estado terminal (%s)",
+                ticket_id,
+                ticket.status,
+            )
+            return
+        ticket.retry_count += 1
+        ticket.last_error = str(error)[:2000]
+        if failed:
+            ticket.failed_at = datetime.now(timezone.utc)
+        ticket.updated_at = datetime.now(timezone.utc)
+        session.add(ticket)
+        session.commit()
+
+
+@app.task(bind=True, name="trackflow.process_rfp_ticket", max_retries=3)
+def process_rfp_ticket(self, ticket_id: str) -> dict:
+    """Execute the RFP graph with three retries after the initial attempt."""
+    try:
+        # La API persiste el ticket/fichero; Celery ejecuta Parte 1 y, cuando
+        # el handoff queda completo, genera y evalúa las secciones de Parte 2.
+        from data.pipelines.rfp_intake import process_ticket
+
+        result = process_ticket(ticket_id)
+        if result.get("status") == "analisis_completo" and not result.get("skipped"):
+            from data.pipelines.rfp_response_generation import generate_ticket_responses
+            from data.pipelines.rfp_intake.pipeline import engine as rfp_engine
+
+            result["response_generation"] = generate_ticket_responses(ticket_id, db_engine=rfp_engine)
+        elif result.get("skipped") and result.get("status") in {
+            "generando_borrador", "en_evaluación"
+        }:
+            # A Celery retry after Part 1 resumes Part 2 from the durable handoff.
+            from data.pipelines.rfp_response_generation import generate_ticket_responses
+            from data.pipelines.rfp_intake.pipeline import engine as rfp_engine
+
+            result["response_generation"] = generate_ticket_responses(ticket_id, db_engine=rfp_engine)
+        return result
+    except Exception as exc:
+        # Celery retries=3 means up to four total executions (initial + 3 retries).
+        exhausted = self.request.retries >= self.max_retries
+        _record_rfp_operational_error(ticket_id, exc, failed=exhausted)
+        logger.exception("Fallo en ticket RFP %s; intento %s", ticket_id, self.request.retries + 1)
+        if not exhausted:
+            raise self.retry(exc=exc, countdown=10 * (2 ** self.request.retries))
+        raise
