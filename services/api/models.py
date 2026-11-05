@@ -149,7 +149,7 @@ class RfpTicket(SQLModel, table=True):
     __tablename__ = "rfp_tickets"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('analizando', 'descartado', 'analisis_completo')",
+            "status IN ('analizando', 'descartado', 'analisis_completo', 'generando_borrador', 'en_evaluación', 'needs_human_review')",
             name="ck_rfp_tickets_part1_status",
         ),
         Index("ix_rfp_tickets_status_created_at", "status", "created_at"),
@@ -226,4 +226,8 @@ class DepartmentSection(SQLModel, table=True):
     key_aspects: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
     open_questions: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
     evidence: list[str] = Field(default_factory=list, sa_type=_JSONB, nullable=False)
+    draft_content: Optional[str] = Field(default=None, nullable=True)
+    evaluation_results: dict = Field(default_factory=dict, sa_type=_JSONB, nullable=False)
+    needs_human_review: bool = Field(default=False, nullable=False)
+    generation_iterations: int = Field(default=0, nullable=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True), nullable=False)
