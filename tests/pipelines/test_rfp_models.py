@@ -104,9 +104,8 @@ def test_department_section_persists_aspects_and_owner(rfp_session):
     assert "no está especificado" in stored.key_aspects[0]
 
 
-def test_part_one_status_constraint_rejects_later_part_status(rfp_session):
-    ticket = RfpTicket(raw_pdf_path="data/raw/rfp-test.pdf", status="esperando_aprobación")
+def test_part_one_status_constraint_accepts_part_three_approval_status(rfp_session):
+    ticket = RfpTicket(raw_pdf_path="data/raw/rfp-test.pdf", status="waiting_for_approval")
     rfp_session.add(ticket)
-    with pytest.raises(IntegrityError):
-        rfp_session.commit()
-    rfp_session.rollback()
+    rfp_session.commit()
+    assert ticket.status == "waiting_for_approval"

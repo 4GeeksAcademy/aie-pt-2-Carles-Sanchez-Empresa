@@ -149,7 +149,7 @@ class RfpTicket(SQLModel, table=True):
     __tablename__ = "rfp_tickets"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('analizando', 'descartado', 'analisis_completo', 'generando_borrador', 'en_evaluación', 'needs_human_review')",
+            "status IN ('analizando', 'descartado', 'archived', 'returned_to_client', 'analisis_completo', 'generando_borrador', 'en_evaluación', 'needs_human_review', 'waiting_for_approval', 'done')",
             name="ck_rfp_tickets_part1_status",
         ),
         Index("ix_rfp_tickets_status_created_at", "status", "created_at"),
@@ -174,6 +174,12 @@ class RfpTicket(SQLModel, table=True):
     # Contrato durable para Parte 2; solo se completa tras síntesis correcta.
     handoff_schema_version: Optional[str] = Field(default=None, nullable=True)
     handoff_payload: Optional[dict] = Field(default=None, sa_column=Column(_JSONB, nullable=True))
+    final_proposal: Optional[str] = Field(default=None, nullable=True)
+    final_proposal_created_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True), nullable=True)
+    final_document_path: Optional[str] = Field(default=None, nullable=True)
+    human_review_comment: Optional[str] = Field(default=None, nullable=True)
+    human_reviewed_by: Optional[str] = Field(default=None, nullable=True)
+    human_reviewed_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True), nullable=True)
 
 
 class RfpMetadata(SQLModel, table=True):
@@ -230,4 +236,41 @@ class DepartmentSection(SQLModel, table=True):
     evaluation_results: dict = Field(default_factory=dict, sa_type=_JSONB, nullable=False)
     needs_human_review: bool = Field(default=False, nullable=False)
     generation_iterations: int = Field(default=0, nullable=False)
+    approval_status: str = Field(default="pending", nullable=False)
+    approver_name: Optional[str] = Field(default=None, nullable=True)
+    approved_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True), nullable=True)
+    approval_comment: Optional[str] = Field(default=None, nullable=True)
+    approval_iteration: int = Field(default=0, nullable=False)
+    checkpoint_thread_id: Optional[str] = Field(default=None, nullable=True, unique=True)
+    approval_request_id: Optional[str] = Field(default=None, nullable=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True), nullable=False)
+
+
+class RfpApprovalTrace(SQLModel, table=True):
+    """Traza durable de nodos y decisiones del flujo de aprobación Parte 3."""
+
+    __tablename__ = "rfp_approval_traces"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    ticket_id: str = Field(foreign_key="rfp_tickets.ticket_id", sa_type=Uuid(as_uuid=False), nullable=False, ondelete="CASCADE", index=True)
+    department_id: Optional[str] = Field(default=None, nullable=True)
+    node_name: str = Field(nullable=False)
+    agent_name: str = Field(nullable=False)
+    input_payload: dict = Field(default_factory=dict, sa_type=_JSONB, nullable=False)
+    output_payload: dict = Field(default_factory=dict, sa_type=_JSONB, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True), nullable=False)
+
+
+class RfpNodeTrace(SQLModel, table=True):
+    """Per-node execution audit for the complete RFP pipeline."""
+
+    __tablename__ = "rfp_node_traces"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    ticket_id: str = Field(foreign_key="rfp_tickets.ticket_id", sa_type=Uuid(as_uuid=False), nullable=False, ondelete="CASCADE", index=True)
+    department_id: Optional[str] = Field(default=None, nullable=True)
+    node_name: str = Field(nullable=False)
+    agent_name: str = Field(nullable=False)
+    input_payload: dict = Field(default_factory=dict, sa_type=_JSONB, nullable=False)
+    output_payload: dict = Field(default_factory=dict, sa_type=_JSONB, nullable=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True), nullable=False)

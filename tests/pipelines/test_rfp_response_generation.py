@@ -20,7 +20,7 @@ from data.pipelines.rfp_response_generation import (
     retrieve_company_knowledge,
     run_section_cycle,
 )
-from models import DepartmentSection, RfpMetadata, RfpTicket
+from models import DepartmentSection, RfpMetadata, RfpTicket, RfpNodeTrace
 
 
 def fake_client(content):
@@ -30,7 +30,7 @@ def fake_client(content):
 
 def database():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    SQLModel.metadata.create_all(engine, tables=[RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__])
+    SQLModel.metadata.create_all(engine, tables=[RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__, RfpNodeTrace.__table__])
     return engine
 
 
@@ -177,7 +177,7 @@ def test_ticket_runs_department_workstreams_in_parallel_and_isolates_failure(tmp
         connect_args={"check_same_thread": False},
     )
     SQLModel.metadata.create_all(
-        engine, tables=[RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__]
+        engine, tables=[RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__, RfpNodeTrace.__table__]
     )
     with Session(engine) as session:
         ticket = RfpTicket(status="analisis_completo", raw_pdf_path="not-read-by-part2.pdf")
@@ -285,4 +285,61 @@ def test_ticket_consumes_stored_handoff_and_persists_part2_result():
         assert section.draft_content.startswith("Borrador almacenado")
         assert section.evaluation_results["overall_pass"] is True
         assert ticket.handoff_payload["response_generation"]["ready_for_part3"] is True
+    engine.dispose()
+
+
+def test_automatic_resume_keeps_existing_draft_but_explicit_regeneration_replaces_it():
+    engine = database()
+    with Session(engine) as session:
+        ticket = RfpTicket(status="needs_human_review", raw_pdf_path="unused.pdf")
+        session.add(ticket)
+        session.flush()
+        ticket.handoff_payload = {
+            "ticket_id": ticket.ticket_id,
+            "active_workstreams": [{"department_id": "warehouse", "key_aspects": [], "open_questions": []}],
+        }
+        session.add(RfpMetadata(ticket_id=ticket.ticket_id, client_country="US", currency="USD"))
+        session.add(DepartmentSection(
+            ticket_id=ticket.ticket_id, department_id="warehouse", owner="Warehouse",
+            draft_content="Human draft that must survive",
+            evaluation_results={"overall_pass": True},
+            generation_iterations=2,
+            needs_human_review=True,
+        ))
+        session.commit()
+        ticket_id = ticket.ticket_id
+
+    def unexpected_generator(*_args, **_kwargs):
+        raise AssertionError("A resumed generation must not replace an existing draft")
+
+    resumed = generate_ticket_responses(
+        ticket_id, db_engine=engine, generator=unexpected_generator,
+        retrieve_fn=lambda _query, k: [],
+    )
+    assert resumed["sections"][0]["draft_content"] == "Human draft that must survive"
+    with Session(engine) as session:
+        section = session.exec(select(DepartmentSection).where(DepartmentSection.ticket_id == ticket_id)).one()
+        assert section.draft_content == "Human draft that must survive"
+        assert section.evaluation_results == {"overall_pass": True}
+
+    def replacement_generator(*_args, **_kwargs):
+        return DraftResult(content="Explicitly regenerated draft")
+
+    def passing_evaluator(department_id, *_args, **_kwargs):
+        return EvaluationResult(
+            department_id=department_id,
+            readability=ReadabilityResult(passed=True, score=50, details="OK"),
+            relevance=RelevanceResult(passed=True, missing_aspects=[]),
+            compliance=ComplianceResult(passed=True, rule_ids=[], violations=[]),
+            overall_pass=True, feedback_for_generator="OK",
+        )
+
+    generate_ticket_responses(
+        ticket_id, db_engine=engine, generator=replacement_generator,
+        evaluator=passing_evaluator, retrieve_fn=lambda _query, k: [],
+        force_regenerate=True,
+    )
+    with Session(engine) as session:
+        section = session.exec(select(DepartmentSection).where(DepartmentSection.ticket_id == ticket_id)).one()
+        assert section.draft_content == "Explicitly regenerated draft"
     engine.dispose()

@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel
 
-from models import DepartmentSection, RfpMetadata, RfpTicket
+from models import DepartmentSection, RfpMetadata, RfpTicket, RfpNodeTrace
 from data.pipelines.rfp_intake import pipeline
 from data.pipelines.rfp_intake.guardrails import document_injection_detected, validate_generated_text
 from data.pipelines.rfp_intake.workstreams import DepartmentWorkerOutput, WorkerAspect
@@ -32,7 +32,7 @@ def database():
     )
     SQLModel.metadata.create_all(
         engine,
-        tables=[RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__],
+        tables=[RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__, RfpNodeTrace.__table__],
     )
     return engine
 
@@ -127,6 +127,50 @@ def test_pdf_is_converted_before_classifier_and_persists_markdown_and_metadata(t
         ).all()
         assert [section.department_id for section in sections] == ["warehouse"]
     engine.dispose()
+
+
+def test_completed_analysis_retry_preserves_existing_department_draft():
+    engine = database()
+    ticket_id = seed_ticket(engine, "/tmp/input.pdf")
+    with Session(engine) as session:
+        ticket = session.get(RfpTicket, ticket_id)
+        section = DepartmentSection(
+            ticket_id=ticket_id,
+            department_id="warehouse",
+            owner="Warehouse",
+            relevant_extracts=["Old extract"],
+            key_aspects=["old aspect"],
+            open_questions=[],
+            evidence=["Old extract"],
+            draft_content="Human-reviewed draft that must survive the retry",
+            approval_status="pending",
+        )
+        session.add(section)
+        session.commit()
+        section_id = section.id
+
+    pipeline._persist_completed_analysis(
+        engine,
+        ticket_id,
+        [{
+            "department_id": "warehouse",
+            "owner": "Warehouse updated",
+            "relevant_extracts": ["New extract"],
+            "key_aspects": [{"source_extract": "New extract", "aspect_key": "storage"}],
+            "open_questions": ["New question"],
+        }],
+        {"schema_version": "test-v1"},
+    )
+
+    with Session(engine) as session:
+        section = session.get(DepartmentSection, section_id)
+        ticket = session.get(RfpTicket, ticket_id)
+        assert section is not None
+        assert section.draft_content == "Human-reviewed draft that must survive the retry"
+        assert section.approval_status == "pending"
+        assert section.owner == "Warehouse updated"
+        assert section.relevant_extracts == ["New extract"]
+        assert ticket.status == "analisis_completo"
 
 
 def test_non_rfp_is_discarded_only_after_classification(tmp_path):
@@ -824,7 +868,7 @@ def test_two_rfp_tickets_can_be_processed_concurrently(tmp_path):
     )
     SQLModel.metadata.create_all(
         engine,
-        tables=[RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__],
+        tables=[RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__, RfpNodeTrace.__table__],
     )
     paths = [tmp_path / "concurrent-a.pdf", tmp_path / "concurrent-b.pdf"]
     for path in paths:

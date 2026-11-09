@@ -45,7 +45,8 @@ export function Header({ onToggleSidebar }: Props) {
               alt="TrackFlow"
               width={112}
               height={56}
-              className="h-14 w-auto md:h-16 bg-transparent"
+              className="h-auto w-28 bg-transparent md:w-32"
+              style={{ height: "auto" }}
               priority
             />
           </Link>
