@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { API_BASE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n";
+import { getToken } from "@trackflow/core/services/auth";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -92,7 +93,11 @@ export default function TelemetryPage() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(`${API_BASE}/telemetry/report`);
+      const token = getToken();
+      const res = await fetch(`${API_BASE}/telemetry/report`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        cache: "no-store",
+      });
       if (!res.ok) {
         throw new Error(`Error ${res.status}: ${res.statusText}`);
       }
@@ -353,9 +358,9 @@ function AuthFailureChart({ data, t }: { data: AuthFailureRate[]; t: (key: strin
         <XAxis dataKey="date" tick={{ fontSize: 12 }} />
         <YAxis tick={{ fontSize: 12 }} />
         <Tooltip
-          formatter={(value: string, name: string) => {
-            if (name === "tasa_fallos") return [`${value}%`, t("telemetry.chart.failure_rate")];
-            return [value, name];
+          formatter={(value: unknown, name: unknown) => {
+            if (name === "tasa_fallos") return [`${String(value)}%`, t("telemetry.chart.failure_rate")];
+            return [String(value), String(name)];
           }}
         />
         <Legend />
