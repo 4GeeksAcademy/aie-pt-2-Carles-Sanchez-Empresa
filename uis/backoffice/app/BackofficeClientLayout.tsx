@@ -80,8 +80,11 @@ function BackofficeContent({ children }: { children: React.ReactNode }) {
         if (entryAny.name === "first-input") {
           onWebVital({ name: "FID", value: entryAny.startTime, delta: entryAny.startTime, id: entryAny.startTime.toString() });
         }
-        if (entryAny.name === "layout-shift" && !(entry as LayoutShift).hadRecentInput) {
-          onWebVital({ name: "CLS", value: (entry as LayoutShift).value, delta: (entry as LayoutShift).value, id: entryAny.startTime.toString() });
+        if (entryAny.name === "layout-shift") {
+          const layoutShift = entry as PerformanceEntry & { value: number; hadRecentInput: boolean };
+          if (!layoutShift.hadRecentInput) {
+            onWebVital({ name: "CLS", value: layoutShift.value, delta: layoutShift.value, id: entryAny.startTime.toString() });
+          }
         }
         if (entryAny.name === "interaction" && entryAny.duration > 0) {
           onWebVital({ name: "INP", value: entryAny.duration, delta: entryAny.duration, id: entryAny.startTime.toString() });
@@ -89,14 +92,19 @@ function BackofficeContent({ children }: { children: React.ReactNode }) {
       }
     });
 
-    try {
-      observer.observe({ type: "largest-contentful-paint", buffered: true });
-      observer.observe({ type: "first-input", buffered: true });
-      observer.observe({ type: "layout-shift", buffered: true });
-      observer.observe({ type: "event", durationThreshold: 40, buffered: true });
-    } catch {
-      // Algunos navegadores no soportan todos los tipos
-    }
+    // Algunas opciones (por ejemplo, `event` o `durationThreshold`) no están
+    // soportadas en todos los navegadores y tampoco están en todos los DOM typings.
+    const observe = (options: PerformanceObserverInit & { durationThreshold?: number }) => {
+      try {
+        observer.observe(options);
+      } catch {
+        // Ignorar individualmente los tipos de métrica no soportados.
+      }
+    };
+    observe({ type: "largest-contentful-paint", buffered: true });
+    observe({ type: "first-input", buffered: true });
+    observe({ type: "layout-shift", buffered: true });
+    observe({ type: "event", durationThreshold: 40, buffered: true });
 
     // TTFB desde Navigation Timing
     const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming;
