@@ -27,6 +27,7 @@ from data.process.rag import GENERATION_MODEL
 from data.pipelines.rfp_intake.guardrails import document_injection_detected, validate_generated_text
 from database import engine
 from models import DepartmentSection, RfpMetadata, RfpTicket
+from data.pipelines.rfp_trace import record_node
 from data.pipelines.rfp_intake.workstreams import (
     DEPARTMENTS,
     DepartmentWorkerOutput,
@@ -259,6 +260,8 @@ def _build_graph(*, converter=None, classifier=None, worker=None, db_engine=None
         metrics = _readability_metrics(markdown)
         if injection_detected:
             metrics["instruction_injection_detected"] = True
+        record_node(database_engine, state.ticket_id, "convert_document", "pdf_converter",
+                    {"pdf_path": str(pdf_path)}, {"markdown_chars": len(markdown), "metrics": metrics})
         return {
             "markdown": markdown,
             "markdown_path": str(markdown_path),
@@ -280,6 +283,8 @@ def _build_graph(*, converter=None, classifier=None, worker=None, db_engine=None
                     ][:30]
                 }
             )
+        record_node(database_engine, state.ticket_id, "classify_document", "rfp_classifier",
+                    {"markdown_chars": len(state.markdown or "")}, result.model_dump(mode="json"))
         return {"classification": result.model_dump()}
 
     def persist_classified(state: RfpPipelineState, *, rejected: bool) -> dict:
@@ -294,6 +299,8 @@ def _build_graph(*, converter=None, classifier=None, worker=None, db_engine=None
             state.readability_metrics,
             instruction_injection_detected=state.instruction_injection_detected,
         )
+        record_node(database_engine, state.ticket_id, "persist_classification", "rfp_intake",
+                    {"rejected": rejected}, {"status": "descartado" if rejected else "analizando"})
         return {"status": "descartado" if rejected else "analizando"}
 
     def persist_rfp(state: RfpPipelineState) -> dict:
@@ -314,6 +321,8 @@ def _build_graph(*, converter=None, classifier=None, worker=None, db_engine=None
                     state.markdown or "", department_id, result.evidence
                 ),
             })
+        record_node(database_engine, state.ticket_id, "orchestrate_workstreams", "workstream_orchestrator",
+                    {"departments_needed": result.departments_needed}, {"department_ids": [item["department_id"] for item in inputs]})
         return {"workstream_inputs": inputs}
 
     def run_workstream(state: RfpPipelineState | dict) -> dict:
@@ -364,6 +373,9 @@ def _build_graph(*, converter=None, classifier=None, worker=None, db_engine=None
             "open_questions": list(dict.fromkeys([*output.open_questions, *output.missing_data, *missing_questions])),
             "missing_data": output.missing_data,
         }
+        record_node(database_engine, state.ticket_id, "run_department", f"{department_id}_worker",
+                    {"department_id": department_id, "extract_count": len(item["relevant_extracts"])},
+                    section, department_id)
         return {"department_outputs": [section]}
 
     def synthesize(state: RfpPipelineState) -> dict:
@@ -382,6 +394,8 @@ def _build_graph(*, converter=None, classifier=None, worker=None, db_engine=None
             result.unassigned_scope, result.open_questions,
         )
         _persist_completed_analysis(database_engine, state.ticket_id, state.department_outputs, handoff)
+        record_node(database_engine, state.ticket_id, "synthesize", "sales_handoff_synthesizer",
+                    {"department_count": len(state.department_outputs)}, {"status": "analisis_completo"})
         return {"handoff_payload": handoff, "status": "analisis_completo"}
 
     def route_classification(state: RfpPipelineState) -> str:
@@ -466,27 +480,38 @@ def process_ticket(
     }
 
 def _persist_completed_analysis(database_engine, ticket_id: str, sections: list[dict], handoff: dict) -> None:
-    """Atomically replace active department sections and persist the Part 2 handoff."""
+    """Upsert department sections without discarding drafts from prior attempts."""
     with Session(database_engine) as session:
         ticket = session.get(RfpTicket, ticket_id)
         if ticket is None:
             raise ValueError(f"No existe el ticket RFP {ticket_id}.")
         if ticket.status != "analizando":
             raise ValueError("El ticket ya no está disponible para completar el análisis.")
-        for section in session.exec(
-            select(DepartmentSection).where(DepartmentSection.ticket_id == ticket_id)
-        ).all():
-            session.delete(section)
+        existing_sections = {
+            section.department_id: section
+            for section in session.exec(
+                select(DepartmentSection).where(DepartmentSection.ticket_id == ticket_id)
+            ).all()
+        }
         for section in sections:
-            session.add(DepartmentSection(
-                ticket_id=ticket_id,
-                department_id=section["department_id"],
-                owner=section["owner"],
-                relevant_extracts=section["relevant_extracts"],
-                key_aspects=section["key_aspects"],
-                open_questions=section["open_questions"],
-                evidence=[item["source_extract"] for item in section["key_aspects"]],
-            ))
+            existing = existing_sections.get(section["department_id"])
+            if existing is not None:
+                existing.owner = section["owner"]
+                existing.relevant_extracts = section["relevant_extracts"]
+                existing.key_aspects = section["key_aspects"]
+                existing.open_questions = section["open_questions"]
+                existing.evidence = [item["source_extract"] for item in section["key_aspects"]]
+                session.add(existing)
+            else:
+                session.add(DepartmentSection(
+                    ticket_id=ticket_id,
+                    department_id=section["department_id"],
+                    owner=section["owner"],
+                    relevant_extracts=section["relevant_extracts"],
+                    key_aspects=section["key_aspects"],
+                    open_questions=section["open_questions"],
+                    evidence=[item["source_extract"] for item in section["key_aspects"]],
+                ))
         ticket.handoff_schema_version = handoff["schema_version"]
         ticket.handoff_payload = handoff
         ticket.status = "analisis_completo"

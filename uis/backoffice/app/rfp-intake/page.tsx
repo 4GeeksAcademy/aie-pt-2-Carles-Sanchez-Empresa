@@ -32,6 +32,14 @@ interface TicketSection {
   })[];
   open_questions: string[];
   evidence: unknown[];
+  draft_content?: string | null;
+  needs_human_review?: boolean;
+  generation_iterations?: number;
+  approval_status?: string;
+  approver_name?: string | null;
+  approved_at?: string | null;
+  approval_comment?: string | null;
+  checkpoint_thread_id?: string | null;
 }
 
 interface TicketDetail extends TicketSummary {
@@ -42,6 +50,12 @@ interface TicketDetail extends TicketSummary {
   sections: TicketSection[];
   handoff_schema_version: string | null;
   handoff_payload: Record<string, unknown> | null;
+  final_proposal: string | null;
+  final_document_available: boolean;
+  human_review_comment: string | null;
+  human_reviewed_by: string | null;
+  human_reviewed_at: string | null;
+  approval_trace: { department_id: string | null; node_name: string; agent_name: string; input: unknown; output: unknown; timestamp: string }[];
 }
 
 function requestHeaders(): HeadersInit {
@@ -161,6 +175,18 @@ export default function RfpIntakePage() {
     }, POLL_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [detail?.processing_failed, detail?.status, loadDetail, loadList, selectedId]);
+
+  useEffect(() => {
+    const refresh = (event: Event) => {
+      const ticketId = (event as CustomEvent<string>).detail;
+      if (ticketId) {
+        void loadDetail(ticketId);
+        void loadList();
+      }
+    };
+    window.addEventListener("rfp-ticket-refresh", refresh);
+    return () => window.removeEventListener("rfp-ticket-refresh", refresh);
+  }, [loadDetail, loadList]);
 
   const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -312,14 +338,28 @@ export default function RfpIntakePage() {
 
 function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
-  const statusClass = status === "analizando"
+  const statusClass = ["analizando", "generando_borrador", "en_evaluación"].includes(status)
     ? "bg-blue-100 text-blue-900"
-    : status === "analisis_completo"
+    : ["analisis_completo", "done"].includes(status)
       ? "bg-emerald-100 text-emerald-900"
-      : "bg-slate-200 text-slate-900";
-  const label = status === "analizando" ? t("rfp.status_analyzing")
-    : status === "analisis_completo" ? t("rfp.status_complete")
-      : status === "descartado" ? t("rfp.status_discarded") : status;
+      : status === "needs_human_review" || status === "waiting_for_approval"
+        ? "bg-amber-100 text-amber-950"
+        : status === "returned_to_client" ? "bg-violet-100 text-violet-950"
+          : status === "descartado" || status === "archived" ? "bg-slate-200 text-slate-900"
+            : "bg-red-100 text-red-900";
+  const statusKeys: Record<string, string> = {
+    analizando: "rfp.status_analyzing",
+    analisis_completo: "rfp.status_complete",
+    descartado: "rfp.status_discarded",
+    waiting_for_approval: "rfp.status_waiting_approval",
+    needs_human_review: "rfp.status_needs_human_review",
+    returned_to_client: "rfp.status_returned_to_client",
+    archived: "rfp.status_archived",
+    done: "rfp.status_done",
+    generando_borrador: "rfp.status_generating_draft",
+    "en_evaluación": "rfp.status_evaluating",
+  };
+  const label = statusKeys[status] ? t(statusKeys[status]) : status;
   return <span className={`inline-flex rounded-full px-2.5 py-1 font-semibold ${statusClass}`}>{label}</span>;
 }
 
@@ -377,6 +417,9 @@ function TicketResult({ detail, t }: { detail: TicketDetail; t: ReturnType<typeo
             <article key={section.department_id} className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm">
               <h3 className="font-semibold text-[#14263a]">{section.department_id}</h3>
               <p className="mt-1 text-sm">{t("rfp.owner")}: {section.owner}</p>
+              {section.draft_content && <div className="mt-3 rounded-lg bg-white/70 p-4"><h4 className="font-semibold text-[#14263a]">{t("rfp.draft_title")}</h4><pre className="mt-2 whitespace-pre-wrap break-words text-sm font-sans">{section.draft_content}</pre></div>}
+              {section.approval_status && <div className="mt-3 text-sm"><strong>{t("rfp.approval_label")}:</strong> {approvalStatusLabel(section.approval_status, t)}{section.approver_name ? ` · ${section.approver_name}` : ""}{section.approval_comment ? ` · ${section.approval_comment}` : ""}</div>}
+              {detail.status === "waiting_for_approval" && section.checkpoint_thread_id && section.approval_status !== "approved" && section.approval_status !== "rejected" && <ApprovalControls ticketId={detail.ticket_id} section={section} onUpdated={() => window.dispatchEvent(new CustomEvent("rfp-ticket-refresh", { detail: detail.ticket_id }))} />}
               <SectionList label={t("rfp.key_aspects")} items={section.key_aspects} />
               <SectionList label={t("rfp.relevant_extracts")} items={section.relevant_extracts} />
               <SectionList label={t("rfp.open_questions")} items={section.open_questions} />
@@ -399,8 +442,104 @@ function TicketResult({ detail, t }: { detail: TicketDetail; t: ReturnType<typeo
           <pre className="mt-3 max-h-96 overflow-auto rounded-lg bg-[#14263a] p-4 text-xs text-white">{JSON.stringify(detail.handoff_payload, null, 2)}</pre>
         </section>
       )}
+      {detail.final_proposal && <section className="rounded-xl border border-emerald-700 bg-emerald-50 p-4 shadow-sm"><h2 className="font-semibold text-emerald-950">{t("rfp.final_proposal")}</h2><pre className="mt-3 whitespace-pre-wrap break-words text-sm font-sans">{detail.final_proposal}</pre></section>}
+      {detail.final_document_available && <a className="inline-flex min-h-10 items-center rounded bg-emerald-800 px-4 font-semibold text-white" href={`/api/rfp-intake/tickets/${encodeURIComponent(detail.ticket_id)}/final-document`} target="_blank" rel="noreferrer">{t("rfp.final_document_link")}</a>}
+      {detail.status === "needs_human_review" && <HumanReviewControls key={`${detail.ticket_id}:${detail.updated_at}`} detail={detail} onUpdated={() => window.dispatchEvent(new CustomEvent("rfp-ticket-refresh", { detail: detail.ticket_id }))} />}
     </>
   );
+}
+
+function approvalStatusLabel(status: string, t: ReturnType<typeof useTranslation>["t"]): string {
+  const keys: Record<string, string> = {
+    pending: "rfp.status_approval_pending",
+    approved: "rfp.status_approval_approved",
+    rejected: "rfp.status_approval_rejected",
+    changes_requested: "rfp.status_approval_changes_requested",
+  };
+  return keys[status] ? t(keys[status]) : status;
+}
+
+function HumanReviewControls({ detail, onUpdated }: { detail: TicketDetail; onUpdated: () => void }) {
+  const { t } = useTranslation();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [comment, setComment] = useState(detail.human_review_comment ?? "");
+  const [monthlyVolume, setMonthlyVolume] = useState(String(detail.metadata?.monthly_volume ?? ""));
+  const [currency, setCurrency] = useState(String(detail.metadata?.currency ?? ""));
+  const [drafts, setDrafts] = useState<Record<string, string>>(() => Object.fromEntries(
+    detail.sections.map((section) => [section.department_id, section.draft_content ?? ""]),
+  ));
+
+  const submit = async (action: "edit" | "approve" | "reject", options: { returnToClient?: boolean; disposition?: "archived" | "descartado" } = {}) => {
+    setBusy(true); setError(null);
+    const field_updates = action === "edit" ? {
+      metadata: {
+        ...(monthlyVolume.trim() ? { monthly_volume: Number(monthlyVolume) } : {}),
+        ...(currency.trim() ? { currency: currency.trim() } : {}),
+      },
+      sections: Object.fromEntries(Object.entries(drafts).map(([department_id, draft_content]) => [department_id, { draft_content }])),
+    } : options.disposition ? { disposition: options.disposition } : {};
+    try {
+      const response = await fetch(`/api/rfp-intake/tickets/${encodeURIComponent(detail.ticket_id)}/human-review`, {
+        method: "POST", headers: { ...requestHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ action, comment: comment || null, return_to_client: options.returnToClient ?? false, field_updates }),
+      });
+      if (!response.ok) throw new Error(await readError(response));
+      onUpdated();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t("rfp.human_review_error"));
+    } finally { setBusy(false); }
+  };
+
+  return <section className="space-y-4 rounded-xl border-2 border-amber-700 bg-amber-50 p-4 shadow-sm">
+    <h2 className="text-lg font-bold text-amber-950">{t("rfp.human_review_title")}</h2>
+    <p className="text-sm text-amber-950">{t("rfp.human_review_description")}</p>
+    <div className="grid gap-3 sm:grid-cols-2">
+      <label className="text-sm font-semibold">{t("rfp.human_review_monthly_volume")}<input type="number" min="0" className="mt-1 block w-full rounded border p-2" value={monthlyVolume} onChange={(event) => setMonthlyVolume(event.target.value)} /></label>
+      <label className="text-sm font-semibold">{t("rfp.human_review_currency")}<input className="mt-1 block w-full rounded border p-2" value={currency} onChange={(event) => setCurrency(event.target.value)} /></label>
+    </div>
+    {detail.sections.map((section) => <label key={section.department_id} className="block text-sm font-semibold">{t("rfp.human_review_draft", { department: section.department_id })}<textarea className="mt-1 block min-h-32 w-full rounded border p-2 font-normal" value={drafts[section.department_id] ?? ""} onChange={(event) => setDrafts((current) => ({ ...current, [section.department_id]: event.target.value }))} /></label>)}
+    <label className="block text-sm font-semibold">{t("rfp.human_review_comment")}<textarea className="mt-1 block w-full rounded border p-2 font-normal" rows={2} value={comment} onChange={(event) => setComment(event.target.value)} /></label>
+    {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
+    <div className="flex flex-wrap gap-2">
+      <button type="button" disabled={busy} onClick={() => void submit("edit")} className="min-h-10 rounded border border-blue-800 px-3 font-semibold text-blue-950 transition-colors hover:bg-blue-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_save")}</button>
+      <button type="button" disabled={busy} onClick={() => void submit("edit", { returnToClient: true })} className="min-h-10 rounded bg-amber-700 px-3 font-semibold text-white transition-colors hover:bg-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_return")}</button>
+      <button type="button" disabled={busy} onClick={() => void submit("approve")} className="min-h-10 rounded bg-emerald-800 px-3 font-semibold text-white transition-colors hover:bg-emerald-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_approve")}</button>
+      <button type="button" disabled={busy} onClick={() => void submit("reject", { disposition: "descartado" })} className="min-h-10 rounded bg-red-800 px-3 font-semibold text-white transition-colors hover:bg-red-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-900 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_discard")}</button>
+      <button type="button" disabled={busy} onClick={() => void submit("reject", { disposition: "archived" })} className="min-h-10 rounded border border-slate-700 px-3 font-semibold text-slate-900 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_archive")}</button>
+    </div>
+  </section>;
+}
+
+function ApprovalControls({ ticketId, section, onUpdated }: { ticketId: string; section: TicketSection; onUpdated: () => void }) {
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const submit = async (decision: "approve" | "reject" | "request_changes") => {
+    setBusy(true); setError(null);
+    try {
+      const approvers: Record<string, string> = { warehouse: "Ana Whitfield", lastmile: "Carlos Vega", reverse: "Sofía Ramos" };
+      const response = await fetch(`/api/rfp-intake/tickets/${encodeURIComponent(ticketId)}/departments/${encodeURIComponent(section.department_id)}/decision`, {
+        method: "POST", headers: { ...requestHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ decision, approver_name: approvers[section.department_id], comment: comment || null,
+          request_id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}` }),
+      });
+      if (!response.ok) throw new Error(await readError(response));
+      onUpdated();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No se pudo registrar la decisión.");
+    } finally { setBusy(false); }
+  };
+  return <div className="mt-4 space-y-2 rounded-lg border border-blue-300 bg-blue-50 p-3">
+    <label className="block text-sm font-semibold text-[#14263a]">Decisión humana · {section.department_id}</label>
+    <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={2} className="w-full rounded border border-slate-300 bg-white p-2 text-sm" placeholder="Comentario o cambios solicitados" />
+    {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
+    <div className="flex flex-wrap gap-2">
+      <button type="button" disabled={busy} onClick={() => void submit("approve")} className="min-h-10 rounded bg-emerald-800 px-3 text-sm font-semibold text-white disabled:opacity-50">Aprobar</button>
+      <button type="button" disabled={busy} onClick={() => void submit("request_changes")} className="min-h-10 rounded bg-amber-700 px-3 text-sm font-semibold text-white disabled:opacity-50">Solicitar cambios</button>
+      <button type="button" disabled={busy} onClick={() => void submit("reject")} className="min-h-10 rounded bg-red-800 px-3 text-sm font-semibold text-white disabled:opacity-50">Rechazar</button>
+    </div>
+  </div>;
 }
 
 function SectionList({ label, items }: { label: string; items: unknown[] }) {
