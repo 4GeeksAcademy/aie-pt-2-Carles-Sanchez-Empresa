@@ -123,12 +123,25 @@ def _record_rfp_operational_error(ticket_id: str, error: Exception, *, failed: b
 def process_rfp_ticket(self, ticket_id: str) -> dict:
     """Execute the RFP graph with three retries after the initial attempt."""
     try:
-        # La API de recepción ya persiste el ticket y el fichero. En Fase 2 el
-        # trabajo queda encolado con ID únicamente; la ejecución real del grafo
-        # se conecta en la fase dedicada de pipeline.
+        # La API persiste el ticket/fichero; Celery ejecuta Parte 1 y, cuando
+        # el handoff queda completo, genera y evalúa las secciones de Parte 2.
         from data.pipelines.rfp_intake import process_ticket
 
-        return process_ticket(ticket_id)
+        result = process_ticket(ticket_id)
+        if result.get("status") == "analisis_completo" and not result.get("skipped"):
+            from data.pipelines.rfp_response_generation import generate_ticket_responses
+            from data.pipelines.rfp_intake.pipeline import engine as rfp_engine
+
+            result["response_generation"] = generate_ticket_responses(ticket_id, db_engine=rfp_engine)
+        elif result.get("skipped") and result.get("status") in {
+            "generando_borrador", "en_evaluación"
+        }:
+            # A Celery retry after Part 1 resumes Part 2 from the durable handoff.
+            from data.pipelines.rfp_response_generation import generate_ticket_responses
+            from data.pipelines.rfp_intake.pipeline import engine as rfp_engine
+
+            result["response_generation"] = generate_ticket_responses(ticket_id, db_engine=rfp_engine)
+        return result
     except Exception as exc:
         # Celery retries=3 means up to four total executions (initial + 3 retries).
         exhausted = self.request.retries >= self.max_retries
