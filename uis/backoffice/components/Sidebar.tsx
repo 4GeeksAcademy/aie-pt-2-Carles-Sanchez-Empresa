@@ -20,6 +20,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { href: "/telemetry",  icon: "📡", labelKey: "nav.telemetry" },
   { href: "/reporting", icon: "📈", labelKey: "nav.reporting" },
   { href: "/sales-forecast", icon: "💶", labelKey: "nav.salesForecast" },
+  { href: "/rfp-intake", icon: "📄", labelKey: "nav.rfpIntake" },
   { href: "/knowledge", icon: "🤖", labelKey: "nav.knowledge" },
   { href: "/account/profile",   icon: "👤", labelKey: "nav.profile" },
 ];
@@ -66,7 +67,7 @@ export function Sidebar({ open, onClose }: Props) {
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <ul className="space-y-1">
             {SIDEBAR_ITEMS.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
               return (
                 <li key={item.href}>
                   <Link
