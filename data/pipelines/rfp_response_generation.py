@@ -12,6 +12,7 @@ from data.pipelines.rag import get_openai_client
 from data.process.rag import GENERATION_MODEL
 from data.pipelines.rfp_intake.workstreams import DEPARTMENTS
 from models import DepartmentSection, RfpMetadata, RfpTicket
+from data.pipelines.rfp_trace import record_node
 
 MAX_ITERATIONS = 3
 
@@ -275,12 +276,12 @@ def evaluate_draft(department_id: str, content: str, metadata: dict, key_aspects
     )
 
 
-def run_section_cycle(department_id: str, metadata: dict, key_aspects: list[str], open_questions: list[str], *, knowledge_context: list[dict] | None = None, max_iterations: int = MAX_ITERATIONS, generator=None, evaluator=evaluate_draft, client=None, model: str | None = None, progress_callback=None) -> dict:
+def run_section_cycle(department_id: str, metadata: dict, key_aspects: list[str], open_questions: list[str], *, knowledge_context: list[dict] | None = None, max_iterations: int = MAX_ITERATIONS, generator=None, evaluator=evaluate_draft, client=None, model: str | None = None, progress_callback=None, initial_feedback: str = "") -> dict:
     """Reintenta solo la sección fallida y conserva siempre el último borrador y evaluación."""
     if max_iterations < 1:
         raise ValueError("max_iterations debe ser al menos 1.")
     active_generator = generator or get_department_generator(department_id)
-    feedback = ""
+    feedback = initial_feedback
     for attempt in range(1, max_iterations + 1):
         draft = active_generator(department_id, metadata, key_aspects, open_questions, feedback, knowledge_context=knowledge_context or [], client=client, model=model)
         if progress_callback:
@@ -319,7 +320,7 @@ def run_section_cycle(department_id: str, metadata: dict, key_aspects: list[str]
     }
 
 
-def generate_ticket_responses(ticket_id: str, *, db_engine, generator=None, evaluator=evaluate_draft, max_iterations: int = MAX_ITERATIONS, client=None, model: str | None = None, retrieve_fn=None) -> dict:
+def generate_ticket_responses(ticket_id: str, *, db_engine, generator=None, evaluator=evaluate_draft, max_iterations: int = MAX_ITERATIONS, client=None, model: str | None = None, retrieve_fn=None, force_regenerate: bool = False) -> dict:
     """Consume exclusivamente metadatos y workstreams del handoff Parte 1; persiste cada sección."""
     with Session(db_engine) as session:
         ticket = session.get(RfpTicket, ticket_id)
@@ -356,6 +357,10 @@ def generate_ticket_responses(ticket_id: str, *, db_engine, generator=None, eval
             department_id: {
                 "key_aspects": section.key_aspects,
                 "open_questions": section.open_questions,
+                "draft_content": section.draft_content,
+                "evaluation_results": section.evaluation_results,
+                "generation_iterations": section.generation_iterations,
+                "needs_human_review": section.needs_human_review,
             }
             for department_id, section in existing.items()
         }
@@ -371,7 +376,25 @@ def generate_ticket_responses(ticket_id: str, *, db_engine, generator=None, eval
         aspects = [str(item) for item in aspects]
         questions = list(dict.fromkeys([*metadata_questions, *section_data["open_questions"]]))
 
+        # Celery resumes may re-enter Part 2 after a partial failure. Keep any
+        # existing draft unless the operator explicitly requested regeneration.
+        if section_data.get("draft_content") and not force_regenerate:
+            return {
+                "department_id": department_id,
+                "draft_content": section_data["draft_content"],
+                "open_questions": section_data["open_questions"],
+                "evaluation_results": section_data["evaluation_results"],
+                "generation_iterations": section_data["generation_iterations"],
+                "needs_human_review": section_data["needs_human_review"],
+            }
+
         def persist_progress(phase, draft, evaluation, attempt):
+            record_node(db_engine, ticket_id, f"{phase}_{attempt}", f"{department_id}_generation_evaluation",
+                        {"department_id": department_id, "iteration": attempt,
+                         "feedback": "[bounded]" if attempt > 1 else None},
+                        {"draft_chars": len(draft.content),
+                         "evaluation": evaluation.model_dump(mode="json") if evaluation else None},
+                        department_id)
             with Session(db_engine) as progress_session:
                 progress_ticket = progress_session.get(RfpTicket, ticket_id)
                 section = progress_session.exec(select(DepartmentSection).where(

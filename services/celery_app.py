@@ -133,6 +133,10 @@ def process_rfp_ticket(self, ticket_id: str) -> dict:
             from data.pipelines.rfp_intake.pipeline import engine as rfp_engine
 
             result["response_generation"] = generate_ticket_responses(ticket_id, db_engine=rfp_engine)
+            if result["response_generation"].get("status") == "en_evaluación":
+                from data.pipelines.rfp_approval import start_approval
+
+                result["approval"] = start_approval(ticket_id, db_engine=rfp_engine)
         elif result.get("skipped") and result.get("status") in {
             "generando_borrador", "en_evaluación"
         }:
@@ -141,6 +145,10 @@ def process_rfp_ticket(self, ticket_id: str) -> dict:
             from data.pipelines.rfp_intake.pipeline import engine as rfp_engine
 
             result["response_generation"] = generate_ticket_responses(ticket_id, db_engine=rfp_engine)
+            if result["response_generation"].get("status") == "en_evaluación":
+                from data.pipelines.rfp_approval import start_approval
+
+                result["approval"] = start_approval(ticket_id, db_engine=rfp_engine)
         return result
     except Exception as exc:
         # Celery retries=3 means up to four total executions (initial + 3 retries).
