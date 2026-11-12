@@ -8,14 +8,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field as PydanticField
 from sqlmodel import Session, select
 
 from auth import get_current_user, require_admin
 from database import get_db
-from models import DepartmentSection, RfpApprovalTrace, RfpMetadata, RfpTicket
+from models import DepartmentSection, RfpApprovalTrace, RfpMetadata, RfpNotificationEvent, RfpTicket
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/rfp-intake", tags=["RFP Intake"])
@@ -23,6 +23,8 @@ router = APIRouter(prefix="/rfp-intake", tags=["RFP Intake"])
 # Límite acordado: 10 MiB (10 * 1024 * 1024 bytes).
 MAX_PDF_BYTES = 10 * 1024 * 1024
 UPLOAD_CHUNK_BYTES = 1024 * 1024
+SSE_POLL_INTERVAL_SECONDS = 1.0
+SSE_KEEPALIVE_INTERVAL_SECONDS = 15.0
 RAW_DATA_DIR = Path(os.getenv("TRACKFLOW_RAW_DATA_DIR", Path(__file__).resolve().parents[3] / "data" / "raw"))
 
 
@@ -133,6 +135,91 @@ def _dispatch_rfp_job(ticket: RfpTicket, session: Session) -> None:
     celery_app.send_task("trackflow.process_rfp_ticket", args=[ticket.ticket_id], task_id=task_id)
 
 
+def _sse_frame(event_id: int, payload: dict) -> str:
+    """Serialize a named SSE frame (the JSON data is not wrapped in an envelope)."""
+    import json
+
+    return f"id: {event_id}\nevent: rfp_ticket_created\ndata: {json.dumps(payload, ensure_ascii=False, separators=(',', ':'))}\n\n"
+
+
+def _notification_payload(ticket: RfpTicket) -> dict:
+    """Build the briefing-shaped event using only values known at ticket creation."""
+    return {
+        "ticket_id": ticket.ticket_id,
+        "rfp_id": ticket.rfp_id,
+        "client_name": None,
+        "client_country": None,
+        "services_requested": [],
+        # API/database retain the Spanish business state; the wire uses the
+        # English equivalent specified by the notification contract.
+        "status": "analyzing" if ticket.status == "analizando" else ticket.status,
+        "created_at": _iso(ticket.created_at),
+    }
+
+
+@router.get("/tickets/events", include_in_schema=True)
+async def stream_rfp_ticket_events(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_db),
+):
+    """Authenticated shared event feed with durable per-client replay cursor."""
+    del current_user  # Authentication is the access policy for this shared feed.
+    bind = session.get_bind()
+
+    last_event_id = request.headers.get("last-event-id")
+    try:
+        cursor = int(last_event_id) if last_event_id is not None else None
+        if cursor is not None and cursor < 0:
+            raise ValueError
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Last-Event-ID debe ser un entero no negativo.") from exc
+
+    if cursor is None:
+        # Replay from the beginning on first connection. The browser persists
+        # every received id; defaulting to "now" here could lose events if the
+        # initial connection drops before the client receives its first frame.
+        cursor = 0
+
+    async def event_stream():
+        import asyncio
+        import time
+
+        nonlocal cursor
+        last_keepalive = time.monotonic()
+        while not await request.is_disconnected():
+            # Keep a short-lived DB session per poll so each open dashboard does
+            # not pin a pooled connection for the full lifetime of its stream.
+            with Session(bind) as poll_session:
+                events = poll_session.exec(
+                    select(RfpNotificationEvent)
+                    .where(RfpNotificationEvent.id > cursor)
+                    .order_by(RfpNotificationEvent.id)
+                    .limit(100)
+                ).all()
+            if events:
+                for notification in events:
+                    cursor = notification.id or cursor
+                    yield _sse_frame(cursor, notification.payload)
+                continue
+
+            now = time.monotonic()
+            if now - last_keepalive >= SSE_KEEPALIVE_INTERVAL_SECONDS:
+                last_keepalive = now
+                yield ": keep-alive\n\n"
+            await asyncio.sleep(SSE_POLL_INTERVAL_SECONDS)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 @router.post("/tickets", response_model=TicketSummary, status_code=status.HTTP_202_ACCEPTED)
 async def upload_rfp(
     file: UploadFile = File(...),
@@ -175,6 +262,15 @@ async def upload_rfp(
             session.delete(ticket)
             session.commit()
             raise HTTPException(status_code=503, detail="No se pudo programar el análisis; vuelve a intentarlo.") from exc
+        try:
+            # Publish only after ticket persistence and queue acceptance.
+            session.add(RfpNotificationEvent(ticket_id=ticket.ticket_id, payload=_notification_payload(ticket)))
+            session.commit()
+        except Exception:
+            # Queue acceptance is already durable at this point; never delete a
+            # ticket that may be processing just because the outbox write failed.
+            session.rollback()
+            logger.exception("No se pudo persistir notificación SSE del ticket RFP %s", ticket_id)
         return _summary(ticket, None)
     except HTTPException:
         if raw_path.exists():
@@ -566,6 +662,11 @@ def delete_rfp_ticket(
         metadata = session.get(RfpMetadata, ticket_id)
         if metadata is not None:
             session.delete(metadata)
+        notification = session.exec(
+            select(RfpNotificationEvent).where(RfpNotificationEvent.ticket_id == ticket_id)
+        ).first()
+        if notification is not None:
+            session.delete(notification)
         for section in session.exec(
             select(DepartmentSection).where(DepartmentSection.ticket_id == ticket_id)
         ).all():
