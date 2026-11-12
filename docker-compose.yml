@@ -31,6 +31,8 @@ services:
     environment:
       - NEXT_PUBLIC_API_HOST=api
       - NEXT_PUBLIC_API_PORT=8000
+      # Browser-side WebSocket URL: use the published host port, not Docker DNS `api`.
+      - NEXT_PUBLIC_API_WS_URL=${NEXT_PUBLIC_API_WS_URL:-ws://localhost:8000}
       # Ruta relativa: el rewrite de next.config.ts proxyea /telemetry → API interna
       - NEXT_PUBLIC_TELEMETRY_ENDPOINT=/telemetry/events
     networks:

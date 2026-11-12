@@ -149,6 +149,22 @@ export async function querySupportAgent(question: string, conversationId?: strin
   });
 }
 
+export interface ChatSession {
+  session_id: string;
+  agent_id: "first_line_cx";
+  user_id: string;
+  client_id: string | null;
+  status: "active" | "interrupted" | "closed";
+  created_at: string;
+}
+
+export async function createChatSession(): Promise<ChatSession> {
+  return request<ChatSession>("/agent/chat/sessions", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
 // ── Suppliers ──
 
 export interface Supplier {
