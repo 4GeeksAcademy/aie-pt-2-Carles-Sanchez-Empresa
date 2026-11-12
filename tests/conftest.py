@@ -66,7 +66,7 @@ def mock_db(tmp_db_path, request):
     """
     from tinydb import TinyDB, Query
 
-    if "tests/pipelines" in str(request.node.fspath):
+    if "tests/pipelines" in str(request.node.fspath) or "tests/test_chat_" in str(request.node.fspath):
         yield {}
         return
 
@@ -192,6 +192,9 @@ def mock_email_service(request):
     if "tests/pipelines" in str(request.node.fspath):
         yield None
         return
+    if "tests/test_chat_" in str(request.node.fspath):
+        yield None
+        return
     with patch("routes.auth.send_reset_email") as mock:
         yield mock
 
@@ -200,6 +203,9 @@ def mock_email_service(request):
 def mock_logger(request):
     """Mockea logger.exception para verificar que se llama sin silenciar."""
     if "tests/pipelines" in str(request.node.fspath):
+        yield None
+        return
+    if "tests/test_chat_" in str(request.node.fspath):
         yield None
         return
     with patch("routes.auth.logger.exception") as mock:

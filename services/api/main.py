@@ -44,6 +44,7 @@ from i18n import get_translator, get_language_from_request
 from models import SQLModel
 from pydantic_models import AnalyzeResponse
 from support_agent.api import agent_lifespan, router as agent_router
+from support_agent.chat_api import router as chat_router
 try:
     from services.celery_app import app as celery_app
 except ModuleNotFoundError:  # Ejecución directa con PYTHONPATH apuntando a api/
@@ -114,6 +115,7 @@ async def authenticate_support_agent(request: Request, current_user: dict = Depe
 
 
 app.include_router(agent_router, dependencies=[Depends(authenticate_support_agent)])
+app.include_router(chat_router)
 app.include_router(oauth_issuer_router)
 
 
