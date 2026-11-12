@@ -47,7 +47,16 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 if not SUPABASE_URL:
     raise RuntimeError("SUPABASE_URL no está configurada en .env")
 
-engine = create_engine(SUPABASE_URL, echo=False)
+# Supabase transaction poolers can route a client connection to a different
+# PostgreSQL server session between transactions. psycopg's automatic prepared
+# statements then collide with statements left on a reused server session
+# (DuplicatePreparedStatement: prepared statement "_pg3_*" already exists).
+# Disable automatic preparation for this pooled connection.
+engine = create_engine(
+    SUPABASE_URL,
+    echo=False,
+    connect_args={"prepare_threshold": None},
+)
 
 
 def get_db() -> Session:
