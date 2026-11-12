@@ -2,6 +2,15 @@
 
 ## ✅ Hitos Completados
 
+### Notificaciones SSE para RFP (implementación en curso)
+- [x] Añadida tabla outbox durable y endpoint SSE autenticado con evento nombrado y replay por `Last-Event-ID`.
+- [x] Home del backoffice sustituida por una tarjeta de nuevas RFP; el dashboard usa `fetch`/`ReadableStream`, recuperación de tickets y reconexión con backoff.
+- [x] Tarjeta limitada a las 3 RFP más recientes, contador rojo de adicionales y estado actual consultado a la API cada 4 segundos y al recibir eventos SSE.
+- [x] Notificaciones y contador restringidos a RFP pendientes o en curso; excluidas las finalizadas, descartadas, archivadas y devueltas al cliente.
+- [x] Demo anterior alojada en `/admin/demo` con comprobación de rol admin.
+- [x] Tests API RFP: 24 pruebas pasan, incluidos formato SSE y rechazo sin JWT.
+- [ ] Verificar build Next.js sin errores de tipos generados y hacer prueba manual de desconexión/reconexión.
+
 ### 🏢 Elección y Contexto de la Empresa
 - [x] Empresa escogida: **TrackFlow** (logística de última milla y almacenes)
 - [x] Documento `company-choice.md` con motivación y visión inicial
