@@ -94,10 +94,41 @@ The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls t
 | `/incidents` | JWT | CSV incident analyzer |
 | `/knowledge` | JWT | Knowledge assistant with suggested questions and generated answers |
 | `/rfp-intake` | JWT | RFP PDF intake, ticket status, analysis and departmental handoff |
+| `/admin/demo` | Admin JWT | Legacy inventory demonstration dashboard (administrators only) |
 | `/sales-forecast` | JWT | TrackFlow consolidated revenue forecast, test metrics, variability band and annual filters |
 | `/account/profile` | JWT | User profile management |
 
 > Protected routes require a valid JWT stored in `localStorage` (`trackflow_token`).
+
+### RFP dashboard notifications
+
+The home page currently contains the RFP notification card. It opens an
+authenticated `fetch` stream to `/api/rfp-intake/tickets/events` and parses
+named `rfp_ticket_created` SSE frames from a `ReadableStream` (the native
+`EventSource` API cannot attach the JWT Authorization header used here). The API
+stores each event in `rfp_notification_events` and supports replay with
+`Last-Event-ID`; each authorized dashboard maintains its own cursor in
+`sessionStorage`. If the stream closes, the client fetches the current ticket
+list and reconnects with exponential backoff from
+1 to 30 seconds. The initial list recovery is also run when the dashboard
+mounts. The card displays only the three most recent pending tickets, with a red
+`+N more` link to the RFP panel for the remaining pending tickets. Completed
+(`done`), discarded (`descartado`), archived (`archived`) and returned-to-client
+(`returned_to_client`) tickets are excluded from both the list and the counter.
+Other states, including completed analysis awaiting response generation and
+processing failures, remain visible. This counts additional pending tickets,
+not unread tickets. The ticket list is the source of truth for current
+business status (including processing failures), refreshed every four seconds
+and on creation events. Creation-event payloads are not used as current state.
+Refresh failures are displayed on the card.
+
+Manual recovery check: open the dashboard in two authorized browser sessions,
+disconnect one session's network after both streams connect, upload a valid PDF
+from the other session, then restore the network. The disconnected session
+should show the ticket after reconnect without a page reload or duplicate card;
+the online session should receive it immediately. The connection badge should
+show reconnecting during the outage and connected after recovery. Also verify
+that opening `/admin/demo` as a non-admin redirects to `/`.
 
 ---
 
