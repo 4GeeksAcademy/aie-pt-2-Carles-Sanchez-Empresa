@@ -119,6 +119,21 @@ def _record_rfp_operational_error(ticket_id: str, error: Exception, *, failed: b
         session.commit()
 
 
+def _is_permanent_rfp_error(error: Exception) -> bool:
+    """Return whether retrying an RFP task unchanged cannot fix the failure.
+
+    Authentication/authorization responses require an operator to rotate or
+    correct provider credentials; retrying them only repeats the same failure.
+    Keep this check based on HTTP status so SDK-specific exception classes are
+    not required here.
+    """
+    status_code = getattr(error, "status_code", None)
+    if status_code is None:
+        response = getattr(error, "response", None)
+        status_code = getattr(response, "status_code", None)
+    return status_code in {401, 403}
+
+
 @app.task(bind=True, name="trackflow.process_rfp_ticket", max_retries=3)
 def process_rfp_ticket(self, ticket_id: str) -> dict:
     """Execute the RFP graph with three retries after the initial attempt."""
@@ -153,7 +168,25 @@ def process_rfp_ticket(self, ticket_id: str) -> dict:
     except Exception as exc:
         # Celery retries=3 means up to four total executions (initial + 3 retries).
         exhausted = self.request.retries >= self.max_retries
-        _record_rfp_operational_error(ticket_id, exc, failed=exhausted)
+        permanent = _is_permanent_rfp_error(exc)
+        failed = exhausted or permanent
+        if permanent:
+            # Avoid exposing a provider's raw authentication payload in the
+            # dashboard. Record a safe diagnosis and the corrective action.
+            response = getattr(exc, "response", None)
+            status_code = getattr(exc, "status_code", None) or getattr(response, "status_code", None)
+            operational_error = RuntimeError(
+                f"El proveedor LLM rechazó las credenciales (HTTP {status_code}). "
+                "Rota o corrige la clave del proveedor y reinicia el worker Celery."
+            )
+            _record_rfp_operational_error(ticket_id, operational_error, failed=True)
+            logger.error(
+                "Fallo permanente de autenticación LLM en ticket RFP %s; no se reintentará",
+                ticket_id,
+            )
+            raise
+
+        _record_rfp_operational_error(ticket_id, exc, failed=failed)
         logger.exception("Fallo en ticket RFP %s; intento %s", ticket_id, self.request.retries + 1)
         if not exhausted:
             raise self.retry(exc=exc, countdown=10 * (2 ** self.request.retries))

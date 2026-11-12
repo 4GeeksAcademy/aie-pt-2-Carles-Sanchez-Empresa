@@ -11,7 +11,7 @@ from sqlmodel import Session, SQLModel, select
 
 from auth import get_current_user
 from database import get_db
-from models import DepartmentSection, RfpApprovalTrace, RfpMetadata, RfpNodeTrace, RfpTicket
+from models import DepartmentSection, RfpApprovalTrace, RfpMetadata, RfpNotificationEvent, RfpNodeTrace, RfpTicket
 from routes import rfp_intake
 
 
@@ -26,7 +26,7 @@ def client(tmp_path, monkeypatch):
     SQLModel.metadata.create_all(
         engine,
         tables=[RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__,
-            RfpApprovalTrace.__table__, RfpNodeTrace.__table__],
+            RfpApprovalTrace.__table__, RfpNodeTrace.__table__, RfpNotificationEvent.__table__],
     )
 
     def database_session():
@@ -63,6 +63,84 @@ def test_upload_creates_accepted_ticket_and_safe_runtime_pdf(client, tmp_path):
     assert len(files) == 1
     assert files[0].read_bytes() == b"%PDF-1.7\nmock bytes"
     assert "prospect" not in files[0].name
+
+
+def test_upload_persists_briefing_shaped_notification(client):
+    from sqlmodel import Session
+
+    response = client.post(
+        "/rfp-intake/tickets",
+        files={"file": ("brief.pdf", b"%PDF-1.7\ncontent", "application/pdf")},
+    )
+    assert response.status_code == 202
+    with Session(client.app.state.test_engine) as session:
+        notification = session.exec(select(RfpNotificationEvent)).one()
+    assert notification.payload == {
+        "ticket_id": response.json()["ticket_id"],
+        "rfp_id": response.json()["rfp_id"],
+        "client_name": None,
+        "client_country": None,
+        "services_requested": [],
+        "status": "analyzing",
+        "created_at": response.json()["created_at"],
+    }
+
+
+def test_sse_endpoint_returns_named_json_wire_frame(client, monkeypatch):
+    from models import RfpNotificationEvent
+
+    with Session(client.app.state.test_engine) as session:
+        ticket_id = str(uuid4())
+        rfp_id = str(uuid4())
+        session.add(RfpTicket(ticket_id=ticket_id, rfp_id=rfp_id, raw_pdf_path="/tmp/test.pdf"))
+        session.flush()
+        session.add(RfpNotificationEvent(
+            ticket_id=ticket_id,
+            payload={
+                "ticket_id": ticket_id,
+                "rfp_id": rfp_id,
+                "client_name": None,
+                "client_country": None,
+                "services_requested": [],
+                "status": "analyzing",
+                "created_at": "2026-11-11T12:00:00+00:00",
+            },
+        ))
+        session.commit()
+
+    disconnect_checks = 0
+
+    async def disconnect_after_one_frame(_request):
+        nonlocal disconnect_checks
+        disconnect_checks += 1
+        return disconnect_checks > 1
+
+    monkeypatch.setattr(rfp_intake.Request, "is_disconnected", disconnect_after_one_frame)
+    with client.stream("GET", "/rfp-intake/tickets/events", headers={"Last-Event-ID": "0"}) as response:
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/event-stream")
+        frame = next(response.iter_text())
+        assert "event: rfp_ticket_created\n" in frame
+        data_line = next(line.removeprefix("data: ") for line in frame.splitlines() if line.startswith("data: "))
+        import json
+        data = json.loads(data_line)
+        assert set(data) == {
+            "ticket_id", "rfp_id", "client_name", "client_country",
+            "services_requested", "status", "created_at",
+        }
+        assert data["status"] == "analyzing"
+        assert "id: 1\n" in frame
+
+
+def test_sse_endpoint_requires_authentication(client):
+    app = FastAPI()
+    app.include_router(rfp_intake.router)
+    app.dependency_overrides[get_db] = client.app.dependency_overrides[get_db]
+
+    with TestClient(app) as unauthenticated_client:
+        response = unauthenticated_client.get("/rfp-intake/tickets/events")
+
+    assert response.status_code == 401
 
 
 def test_upload_rejects_wrong_extension_and_invalid_pdf_without_orphan(client, tmp_path):
@@ -164,6 +242,7 @@ def test_delete_ticket_removes_database_rows_and_generated_files(client, tmp_pat
     assert not markdown_path.exists()
     with Session(client.app.state.test_engine) as session:
         assert session.get(RfpMetadata, ticket_id) is None
+        assert session.exec(select(RfpNotificationEvent).where(RfpNotificationEvent.ticket_id == ticket_id)).first() is None
         assert session.exec(select(DepartmentSection).where(DepartmentSection.ticket_id == ticket_id)).all() == []
 
 
