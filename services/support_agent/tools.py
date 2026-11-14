@@ -7,6 +7,8 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
+from .url_policy import validate_support_base_url
+
 INCIDENT_TIMEOUT_SECONDS = 5.0
 INVENTORY_TIMEOUT_SECONDS = 5.0
 
@@ -46,7 +48,8 @@ class TicketResult(BaseModel):
 
 class IncidentTool:
     def __init__(self, base_url: str | None = None, *, transport=None):
-        self.base_url = base_url or os.environ.get("SUPPORT_INCIDENTS_BASE_URL", "http://127.0.0.1:8000")
+        configured_url = base_url or os.environ.get("SUPPORT_INCIDENTS_BASE_URL", "http://127.0.0.1:8000")
+        self.base_url = validate_support_base_url(configured_url)
         self.transport = transport
 
     def __call__(self, payload: TicketInput, *, token: str | None = None) -> TicketResult:
@@ -141,9 +144,10 @@ class InventoryResult(BaseModel):
 
 class InventoryTool:
     def __init__(self, base_url: str | None = None, *, transport=None):
-        self.base_url = base_url or os.environ.get(
+        configured_url = base_url or os.environ.get(
             "SUPPORT_INVENTORY_BASE_URL", os.environ.get("SUPPORT_INCIDENTS_BASE_URL", "http://127.0.0.1:8000"),
         )
+        self.base_url = validate_support_base_url(configured_url)
         self.transport = transport
 
     def __call__(self, payload: InventoryInput, *, token: str | None = None) -> InventoryResult:

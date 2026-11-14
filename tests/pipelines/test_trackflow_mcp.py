@@ -232,7 +232,7 @@ async def test_api_calls_use_service_credential_not_user_bearer(server):
         calls.append((request.method, request.url.path, request.headers.get("authorization")))
         return httpx.Response(200, json={"id": 1, "status": "open"})
 
-    api = server.TrackFlowApi(base_url="http://trackflow.test", service_token="service-secret", transport=httpx.MockTransport(handler))
+    api = server.TrackFlowApi(base_url="https://trackflow.test", service_token="service-secret", transport=httpx.MockTransport(handler))
     assert await api.request("POST", "/api/incidents", json={"title": "x"}) == {
         "id": 1, "status": "open"
     }
@@ -248,9 +248,30 @@ async def test_api_calls_use_service_credential_not_user_bearer(server):
 
 @pytest.mark.asyncio
 async def test_api_calls_fail_closed_without_service_credential(server):
-    api = server.TrackFlowApi(base_url="http://trackflow.test", service_token="")
+    api = server.TrackFlowApi(base_url="https://trackflow.test", service_token="")
     with pytest.raises(server.ServiceError, match="service_credentials_not_configured"):
         await api.request("GET", "/inventory/products")
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://trackflow.internal",
+        "https://user:password@trackflow.example",
+        "https://trackflow.example/api",
+        "https://trackflow.example?target=internal",
+        "file:///etc/passwd",
+    ],
+)
+def test_api_client_rejects_unsafe_configured_destinations(server, base_url):
+    with pytest.raises(ValueError):
+        server.TrackFlowApi(base_url=base_url, service_token="service-secret")
+
+
+@pytest.mark.parametrize("base_url", ["http://localhost:8000", "http://127.0.0.1:8000", "https://api.example.test"])
+def test_api_client_accepts_local_http_or_remote_https(server, base_url):
+    api = server.TrackFlowApi(base_url=base_url, service_token="service-secret")
+    assert api.base_url == base_url
 
 
 def test_inventory_write_deny_is_tool_and_has_no_write_routes(server):
@@ -401,7 +422,7 @@ async def test_complete_mocked_workflow_for_every_exposed_tool(server, monkeypat
         return httpx.Response(404, json={"detail": "not found"})
 
     api = server.TrackFlowApi(
-        base_url="http://trackflow.test", service_token="service-secret", transport=httpx.MockTransport(handler),
+        base_url="https://trackflow.test", service_token="service-secret", transport=httpx.MockTransport(handler),
     )
     server.create_mcp_app(api=api)
 

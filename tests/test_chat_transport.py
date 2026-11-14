@@ -82,7 +82,8 @@ def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, m
 
     with TestClient(app) as client:
         with client.websocket_connect(
-            f"/agent/chat/ws/{session['session_id']}?token=test-token"
+            f"/agent/chat/ws/{session['session_id']}",
+            subprotocols=["trackflow-chat-v1", "bearer.test-token"],
         ) as websocket:
             snapshot = websocket.receive_json()
             assert snapshot["event"] == "session_snapshot"

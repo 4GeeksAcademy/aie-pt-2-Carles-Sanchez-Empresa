@@ -23,6 +23,7 @@ export function OutboundForm({ products, onSubmit }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!window.confirm(t("inventory.outbound.confirm"))) return;
     setError(null);
     setSuccess(false);
     setSubmitting(true);

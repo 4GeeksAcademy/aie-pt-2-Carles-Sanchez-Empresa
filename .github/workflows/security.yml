@@ -1,0 +1,59 @@
+name: Security checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  schedule:
+    - cron: "23 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Python audit tool
+        run: python -m pip install pip-audit
+      - name: Audit workspace Python lock
+        run: uv export --locked --no-dev --format requirements-txt > /tmp/trackflow-requirements.txt && pip-audit -r /tmp/trackflow-requirements.txt
+      - name: Audit API dependency manifest
+        run: pip-audit -r services/api/requirements.txt
+      - name: Resolve npm workspace lock for audit
+        run: npm install --package-lock-only --ignore-scripts --no-audit
+      - name: Audit npm lockfiles
+        run: npm audit --workspaces --audit-level=high
+
+  container-scan:
+    name: Container image scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/Dockerfile
+          load: true
+          tags: trackflow-api:audit
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Scan API image for fixable high/critical CVEs
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: trackflow-api:audit
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"

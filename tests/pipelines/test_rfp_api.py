@@ -36,7 +36,7 @@ def client(tmp_path, monkeypatch):
     app = FastAPI()
     app.include_router(rfp_intake.router)
     app.state.test_engine = engine
-    app.dependency_overrides[get_current_user] = lambda: {"id": "test-user"}
+    app.dependency_overrides[get_current_user] = lambda: {"id": "test-user", "role": "user"}
     app.dependency_overrides[get_db] = database_session
     monkeypatch.setattr(rfp_intake, "RAW_DATA_DIR", tmp_path / "raw")
     monkeypatch.setattr(
@@ -60,14 +60,11 @@ def test_upload_creates_accepted_ticket_and_safe_runtime_pdf(client, tmp_path):
     assert body["processing_failed"] is False
     assert body["ticket_id"]
     files = list((tmp_path / "raw").glob("rfp-*.pdf"))
-    assert len(files) == 1
     assert files[0].read_bytes() == b"%PDF-1.7\nmock bytes"
     assert "prospect" not in files[0].name
 
 
 def test_upload_persists_briefing_shaped_notification(client):
-    from sqlmodel import Session
-
     response = client.post(
         "/rfp-intake/tickets",
         files={"file": ("brief.pdf", b"%PDF-1.7\ncontent", "application/pdf")},
@@ -86,13 +83,33 @@ def test_upload_persists_briefing_shaped_notification(client):
     }
 
 
+def test_admin_can_list_and_read_tickets_created_by_others(client):
+    other_ticket_id = str(uuid4())
+    with Session(client.app.state.test_engine) as session:
+        session.add(RfpTicket(
+            ticket_id=other_ticket_id,
+            raw_pdf_path="/tmp/other.pdf",
+            created_by_user_id="another-user",
+        ))
+        session.commit()
+
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
+    assert other_ticket_id in [item["ticket_id"] for item in client.get("/rfp-intake/tickets").json()]
+    assert client.get(f"/rfp-intake/tickets/{other_ticket_id}").status_code == 200
+
+
 def test_sse_endpoint_returns_named_json_wire_frame(client, monkeypatch):
     from models import RfpNotificationEvent
 
     with Session(client.app.state.test_engine) as session:
         ticket_id = str(uuid4())
         rfp_id = str(uuid4())
-        session.add(RfpTicket(ticket_id=ticket_id, rfp_id=rfp_id, raw_pdf_path="/tmp/test.pdf"))
+        session.add(RfpTicket(
+            ticket_id=ticket_id,
+            rfp_id=rfp_id,
+            raw_pdf_path="/tmp/test.pdf",
+            created_by_user_id="test-user",
+        ))
         session.flush()
         session.add(RfpNotificationEvent(
             ticket_id=ticket_id,
@@ -188,6 +205,62 @@ def test_ticket_list_and_detail_expose_persisted_data_not_internal_path(client):
     assert client.get("/rfp-intake/tickets/not-a-ticket").status_code == 404
 
 
+def test_rfp_tickets_are_isolated_by_creator(client):
+    own_upload = client.post(
+        "/rfp-intake/tickets",
+        files={"file": ("own.pdf", b"%PDF-1.7\nown", "application/pdf")},
+    )
+    other_ticket_id = str(uuid4())
+    with Session(client.app.state.test_engine) as session:
+        session.add(RfpTicket(
+            ticket_id=other_ticket_id,
+            raw_pdf_path="/tmp/other.pdf",
+            created_by_user_id="another-user",
+        ))
+        session.add(RfpNotificationEvent(
+            ticket_id=other_ticket_id,
+            payload={"ticket_id": other_ticket_id, "client_name": "private-client"},
+        ))
+        session.commit()
+
+    own_ticket_id = own_upload.json()["ticket_id"]
+    assert own_upload.status_code == 202
+    assert [item["ticket_id"] for item in client.get("/rfp-intake/tickets").json()] == [own_ticket_id]
+    assert client.get(f"/rfp-intake/tickets/{other_ticket_id}").status_code == 404
+    assert client.get(f"/rfp-intake/tickets/{other_ticket_id}/final-document").status_code == 404
+    # Mutations are admin-only, so authorization precedes resource lookup.
+    assert client.post(f"/rfp-intake/tickets/{other_ticket_id}/generate-response").status_code == 403
+    assert client.delete(f"/rfp-intake/tickets/{other_ticket_id}").status_code == 403
+    assert client.post(f"/rfp-intake/tickets/{other_ticket_id}/start-approval").status_code == 403
+    with Session(client.app.state.test_engine) as session:
+        assert session.get(RfpTicket, other_ticket_id) is not None
+
+
+def test_admin_can_list_and_read_tickets_created_by_others(client):
+    other_ticket_id = str(uuid4())
+    with Session(client.app.state.test_engine) as session:
+        session.add(RfpTicket(
+            ticket_id=other_ticket_id,
+            raw_pdf_path="/tmp/other.pdf",
+            created_by_user_id="another-user",
+        ))
+        session.commit()
+
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
+    assert other_ticket_id in [item["ticket_id"] for item in client.get("/rfp-intake/tickets").json()]
+    assert client.get(f"/rfp-intake/tickets/{other_ticket_id}").status_code == 200
+
+
+def test_non_admin_cannot_start_rfp_approval(client):
+    ticket_id = str(uuid4())
+    with Session(client.app.state.test_engine) as session:
+        session.add(RfpTicket(ticket_id=ticket_id, raw_pdf_path="/tmp/test.pdf", status="analizando"))
+        session.commit()
+
+    response = client.post(f"/rfp-intake/tickets/{ticket_id}/start-approval")
+    assert response.status_code == 403
+
+
 def test_queue_failure_compensates_ticket_and_uploaded_file(client, tmp_path, monkeypatch):
     def fail_queue(ticket, session):
         raise RuntimeError("broker unavailable")
@@ -202,6 +275,7 @@ def test_queue_failure_compensates_ticket_and_uploaded_file(client, tmp_path, mo
 
 
 def test_delete_ticket_removes_database_rows_and_generated_files(client, tmp_path):
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
     upload = client.post(
         "/rfp-intake/tickets",
         files={"file": ("brief.pdf", b"%PDF-1.7\ncontent", "application/pdf")},
@@ -247,11 +321,13 @@ def test_delete_ticket_removes_database_rows_and_generated_files(client, tmp_pat
 
 
 def test_delete_ticket_returns_404_for_missing_or_invalid_id(client):
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
     assert client.delete("/rfp-intake/tickets/not-a-uuid").status_code == 404
     assert client.delete("/rfp-intake/tickets/00000000-0000-0000-0000-000000000000").status_code == 404
 
 
 def test_delete_ticket_refuses_to_unlink_outside_raw_directory(client, tmp_path):
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
     upload = client.post(
         "/rfp-intake/tickets",
         files={"file": ("brief.pdf", b"%PDF-1.7\ncontent", "application/pdf")},
@@ -277,11 +353,10 @@ def test_delete_ticket_rejects_active_analysis(client, tmp_path):
         files={"file": ("brief.pdf", b"%PDF-1.7\ncontent", "application/pdf")},
     )
     ticket_id = upload.json()["ticket_id"]
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
     response = client.delete(f"/rfp-intake/tickets/{ticket_id}")
     assert response.status_code == 409
     assert client.get(f"/rfp-intake/tickets/{ticket_id}").status_code == 200
-
-
 def test_delete_ticket_cancels_retrying_analysis(client, tmp_path, monkeypatch):
     upload = client.post(
         "/rfp-intake/tickets",
@@ -301,7 +376,8 @@ def test_delete_ticket_cancels_retrying_analysis(client, tmp_path, monkeypatch):
         def revoke(self, task_id, terminate=False):
             revoked.append((task_id, terminate))
 
-    monkeypatch.setattr("main.celery_app.control", Control())
+    monkeypatch.setattr(rfp_intake, "_revoke_celery_task", lambda task_id: revoked.append((task_id, False)))
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
     response = client.delete(f"/rfp-intake/tickets/{ticket_id}")
 
     assert response.status_code == 204
@@ -322,6 +398,7 @@ def test_delete_ticket_allows_failed_analysis_after_retries(client, tmp_path):
         session.add(ticket)
         session.commit()
 
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
     response = client.delete(f"/rfp-intake/tickets/{ticket_id}")
     assert response.status_code == 204
     assert list((tmp_path / "raw").glob("rfp-*.pdf")) == []

@@ -515,6 +515,7 @@ const en: Record<string, string> = {
   "inventory.outbound.submit": "Register outbound",
   "inventory.outbound.submitting": "Registering...",
   "inventory.outbound.created": "Outbound registered successfully",
+  "inventory.outbound.confirm": "Confirm registering this inventory outbound? This operation will be recorded.",
   "inventory.order.type": "Type",
   "inventory.order.inbound": "Inbound",
   "inventory.order.outbound": "Outbound",

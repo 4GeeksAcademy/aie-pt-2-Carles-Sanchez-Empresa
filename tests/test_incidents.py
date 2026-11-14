@@ -13,6 +13,7 @@ Endpoints:
 
 import pytest
 from fastapi import HTTPException
+from unittest.mock import patch
 
 
 # ═══════════════════════════════════════════════════════# ═══════════════════════════════════════════════════════
@@ -36,7 +37,7 @@ class TestCreateIncident:
             category="lost_parcel",
             origin="customer",
             branch="central",
-        ))
+        ), current_user={"id": 1, "role": "admin"})
 
         assert created.id is not None
         assert created.title == "Paquete perdido"
@@ -60,7 +61,7 @@ class TestCreateIncident:
             origin="branch",
             branch="zaragoza_warehouse",
             status="in_progress",
-        ))
+        ), current_user={"id": 1, "role": "admin"})
 
         assert created.status == "in_progress"
 
