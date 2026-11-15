@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import sqlite3
 import threading
 import time
@@ -87,7 +88,7 @@ class AgentRuntime:
         self, state_dir: Path, *, retrieve_fn=None, generate_fn=None,
         route_fn=None, incident_fn=None, inventory_fn=None, mcp_server_url: str | None = None,
         interrupt_after=None, capture_kind: str = "live", memory_classifier=None,
-        memory_evaluator=None,
+        memory_evaluator=None, trace_content: bool | None = None,
     ):
         state_dir = Path(state_dir)
         state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -99,6 +100,14 @@ class AgentRuntime:
         self.lock = threading.RLock()
         self._token = None
         self.capture_kind = "simulated" if any((retrieve_fn, generate_fn, route_fn, incident_fn, inventory_fn)) else capture_kind
+        if trace_content is None:
+            setting = os.getenv("SUPPORT_AGENT_TRACE_CONTENT", "").strip().casefold()
+            if setting not in {"", "0", "false", "no", "1", "true", "yes"}:
+                raise RuntimeError("Invalid SUPPORT_AGENT_TRACE_CONTENT configuration")
+            # Offline evaluations use synthetic inputs; live traces omit prompts,
+            # retrieved content, operational data and answers by default.
+            trace_content = self.capture_kind == "simulated" or setting in {"1", "true", "yes"}
+        self.trace_content = trace_content
         try:
             self.metadata = self._metadata()
             self.graph = build_graph(
@@ -130,7 +139,7 @@ class AgentRuntime:
             },
             "generation_model": rag.GENERATION_MODEL,
             "top_k": rag.DEFAULT_TOP_K, "min_score": rag.DEFAULT_MIN_SCORE,
-            "capture_kind": self.capture_kind,
+            "capture_kind": self.capture_kind, "trace_content": self.trace_content,
         }
 
     def _instrument(self, name, node):
@@ -145,7 +154,7 @@ class AgentRuntime:
             trace = self.traces.get(run_id)
             event = {
                 "sequence": len(trace["events"]) + 1, "node": name,
-                "started_at": timestamp(), "input": state.model_dump(),
+                "started_at": timestamp(), "input": self._trace_payload(state.model_dump()),
                 "status": "running", "output": None, "next": None, "reason": None,
             }
             trace["events"].append(event)
@@ -176,7 +185,7 @@ class AgentRuntime:
                     target, reason = after_inventory_fallback(updated), updated.inventory_result.outcome
                 else:
                     target, reason = END, "response_ready"
-                event.update(status="completed", output=output, next=target, reason=reason)
+                event.update(status="completed", output=self._trace_payload(output), next=target, reason=reason)
                 return output
             except Exception:
                 event.update(status="failed", error={"code": "node_failed"})
@@ -186,6 +195,14 @@ class AgentRuntime:
                 self.traces.put(trace)
 
         return recorded
+
+    def _trace_payload(self, value):
+        """Keep trace structure without retaining potentially personal content."""
+        if self.trace_content:
+            return value
+        if isinstance(value, dict):
+            return {"content_redacted": True, "fields": sorted(str(key) for key in value)}
+        return {"content_redacted": True, "type": type(value).__name__}
 
     def run(self, question: str, *, token: str | None = None, actor_id: str | None = None,
             conversation_id: str | None = None) -> dict:
@@ -214,7 +231,9 @@ class AgentRuntime:
             question = inputs["question"] if inputs is not None else previous.values["question"]
             trace = {
                 "schema_version": 1, "run_id": run_id, "thread_id": thread_id,
-                "started_at": timestamp(), "status": "running", "question": question,
+                "started_at": timestamp(), "status": "running",
+                "question": question if self.trace_content else None,
+                "content_redacted": not self.trace_content,
                 "resumed": inputs is None, "events": [], "sources": [], "answer": None, "error": None,
                 "guardrail_summary": summarize_guardrails([]),
                 "metadata": self.metadata,
@@ -227,7 +246,8 @@ class AgentRuntime:
                 trace = self.traces.get(run_id)
                 trace.update(
                     status="paused" if pending else ("rejected" if result.error else "completed"),
-                    answer=result.answer, error=result.error, finished_at=timestamp(),
+                    answer=result.answer if self.trace_content else None,
+                    error=result.error, finished_at=timestamp(),
                     guardrail_summary=summarize_guardrails(result.guardrail_events),
                 )
                 self.traces.put(trace)

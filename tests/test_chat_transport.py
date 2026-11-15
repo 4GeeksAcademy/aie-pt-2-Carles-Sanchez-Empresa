@@ -63,17 +63,24 @@ class FakeRuntime:
 
 def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, monkeypatch):
     import support_agent.chat_api as chat_api
+    from support_agent import rate_limit as rate_limit_module
+    from support_agent.rate_limit import SlidingWindowRateLimiter
 
     store = ChatStore(tmp_path / "chat.sqlite3")
     session = store.create_session("user-1")
 
     class NonStreamingRuntime(FakeRuntime):
+        calls = 0
+
         def stream(self, question, **kwargs):
+            self.calls += 1
             return {"answer": "Respuesta final sin chunks"}
 
     app = FastAPI()
-    app.state.support_agent = NonStreamingRuntime(store)
+    runtime = NonStreamingRuntime(store)
+    app.state.support_agent = runtime
     app.include_router(router)
+    monkeypatch.setattr(rate_limit_module, "limiter", SlidingWindowRateLimiter(1, 60))
 
     async def authenticated_user(*args, **kwargs):
         return {"id": "user-1"}
@@ -96,6 +103,12 @@ def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, m
             while not any(event["event"] == "generation_completed" for event in events):
                 events.append(websocket.receive_json())
 
+            websocket.send_json({
+                "event": "user_message",
+                "data": {"session_id": session["session_id"], "text": "Segunda pregunta"},
+            })
+            limited = websocket.receive_json()
+
     assistant_message = next(event for event in events if event["event"] == "assistant_message")
     completed = next(event for event in events if event["event"] == "generation_completed")
     assert assistant_message["data"]["role"] == "assistant"
@@ -103,6 +116,9 @@ def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, m
     saved_assistant = store.messages(session["session_id"])[-1]
     assert saved_assistant["content"] == "Respuesta final sin chunks"
     assert saved_assistant["status"] == "completed"
+    assert limited["event"] == "rate_limited"
+    assert limited["data"]["retry_after"] == 60
+    assert runtime.calls == 1
 
 
 def make_client(tmp_path, monkeypatch):
