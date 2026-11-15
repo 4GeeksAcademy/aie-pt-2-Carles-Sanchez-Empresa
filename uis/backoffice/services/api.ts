@@ -180,7 +180,7 @@ export interface Supplier {
   contact_email?: string;
   notes?: string;
   status: "active" | "suspended";
-  updated_at: string;
+  updated_at?: string;
 }
 
 export async function fetchSuppliers(): Promise<Supplier[]> {

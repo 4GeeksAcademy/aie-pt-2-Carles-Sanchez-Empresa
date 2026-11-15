@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useIncidentManager } from "@/hooks/useIncidentManager";
 import { useTranslation } from "@/lib/i18n";
 
@@ -21,6 +21,15 @@ export default function IncidentManagerPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("form");
   const manager = useIncidentManager();
+
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (requestedTab === "list" || requestedTab === "summary") {
+      setActiveTab(requestedTab);
+      if (requestedTab === "list") void manager.loadIncidents();
+      if (requestedTab === "summary") void manager.loadSummary();
+    }
+  }, [manager.loadIncidents, manager.loadSummary]);
 
   const selectTab = (tab: Tab) => {
     setActiveTab(tab);

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getToken } from "@trackflow/core/services/auth";
 import { useTranslation } from "@/lib/i18n";
+import { BackofficePreviews } from "@/components/dashboard/BackofficePreviews";
 
 interface RfpNotification {
   ticket_id: string;
@@ -30,14 +31,37 @@ const STATUS_KEYS: Record<string, string> = {
   generando_borrador: "rfp.status_generating_draft",
   "en_evaluación": "rfp.status_evaluating",
 };
+const COMPANY_WEBSITE_FALLBACK_URL = "http://localhost:3000";
+const TALENT_PIPELINE_FALLBACK_URL = process.env.NEXT_PUBLIC_TALENT_PIPELINE_URL ?? "http://localhost:3002";
+
+function forwardedPortUrl(port: number, fallbackUrl: string): string {
+  if (typeof window === "undefined") return fallbackUrl;
+
+  const { hostname, protocol } = window.location;
+  const forwardedHostname = hostname.replace(/-3001(?=\.|$)/, `-${port}`);
+  if (forwardedHostname !== hostname) return `${protocol}//${forwardedHostname}`;
+
+  if (["localhost", "127.0.0.1", "::1"].includes(hostname)) {
+    return `${protocol}//${hostname}:${port}`;
+  }
+
+  return fallbackUrl;
+}
 
 export default function DashboardPage() {
   const { t } = useTranslation();
+  const [companyWebsiteUrl, setCompanyWebsiteUrl] = useState(COMPANY_WEBSITE_FALLBACK_URL);
+  const [talentPipelineUrl, setTalentPipelineUrl] = useState(TALENT_PIPELINE_FALLBACK_URL);
   const [notifications, setNotifications] = useState<RfpNotification[]>([]);
   const [connection, setConnection] = useState<"connecting" | "connected" | "reconnecting">("connecting");
   const [recovered, setRecovered] = useState(false);
   const [recoveryFailed, setRecoveryFailed] = useState(false);
   const lastEventId = useRef(typeof window === "undefined" ? "0" : window.sessionStorage.getItem("rfp-sse-last-id") ?? "0");
+
+  useEffect(() => {
+    setCompanyWebsiteUrl(forwardedPortUrl(3000, COMPANY_WEBSITE_FALLBACK_URL));
+    setTalentPipelineUrl(forwardedPortUrl(3002, TALENT_PIPELINE_FALLBACK_URL));
+  }, []);
 
   useEffect(() => {
     let stopped = false;
@@ -209,6 +233,15 @@ export default function DashboardPage() {
             ))}
           </ul>
         )}
+      </section>
+      <BackofficePreviews />
+      <section aria-label={t("dashboard.links.title")} className="grid gap-4 sm:grid-cols-2">
+        <a href={companyWebsiteUrl} target="_blank" rel="noreferrer" className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-[#c89d66] bg-white px-5 py-4 font-semibold text-[#14263a] shadow-sm transition-colors hover:bg-[#f3ddba] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d4f7a]">
+          <span>{t("dashboard.links.website")}</span><span aria-hidden="true">↗</span>
+        </a>
+        <a href={talentPipelineUrl} target="_blank" rel="noreferrer" className="flex min-h-16 items-center justify-between gap-3 rounded-xl border border-[#c89d66] bg-white px-5 py-4 font-semibold text-[#14263a] shadow-sm transition-colors hover:bg-[#f3ddba] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d4f7a]">
+          <span>{t("dashboard.links.candidates")}</span><span aria-hidden="true">↗</span>
+        </a>
       </section>
     </div>
   );

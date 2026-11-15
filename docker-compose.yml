@@ -15,14 +15,17 @@ services:
     ports:
       - "3000:3000"   # website
       - "3001:3001"   # backoffice
+      - "3002:3002"   # talent pipeline / RR. HH.
     command: >
       sh -c "cd /app/uis/website && npx next dev --webpack --port 3000 &
              cd /app/uis/backoffice && npx next dev --webpack --port 3001 &
+             cd /app/uis/talent-pipeline-tracker && npx next dev --webpack --port 3002 &
              wait"
     volumes:
       # Bind mounts para recarga en caliente
       - ./uis/website:/app/uis/website
       - ./uis/backoffice:/app/uis/backoffice
+      - ./uis/talent-pipeline-tracker:/app/uis/talent-pipeline-tracker
       - ./src:/app/src
       - ./packages/shared:/app/packages/shared
       - ./package.json:/app/package.json
@@ -31,6 +34,8 @@ services:
     environment:
       - NEXT_PUBLIC_API_HOST=api
       - NEXT_PUBLIC_API_PORT=8000
+      - NEXT_PUBLIC_TALENT_PIPELINE_URL=http://localhost:3002
+      - AUTH_API_BASE=http://api:8000
       # Browser-side WebSocket URL: use the published host port, not Docker DNS `api`.
       - NEXT_PUBLIC_API_WS_URL=${NEXT_PUBLIC_API_WS_URL:-ws://localhost:8000}
       # Ruta relativa: el rewrite de next.config.ts proxyea /telemetry → API interna
