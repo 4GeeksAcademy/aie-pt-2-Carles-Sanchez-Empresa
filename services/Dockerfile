@@ -6,6 +6,12 @@ FROM python:3.12-slim AS base
 
 WORKDIR /app
 
+# Keep security-sensitive Debian runtime libraries on the latest security
+# repository version instead of the potentially stale version in the base tag.
+RUN apt-get update \
+	&& apt-get upgrade -y --no-install-recommends zlib1g \
+	&& rm -rf /var/lib/apt/lists/*
+
 # ─── Instalar uv (gestor de paquetes rápido) ───────────────
 RUN pip install --no-cache-dir uv
 
