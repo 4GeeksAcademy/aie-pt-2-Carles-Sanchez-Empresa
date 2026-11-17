@@ -61,9 +61,21 @@ class FakeRuntime:
         return {"answer": "Hola mundo"}
 
 
-def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, monkeypatch):
+def websocket_test_app(store, runtime, monkeypatch):
     import support_agent.chat_api as chat_api
 
+    app = FastAPI()
+    app.state.support_agent = runtime
+    app.include_router(router)
+
+    async def authenticated_user(*args, **kwargs):
+        return {"id": "user-1"}
+
+    monkeypatch.setattr(chat_api, "get_current_user", authenticated_user)
+    return app
+
+
+def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, monkeypatch):
     store = ChatStore(tmp_path / "chat.sqlite3")
     session = store.create_session("user-1")
 
@@ -71,14 +83,7 @@ def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, m
         def stream(self, question, **kwargs):
             return {"answer": "Respuesta final sin chunks"}
 
-    app = FastAPI()
-    app.state.support_agent = NonStreamingRuntime(store)
-    app.include_router(router)
-
-    async def authenticated_user(*args, **kwargs):
-        return {"id": "user-1"}
-
-    monkeypatch.setattr(chat_api, "get_current_user", authenticated_user)
+    app = websocket_test_app(store, NonStreamingRuntime(store), monkeypatch)
 
     with TestClient(app) as client:
         with client.websocket_connect(
@@ -102,6 +107,97 @@ def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, m
     saved_assistant = store.messages(session["session_id"])[-1]
     assert saved_assistant["content"] == "Respuesta final sin chunks"
     assert saved_assistant["status"] == "completed"
+
+
+def test_websocket_publishes_token_chunks_in_sequence(tmp_path, monkeypatch):
+    store = ChatStore(tmp_path / "chat.sqlite3")
+    session = store.create_session("user-1")
+    app = websocket_test_app(store, FakeRuntime(store), monkeypatch)
+
+    with TestClient(app) as client:
+        with client.websocket_connect(
+            f"/agent/chat/ws/{session['session_id']}?token=test-token"
+        ) as websocket:
+            assert websocket.receive_json()["event"] == "session_snapshot"
+            websocket.send_json({
+                "event": "user_message",
+                "data": {"session_id": session["session_id"], "text": "Pregunta"},
+            })
+
+            events = []
+            while not any(event["event"] == "generation_completed" for event in events):
+                events.append(websocket.receive_json())
+
+    chunks = [event["data"] for event in events if event["event"] == "token_chunk"]
+    assert [(chunk["token"], chunk["sequence"]) for chunk in chunks] == [
+        ("Hola", 1), (" mundo", 2),
+    ]
+    assert all(chunk["session_id"] == session["session_id"] for chunk in chunks)
+    assert len({chunk["message_id"] for chunk in chunks}) == 1
+    saved_assistant = store.messages(session["session_id"])[-1]
+    assert saved_assistant["content"] == "Hola mundo"
+    assert saved_assistant["status"] == "completed"
+
+
+def test_websocket_interrupt_persists_partial_and_emits_interrupted_event(tmp_path, monkeypatch):
+    import support_agent.chat_api as chat_api
+
+    class InterruptibleRuntime(FakeRuntime):
+        def __init__(self, store):
+            super().__init__(store)
+            self.calls = 0
+
+        def stream(self, question, *, on_token, cancel_event, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                on_token("Texto parcial")
+                assert cancel_event.wait(timeout=5), "El stream no recibió la cancelación"
+                raise chat_api.GenerationCancelled()
+            on_token("Nueva respuesta")
+            return {"answer": "Nueva respuesta"}
+
+    store = ChatStore(tmp_path / "chat.sqlite3")
+    session = store.create_session("user-1")
+    app = websocket_test_app(store, InterruptibleRuntime(store), monkeypatch)
+
+    with TestClient(app) as client:
+        with client.websocket_connect(
+            f"/agent/chat/ws/{session['session_id']}?token=test-token"
+        ) as websocket:
+            assert websocket.receive_json()["event"] == "session_snapshot"
+            websocket.send_json({
+                "event": "user_message",
+                "data": {"session_id": session["session_id"], "text": "Primera pregunta"},
+            })
+
+            first_chunk = websocket.receive_json()
+            while first_chunk["event"] != "token_chunk":
+                first_chunk = websocket.receive_json()
+            assert first_chunk["data"]["token"] == "Texto parcial"
+
+            websocket.send_json({
+                "event": "interrupt_requested",
+                "data": {
+                    "session_id": session["session_id"],
+                    "new_input": "Pregunta de seguimiento",
+                },
+            })
+
+            events = []
+            while not any(event["event"] == "generation_completed" for event in events):
+                events.append(websocket.receive_json())
+
+    interrupted = next(event for event in events if event["event"] == "generation_interrupted")
+    assert interrupted["data"]["content"] == "Texto parcial"
+    assert interrupted["data"]["status"] == "interrupted"
+    messages = store.messages(session["session_id"])
+    first_assistant = next(message for message in messages if message["role"] == "assistant")
+    assert first_assistant["content"] == "Texto parcial"
+    assert first_assistant["status"] == "interrupted"
+    assert store.get_session(session["session_id"], "user-1")["status"] == "active"
+    second_assistant = [message for message in messages if message["role"] == "assistant"][-1]
+    assert second_assistant["content"] == "Nueva respuesta"
+    assert second_assistant["status"] == "completed"
 
 
 def make_client(tmp_path, monkeypatch):
