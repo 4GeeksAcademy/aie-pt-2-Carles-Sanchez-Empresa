@@ -1142,3 +1142,110 @@ def test_mixed_question_keeps_ticket_data_when_knowledge_fails(failure):
     assert "Estado: in_progress" in result["answer"]
     assert "No pude consultar la documentacion" in result["answer"]
     assert "private" not in result["answer"]
+
+def test_incident_tool_lists_only_requested_status_and_limits_results():
+    incidents = [
+        {"id": i, "title": f"Issue {i}", "category": "other", "status": "open",
+         "origin": "internal", "branch": "central", "created_at": "2026-10-18T10:00:00Z"}
+        for i in range(1, 13)
+    ]
+
+    def handle(request):
+        assert request.url.path == "/api/incidents"
+        assert request.url.params["status"] == "open"
+        return httpx.Response(200, json=incidents)
+
+    tool = IncidentTool("http://127.0.0.1:8000", transport=httpx.MockTransport(handle))
+    result = tool(TicketInput(status="open"), token="test-token")
+    assert result.outcome == "found"
+    assert len(result.incidents) == 10
+    assert all(item.status == "open" for item in result.incidents)
+
+
+def test_incident_tool_returns_empty_status_list_as_not_found():
+    tool = IncidentTool("http://127.0.0.1:8000", transport=httpx.MockTransport(
+        lambda request: httpx.Response(200, json=[]),
+    ))
+    assert tool(TicketInput(status="resolved"), token="test-token").outcome == "not_found"
+
+
+def test_inventory_low_stock_uses_strict_threshold_and_returns_bounded_list():
+    products = [
+        inventory_payload(1, current_stock=49),
+        inventory_payload(2, current_stock=50),
+        inventory_payload(3, current_stock=2),
+    ]
+
+    def handle(request):
+        assert request.url.params["low_stock_threshold"] == "50"
+        return httpx.Response(200, json=products)
+
+    tool = InventoryTool("http://127.0.0.1:8000", transport=httpx.MockTransport(handle))
+    result = tool(InventoryInput(low_stock=True, low_stock_threshold=50), token="test-token")
+    assert result.outcome == "found"
+    assert [product.id for product in result.products] == [1, 3]
+    assert all(product.current_stock < 50 for product in result.products)
+
+
+def test_status_list_route_uses_status_filter_and_renders_list(tmp_path):
+    summaries = [
+        {"id": i, "title": f"Issue {i}", "category": "other", "status": "open",
+         "origin": "internal", "branch": "central", "created_at": "2026-10-18T10:00:00Z"}
+        for i in (1, 2)
+    ]
+    incident_tool = Mock(return_value=TicketResult(outcome="found", incidents=summaries))
+    runtime = AgentRuntime(
+        tmp_path, incident_fn=incident_tool,
+        route_fn=lambda question: RouteDecision(source="incidents", incident_status="open"),
+    )
+    try:
+        result = runtime.run("Lista las incidencias abiertas")
+        assert "#1 Issue 1" in result["answer"] and "#2 Issue 2" in result["answer"]
+        incident_tool.assert_called_once_with(TicketInput(status="open"), token=None)
+    finally:
+        runtime.close()
+
+
+def test_mcp_adapter_uses_incidents_list_and_low_stock_arguments(monkeypatch):
+    from types import SimpleNamespace
+    from support_agent.tools import MCPTrackFlowTools
+
+    calls = []
+    summary = {"id": 8, "title": "Open issue", "category": "other", "status": "open",
+               "origin": "internal", "branch": "central", "created_at": "2026-10-18T10:00:00Z"}
+    low_product = inventory_payload(7, current_stock=49)
+
+    def fake_call(self, name, arguments, *, token=None):
+        calls.append((name, arguments, token))
+        content = {"result": [summary]} if name == "incidents_list" else {"result": [low_product]}
+        return SimpleNamespace(isError=False, structuredContent=content)
+
+    monkeypatch.setattr(MCPTrackFlowTools, "_call", fake_call)
+    tools = MCPTrackFlowTools("https://mcp.test", token_provider=lambda: None)
+    incidents = tools.incident(TicketInput(status="open"), token="oauth")
+    inventory = tools.inventory(InventoryInput(low_stock=True, low_stock_threshold=50), token="oauth")
+    assert incidents.outcome == "found" and incidents.incidents[0].id == 8
+    assert inventory.outcome == "found" and inventory.products[0].current_stock == 49
+    assert calls == [
+        ("incidents_list", {"status": "open"}, "oauth"),
+        ("inventory_list_products", {"low_stock_threshold": 50}, "oauth"),
+    ]
+
+
+def test_low_stock_graph_routes_threshold_and_explains_empty_result(tmp_path):
+    retrieve = Mock()
+    observed = []
+    runtime = AgentRuntime(
+        tmp_path, retrieve_fn=retrieve,
+        route_fn=lambda question: RouteDecision(
+            source="inventory", inventory_query=InventoryInput(low_stock=True, low_stock_threshold=50),
+        ),
+        inventory_fn=lambda payload, token: (observed.append(payload) or InventoryResult(outcome="not_found")),
+    )
+    try:
+        result = runtime.run("¿Qué productos tienen stock bajo?")
+        assert "stock inferior a 50 unidades" in result["answer"]
+        assert observed == [InventoryInput(low_stock=True, low_stock_threshold=50)]
+        retrieve.assert_not_called()
+    finally:
+        runtime.close()

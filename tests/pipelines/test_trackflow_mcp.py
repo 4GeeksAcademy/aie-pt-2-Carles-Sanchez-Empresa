@@ -106,6 +106,7 @@ async def test_each_data_tool_enforces_its_own_scope_without_api_access(server, 
             "origin": "internal", "branch": "central",
         }, "incidents:read"),
         ("incidents_get", {"incident_id": 1}, "inventory:read"),
+        ("incidents_list", {"status": "open"}, "inventory:read"),
         ("incidents_update_status", {"incident_id": 1, "status": "resolved"}, "incidents:read"),
         ("inventory_list_products", {}, "incidents:read"),
         ("inventory_get_product", {"product_id": 1}, "incidents:read"),
@@ -304,6 +305,7 @@ async def test_mcp_discovery_exposes_tool_input_and_output_schemas(server, monke
     assert {
         "incidents_create",
         "incidents_get",
+        "incidents_list",
         "incidents_update_status",
         "inventory_list_products",
         "inventory_get_product",
@@ -316,11 +318,13 @@ async def test_mcp_discovery_exposes_tool_input_and_output_schemas(server, monke
     incident_output = discovered["incidents_get"].output_schema
     assert incident_output["properties"]["id"]["type"] == "integer"
     assert "status" in incident_output["properties"]
+    assert "status" in discovered["incidents_list"].parameters["properties"]
 
     product_output = discovered["inventory_get_product"].output_schema
     assert product_output["properties"]["sku_code"]["type"] == "string"
     list_output = discovered["inventory_list_products"].output_schema
     assert list_output["properties"]["result"]["items"]["properties"]["current_stock"]["type"] == "integer"
+    assert "low_stock_threshold" in discovered["inventory_list_products"].parameters["properties"]
 
 
 @pytest.mark.asyncio
@@ -399,6 +403,9 @@ async def test_complete_mocked_workflow_for_every_exposed_tool(server, monkeypat
         "branch": "central", "created_at": "2026-01-01T00:00:00Z",
         "updated_at": "2026-01-01T00:00:00Z",
     }
+    incident_summary = {key: incident[key] for key in (
+        "id", "title", "category", "status", "origin", "branch", "created_at",
+    )}
     product = {
         "id": 202, "name": "Test product", "sku_code": "TEST-202",
         "client_name": "Test client", "category": "electronics", "warehouse": "LA",
@@ -419,6 +426,8 @@ async def test_complete_mocked_workflow_for_every_exposed_tool(server, monkeypat
             return httpx.Response(200, json=incident)
         if request.method == "GET" and request.url.path == "/api/incidents/101":
             return httpx.Response(200, json=incident)
+        if request.method == "GET" and request.url.path == "/api/incidents":
+            return httpx.Response(200, json=[incident_summary])
         return httpx.Response(404, json={"detail": "not found"})
 
     api = server.TrackFlowApi(
@@ -441,10 +450,14 @@ async def test_complete_mocked_workflow_for_every_exposed_tool(server, monkeypat
         "origin": "internal", "branch": "central",
     }, ["incidents:write"])
     await call_with_scopes("incidents_get", {"incident_id": 101}, ["incidents:read"])
+    incident_list_result = await call_with_scopes("incidents_list", {"status": "open"}, ["incidents:read"])
     await call_with_scopes("incidents_update_status", {
         "incident_id": 101, "status": "in_progress",
     }, ["incidents:write"])
     product_list_result = await call_with_scopes("inventory_list_products", {}, ["inventory:read"])
+    low_stock_result = await call_with_scopes(
+        "inventory_list_products", {"low_stock_threshold": 50}, ["inventory:read"],
+    )
     await call_with_scopes("inventory_get_product", {"product_id": 202}, ["inventory:read"])
 
     with pytest.raises(server.ToolExecutionError) as error:
@@ -455,10 +468,14 @@ async def test_complete_mocked_workflow_for_every_exposed_tool(server, monkeypat
     assert error.value.code == "INVENTORY_READ_ONLY"
     assert "no modification was performed" in error.value.message
     assert product_list_result.structured_content == {"result": [product]}
+    assert incident_list_result.structured_content == {"result": [incident_summary]}
+    assert low_stock_result.structured_content == {"result": [product]}
     assert [(method, path) for method, path, _, _ in calls] == [
         ("POST", "/api/incidents"),
         ("GET", "/api/incidents/101"),
+        ("GET", "/api/incidents"),
         ("PATCH", "/api/incidents/101/status"),
+        ("GET", "/inventory/products"),
         ("GET", "/inventory/products"),
         ("GET", "/inventory/products/202"),
     ]
