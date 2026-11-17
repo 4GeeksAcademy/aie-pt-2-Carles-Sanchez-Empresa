@@ -98,7 +98,8 @@ def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, m
 
     with TestClient(app) as client:
         with client.websocket_connect(
-            f"/agent/chat/ws/{session['session_id']}?token=test-token"
+            f"/agent/chat/ws/{session['session_id']}" ,
+            subprotocols=["trackflow-chat-v1", "bearer.test-token"],
         ) as websocket:
             snapshot = websocket.receive_json()
             assert snapshot["event"] == "session_snapshot"
@@ -127,7 +128,8 @@ def test_websocket_publishes_token_chunks_in_sequence(tmp_path, monkeypatch):
 
     with TestClient(app) as client:
         with client.websocket_connect(
-            f"/agent/chat/ws/{session['session_id']}?token=test-token"
+            f"/agent/chat/ws/{session['session_id']}" ,
+            subprotocols=["trackflow-chat-v1", "bearer.test-token"],
         ) as websocket:
             assert websocket.receive_json()["event"] == "session_snapshot"
             websocket.send_json({
@@ -190,7 +192,8 @@ def test_websocket_interrupt_persists_partial_and_emits_interrupted_event(tmp_pa
 
     with TestClient(app) as client:
         with client.websocket_connect(
-            f"/agent/chat/ws/{session['session_id']}?token=test-token"
+            f"/agent/chat/ws/{session['session_id']}" ,
+            subprotocols=["trackflow-chat-v1", "bearer.test-token"],
         ) as websocket:
             assert websocket.receive_json()["event"] == "session_snapshot"
             websocket.send_json({
@@ -239,7 +242,7 @@ def test_websocket_reconnect_rehydrates_same_session_history(tmp_path, monkeypat
     app = websocket_test_app(store, FakeRuntime(store), monkeypatch)
 
     with TestClient(app) as client:
-        with client.websocket_connect(f"/agent/chat/ws/{session['session_id']}?token=test-token") as websocket:
+        with client.websocket_connect(f"/agent/chat/ws/{session['session_id']}", subprotocols=["trackflow-chat-v1", "bearer.test-token"]) as websocket:
             snapshot = websocket.receive_json()
 
     assert snapshot["event"] == "session_snapshot"

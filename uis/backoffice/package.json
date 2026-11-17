@@ -4,11 +4,12 @@
   "scripts": {
     "dev": "next dev --webpack --port 3001",
     "build": "next build",
+    "typecheck": "next typegen && tsc --noEmit",
     "start": "next start"
   },
   "dependencies": {
     "@trackflow/core": "*",
-    "next": "^16.3.0",
+    "next": "^16.4.6",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "recharts": "^3.10.1"

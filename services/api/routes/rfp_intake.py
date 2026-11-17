@@ -28,6 +28,22 @@ SSE_KEEPALIVE_INTERVAL_SECONDS = 15.0
 RAW_DATA_DIR = Path(os.getenv("TRACKFLOW_RAW_DATA_DIR", Path(__file__).resolve().parents[3] / "data" / "raw"))
 
 
+def _revoke_celery_task(task_id: str) -> None:
+    """Revoke an RFP retry without importing the full FastAPI application."""
+    import importlib.util
+
+    # Avoid importing main.py, which loads the full agent graph and its
+    # optional model dependencies just to revoke a queued retry.
+    celery_path = Path(__file__).resolve().parents[2] / "celery_app.py"
+    spec = importlib.util.spec_from_file_location("trackflow_celery_app", celery_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"No se pudo cargar Celery desde {celery_path}")
+    celery_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(celery_module)
+    celery_app = celery_module.app
+    celery_app.control.revoke(task_id, terminate=False)
+
+
 class TicketSummary(BaseModel):
     ticket_id: str
     rfp_id: str
@@ -161,8 +177,7 @@ async def stream_rfp_ticket_events(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_db),
 ):
-    """Authenticated shared event feed with durable per-client replay cursor."""
-    del current_user  # Authentication is the access policy for this shared feed.
+    """Stream events for the caller's tickets; admins can monitor the full queue."""
     bind = session.get_bind()
 
     last_event_id = request.headers.get("last-event-id")
@@ -193,11 +208,14 @@ async def stream_rfp_ticket_events(
             # Keep a short-lived DB session per poll so each open dashboard does
             # not pin a pooled connection for the full lifetime of its stream.
             with Session(bind) as poll_session:
+                statement = select(RfpNotificationEvent).where(RfpNotificationEvent.id > cursor)
+                if current_user.get("role") != "admin":
+                    own_tickets = select(RfpTicket.ticket_id).where(
+                        RfpTicket.created_by_user_id == str(current_user["id"])
+                    )
+                    statement = statement.where(RfpNotificationEvent.ticket_id.in_(own_tickets))
                 events = poll_session.exec(
-                    select(RfpNotificationEvent)
-                    .where(RfpNotificationEvent.id > cursor)
-                    .order_by(RfpNotificationEvent.id)
-                    .limit(100)
+                    statement.order_by(RfpNotificationEvent.id).limit(100)
                 ).all()
             if events:
                 for notification in events:
@@ -293,8 +311,11 @@ def list_rfp_tickets(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_db),
 ):
-    """Lista tickets visibles a usuarios autenticados (mock-up; restringir antes de producción)."""
-    tickets = session.exec(select(RfpTicket).order_by(RfpTicket.created_at.desc())).all()
+    """Lista solo tickets propios; administradores pueden gestionar la cola compartida."""
+    statement = select(RfpTicket).order_by(RfpTicket.created_at.desc())
+    if current_user.get("role") != "admin":
+        statement = statement.where(RfpTicket.created_by_user_id == str(current_user["id"]))
+    tickets = session.exec(statement).all()
     result = []
     for ticket in tickets:
         metadata = session.get(RfpMetadata, ticket.ticket_id)
@@ -308,7 +329,7 @@ def get_rfp_ticket(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_db),
 ):
-    """Consulta estado y resultados persistidos; autenticado para mock-up compartido."""
+    """Consulta estado y resultados persistidos solo si pertenecen al usuario o es admin."""
     try:
         UUID(ticket_id)
     except ValueError as exc:
@@ -316,11 +337,14 @@ def get_rfp_ticket(
     ticket = session.get(RfpTicket, ticket_id)
     if ticket is None:
         raise HTTPException(status_code=404, detail="Ticket RFP no encontrado.")
+    if current_user.get("role") != "admin" and ticket.created_by_user_id != str(current_user["id"]):
+        raise HTTPException(status_code=404, detail="Ticket RFP no encontrado.")
     metadata = session.get(RfpMetadata, ticket.ticket_id)
     sections = session.exec(
         select(DepartmentSection).where(DepartmentSection.ticket_id == ticket.ticket_id)
     ).all()
-    if ticket.status == "en_evaluación" and sections and all(section.draft_content for section in sections):
+    if (current_user.get("role") == "admin" and ticket.status == "en_evaluación"
+            and sections and all(section.draft_content for section in sections)):
         # Supports manually generated tickets and recovery if the Celery worker
         # persisted Parte 2 but stopped before writing its approval gate.
         from data.pipelines.rfp_approval import start_approval
@@ -370,7 +394,7 @@ class HumanReviewAction(BaseModel):
 
 
 @router.post("/tickets/{ticket_id}/start-approval")
-def start_rfp_approval(ticket_id: str, current_user: dict = Depends(get_current_user),
+def start_rfp_approval(ticket_id: str, current_user: dict = Depends(require_admin),
                        session: Session = Depends(get_db)):
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Se requieren permisos de administrador para iniciar aprobaciones.")
@@ -553,6 +577,8 @@ def download_final_rfp_document(ticket_id: str, current_user: dict = Depends(get
     ticket = session.get(RfpTicket, ticket_id)
     if ticket is None:
         raise HTTPException(status_code=404, detail="Ticket RFP no encontrado.")
+    if current_user.get("role") != "admin" and ticket.created_by_user_id != str(current_user["id"]):
+        raise HTTPException(status_code=404, detail="Ticket RFP no encontrado.")
     if ticket.status != "done" or not ticket.final_document_path:
         raise HTTPException(status_code=409, detail="No hay documento final aprobado.")
     final_dir = (RAW_DATA_DIR / "final").resolve()
@@ -565,7 +591,7 @@ def download_final_rfp_document(ticket_id: str, current_user: dict = Depends(get
 @router.post("/tickets/{ticket_id}/generate-response", response_model=TicketDetail)
 def generate_rfp_response(
     ticket_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),
     session: Session = Depends(get_db),
 ):
     """Reanuda la Parte 2 sobre el handoff almacenado; no acepta/reprocesa el PDF."""
@@ -606,7 +632,7 @@ def generate_rfp_response(
 @router.delete("/tickets/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_rfp_ticket(
     ticket_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),
     session: Session = Depends(get_db),
 ):
     """Delete an RFP ticket and its generated files for operational cleanup."""
@@ -628,9 +654,7 @@ def delete_rfp_ticket(
         # Pipeline persistence checks the ticket still exists before committing.
         if ticket.celery_task_id:
             try:
-                from main import celery_app
-
-                celery_app.control.revoke(ticket.celery_task_id, terminate=False)
+                _revoke_celery_task(ticket.celery_task_id)
             except Exception as exc:
                 logger.exception("No se pudo cancelar la tarea Celery del ticket RFP %s", ticket_id)
                 raise HTTPException(

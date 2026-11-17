@@ -35,7 +35,16 @@ from database import users_table, used_tokens_table, TokenQuery
 dotenv_path = Path(__file__).resolve().parent.parent.parent / ".env"
 load_dotenv(dotenv_path)
 
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback-insecure-key")
+
+def _required_secret_key() -> str:
+    """Load the JWT signing key and fail closed when it is not configured."""
+    secret_key = os.getenv("SECRET_KEY")
+    if not secret_key:
+        raise RuntimeError("SECRET_KEY must be configured; refusing to start with an insecure JWT key.")
+    return secret_key
+
+
+SECRET_KEY = _required_secret_key()
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 RESET_TOKEN_EXPIRE_MINUTES = int(os.getenv("RESET_TOKEN_EXPIRE_MINUTES", "60"))
 
@@ -161,13 +170,28 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
 
 # ───────────────────── Dependencia: require_admin ─────────────────────
 
-async def require_admin(current_user: dict = Depends(get_current_user)) -> dict:
+async def require_admin(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+) -> dict:
     """
     Dependencia que verifica que el usuario autenticado sea administrador.
 
     Lanza HTTPException(403) si el usuario no tiene rol 'admin'.
     """
-    if current_user.get("role") != "admin":
+    # MCP's service principal is separately OAuth/scope-gated and additionally
+    # restricted by get_current_user to this exact incident allowlist. Preserve
+    # its intentional incident write tools without granting inventory/supplier
+    # mutations or any other admin-only route.
+    service_incident_write = False
+    if current_user.get("is_service") is True and _service_route_allowed(request):
+        service_incident_write = (
+            request.url.path == "/api/incidents" and request.method.upper() == "POST"
+        ) or (
+            bool(re.fullmatch(r"/api/incidents/[1-9][0-9]*/status", request.url.path))
+            and request.method.upper() == "PATCH"
+        )
+    if current_user.get("role") != "admin" and not service_incident_write:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Se requieren permisos de administrador para acceder a este recurso",

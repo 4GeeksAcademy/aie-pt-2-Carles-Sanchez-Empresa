@@ -42,12 +42,21 @@ async def create_chat_session(payload: ChatSessionCreate, request: Request,
 
 
 @router.websocket("/agent/chat/ws/{session_id}")
-async def chat_websocket(websocket: WebSocket, session_id: str, token: str | None = None):
+async def chat_websocket(websocket: WebSocket, session_id: str):
     try:
         session_id = str(UUID(session_id))
     except ValueError:
         await websocket.close(code=4400)
         return
+    # Browser WebSocket APIs cannot set Authorization headers. Accept the
+    # bearer token via the WebSocket subprotocol instead of the URL, where
+    # query strings are routinely captured by proxies and access logs.
+    offered_protocols = websocket.scope.get("subprotocols", [])
+    auth_protocols = [value for value in offered_protocols if value.startswith("bearer.")]
+    if len(auth_protocols) != 1 or "trackflow-chat-v1" not in offered_protocols:
+        await websocket.close(code=4401)
+        return
+    token = auth_protocols[0][len("bearer."):]
     if not token:
         await websocket.close(code=4401)
         return
@@ -81,7 +90,7 @@ async def chat_websocket(websocket: WebSocket, session_id: str, token: str | Non
                 store.set_session_status(session_id, "interrupted")
                 break
 
-    await websocket.accept()
+    await websocket.accept(subprotocol="trackflow-chat-v1")
     bus = pubsub_for(websocket.app)
     queue = bus.subscribe(session_id)
     await websocket.send_json({

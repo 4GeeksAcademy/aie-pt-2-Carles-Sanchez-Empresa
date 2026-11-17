@@ -322,9 +322,9 @@ def classify_pending_decision(proposal: MemoryProposal, message: str) -> MemoryD
         return MemoryDecision(decision="unclear", confidence=0)
 
 
-STREAM_CALLBACKS: contextvars.ContextVar[
-    tuple[Callable[[str], None] | None, Callable[[Any], None] | None]
-] = contextvars.ContextVar("memory_stream_callbacks", default=(None, None))
+STREAM_CALLBACKS: contextvars.ContextVar[tuple[Callable[[str], None] | None, Callable[[Any], None] | None]] = contextvars.ContextVar(
+    "memory_stream_callbacks", default=(None, None),
+)
 
 
 def generate_structured_response(question: str, context: list[dict], memories: list[dict], *, evaluator=None):
@@ -404,4 +404,8 @@ después de la respuesta estructurada. No muestres razonamiento interno.
     proposal = payload.get("memory_proposal")
     if proposal is not None:
         proposal = (evaluator or MemoryProposal.model_validate)(proposal)
+    # Structured output includes internal memory metadata. Never emit its JSON
+    # fragments as user-visible tokens. This path currently provides no
+    # incremental answer chunks; the caller persists the validated answer once
+    # generation has completed.
     return payload["answer"].strip(), proposal

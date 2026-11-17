@@ -6,7 +6,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from auth import require_admin
 
 _root = Path(__file__).resolve().parents[2]
 if str(_root) not in sys.path:
@@ -17,7 +18,6 @@ from data.pipelines import (
     disparar_corrida_semanal,
     obtener_ultima_ejecucion,
 )
-from scripts.sales_forecast import calculate_metrics
 
 router = APIRouter(prefix="/reporting", tags=["Reporting"])
 
@@ -55,6 +55,11 @@ def weekly_performance(week_start: Optional[date] = None):
 @router.get("/sales-forecast")
 def sales_forecast(start_year: Optional[int] = None, end_year: Optional[int] = None):
     """Return the forecast report, optionally recalculated for a year range."""
+    # Load the optional forecasting dependency only for this endpoint. Keeping
+    # it out of module import allows unrelated API routes/tests to start when
+    # the forecasting extra is not installed.
+    from scripts.sales_forecast import calculate_metrics
+
     candidates = (
         _root / "data" / "eval" / "sales_forecast.json",
         Path(__file__).resolve().parents[1] / "data" / "eval" / "sales_forecast.json",
@@ -86,11 +91,11 @@ def sales_forecast(start_year: Optional[int] = None, end_year: Optional[int] = N
 
 
 @router.get("/pipeline-runs/latest")
-def latest_pipeline_run():
+def latest_pipeline_run(current_user: dict = Depends(require_admin)):
     return obtener_ultima_ejecucion() or {"status": "no_runs"}
 
 
 @router.post("/pipeline-runs", status_code=status.HTTP_202_ACCEPTED)
-def run_pipeline(week_start: Optional[date] = None):
+def run_pipeline(week_start: Optional[date] = None, current_user: dict = Depends(require_admin)):
     task = _get_pipeline_task().delay(week_start.isoformat() if week_start else None)
     return {"task_id": task.id}

@@ -80,13 +80,15 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   }
 
   const token = typeof window !== "undefined" ? getToken() : null;
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  });
+  new Headers(options?.headers).forEach((value, key) => headers.set(key, value));
 
   const res = await fetch(`${API_BASE}${url}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
     ...options,
+    headers,
   });
 
   const latencyMs = Math.round(performance.now() - startTime);
@@ -387,6 +389,7 @@ export async function createInboundOrder(data: StockEntryInput): Promise<StockEn
 export async function createOutboundOrder(data: StockExitInput): Promise<StockExitResult> {
   return request<StockExitResult>("/inventory/orders/outbound", {
     method: "POST",
+    headers: { "X-TrackFlow-Human-Confirmation": "confirmed" },
     body: JSON.stringify(data),
   });
 }
