@@ -17,6 +17,8 @@ Frames have `{ "event": string, "data": object }` shape. Client events are
 `generation_failed` and `protocol_error`.
 
 the available assistant prefix with `interrupted` status, waits for the prior
+If the API process restarts while an assistant row is still marked `streaming`, the next connection marks that row `interrupted` before sending its snapshot.
+
 The producer calls the existing First-line CX graph. The plain RAG answer path
 emits provider stream chunks as they arrive. The structured memory-response
 path buffers and validates its JSON before use, and deliberately emits no

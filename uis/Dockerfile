@@ -17,7 +17,8 @@ COPY uis/website/package.json ./uis/website/package.json
 COPY uis/backoffice/package.json ./uis/backoffice/package.json
 
 # Instalar dependencias (incluyendo dev para next build)
-RUN npm install --include=dev
+RUN npm install --include=dev --no-audit --no-fund --cache=/tmp/npm-cache \
+	&& rm -rf /tmp/npm-cache
 
 # ─── Stage 2: Build ────────────────────────────────────────
 FROM deps AS builder
