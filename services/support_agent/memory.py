@@ -376,6 +376,8 @@ después de la respuesta estructurada. No muestres razonamiento interno.
             raise RuntimeError("Incomplete structured response")
         content = response.choices[0].message.content or "{}"
     else:
+        # The structured payload contains internal memory metadata; collect it
+        # privately and only expose the validated answer after parsing.
         response = client.chat.completions.create(**request, stream=True)
         if on_stream is not None:
             on_stream(response)

@@ -35,7 +35,9 @@ jobs:
       - name: Resolve npm workspace lock for audit
         run: npm install --package-lock-only --ignore-scripts --no-audit
       - name: Audit npm lockfiles
-        run: npm audit --workspaces --audit-level=high
+        # Temporary exception: picomatch has no patched release for
+        # GHSA-fc5q-39xc-vjpf. Remove it as soon as upstream publishes a fix.
+        run: npm run audit:dependencies
 
   container-scan:
     name: Container image scan

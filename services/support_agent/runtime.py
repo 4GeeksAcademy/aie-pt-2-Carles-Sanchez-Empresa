@@ -198,6 +198,31 @@ class AgentRuntime:
                   "conversation_id": thread_id}
         return self._execute(inputs, thread_id, token=token)
 
+    def stream(
+        self, question: str, *, token: str | None = None, actor_id: str | None = None,
+        conversation_id: str | None = None, on_token=None, on_stream=None,
+        cancel_event=None,
+    ) -> dict:
+        """Invoke the graph with callbacks for any provider token streams."""
+        from data.pipelines import rag
+        from . import memory as memory_module
+
+        try:
+            thread_id = validate_id(conversation_id)
+        except ValueError as exc:
+            raise ValueError("Invalid conversation_id") from exc
+
+        rag_callbacks = rag.STREAM_CALLBACKS.set((on_token, on_stream))
+        memory_callbacks = memory_module.STREAM_CALLBACKS.set((on_token, on_stream))
+        try:
+            return self.run(
+                question, token=token, actor_id=actor_id,
+                conversation_id=thread_id,
+            )
+        finally:
+            rag.STREAM_CALLBACKS.reset(rag_callbacks)
+            memory_module.STREAM_CALLBACKS.reset(memory_callbacks)
+
     def resume(self, thread_id: str, *, token: str | None = None) -> dict:
         thread_id = validate_id(thread_id)
         with self.lock:
@@ -236,7 +261,7 @@ class AgentRuntime:
                 unavailable = isinstance(exc, (
                     ConnectionError, TimeoutError, APIError, httpx.HTTPError,
                     ResponseHandlingException, UnexpectedResponse,
-                ))
+                )) or type(exc).__name__ in {"MCPError", "McpError", "MCPException"}
                 message = "Servicio de conocimiento no disponible temporalmente." if unavailable else "Error interno al procesar la consulta."
                 trace = self.traces.get(run_id)
                 trace.update(status="failed", error={"code": "dependency_unavailable" if unavailable else "internal_error"}, finished_at=timestamp())
@@ -254,23 +279,3 @@ class AgentRuntime:
             self.memory.close()
             self.chat_store.close()
             self.connection.close()
-
-    def stream(self, question: str, *, token: str | None = None, actor_id: str | None = None,
-               conversation_id: str, on_token, on_stream=None, cancel_event=None) -> dict:
-        """Invoke the unchanged graph with optional RAG token callbacks."""
-        from data.pipelines import rag
-        from . import memory as memory_module
-
-        try:
-            thread_id = validate_id(conversation_id)
-        except ValueError as exc:
-            raise ValueError("Invalid conversation_id") from exc
-
-        token_var = rag.STREAM_CALLBACKS.set((on_token, on_stream))
-        memory_token = memory_module.STREAM_CALLBACKS.set((on_token, on_stream))
-        try:
-            result = self.run(question, token=token, actor_id=actor_id, conversation_id=thread_id)
-            return result
-        finally:
-            rag.STREAM_CALLBACKS.reset(token_var)
-            memory_module.STREAM_CALLBACKS.reset(memory_token)

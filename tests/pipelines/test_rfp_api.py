@@ -78,7 +78,7 @@ def test_upload_persists_briefing_shaped_notification(client):
         "client_name": None,
         "client_country": None,
         "services_requested": [],
-        "status": "analyzing",
+        "status": "analizando",
         "created_at": response.json()["created_at"],
     }
 
@@ -119,7 +119,7 @@ def test_sse_endpoint_returns_named_json_wire_frame(client, monkeypatch):
                 "client_name": None,
                 "client_country": None,
                 "services_requested": [],
-                "status": "analyzing",
+                "status": "analizando",
                 "created_at": "2026-11-11T12:00:00+00:00",
             },
         ))
@@ -145,8 +145,38 @@ def test_sse_endpoint_returns_named_json_wire_frame(client, monkeypatch):
             "ticket_id", "rfp_id", "client_name", "client_country",
             "services_requested", "status", "created_at",
         }
-        assert data["status"] == "analyzing"
+        assert data["status"] == "analizando"
         assert "id: 1\n" in frame
+
+
+def test_sse_without_last_event_id_does_not_replay_history(client, monkeypatch):
+    import asyncio
+    from models import RfpNotificationEvent
+
+    with Session(client.app.state.test_engine) as session:
+        ticket_id = str(uuid4())
+        session.add(RfpNotificationEvent(
+            ticket_id=ticket_id,
+            payload={"ticket_id": ticket_id, "status": "analizando"},
+        ))
+        session.commit()
+
+    disconnect_checks = 0
+
+    async def disconnect_after_initial_poll(_request):
+        nonlocal disconnect_checks
+        disconnect_checks += 1
+        return disconnect_checks > 1
+
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(rfp_intake.Request, "is_disconnected", disconnect_after_initial_poll)
+    monkeypatch.setattr(asyncio, "sleep", no_wait)
+    response = client.get("/rfp-intake/tickets/events")
+
+    assert response.status_code == 200
+    assert "event: rfp_ticket_created" not in response.text
 
 
 def test_sse_endpoint_requires_authentication(client):
