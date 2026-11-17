@@ -40,6 +40,12 @@
 
 ### Backoffice operacional — `uis/backoffice/` (HTML estático + bundle desde `src` + páginas servidas por FastAPI)
 
+The current operational backoffice also includes a Next.js App Router client
+under `uis/backoffice`: its RFP dashboard consumes authenticated SSE via
+`fetch`/`ReadableStream`, backed by a relational notification outbox and
+`Last-Event-ID` replay. The legacy inventory demo is located at `/admin/demo`
+and checks the authenticated user's admin role before rendering.
+
 | Tecnología | Versión | Propósito |
 |---|---|---|
 | **HTML5 + Tailwind CDN** | — | Render del panel manual del backoffice (`index.html`, `incidents.html`, `suppliers.html`) |

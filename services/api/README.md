@@ -107,6 +107,7 @@ Legacy aliases are also available:
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/auth/me` | Current authenticated user |
+| `GET` | `/rfp-intake/tickets/events` | Shared authenticated RFP SSE feed (`Last-Event-ID` replay) |
 | `POST` | `/auth/change-password` | Change password (authenticated) |
 | `GET` | `/profiles/me` | Current user profile |
 | `PUT` | `/profiles/me` | Update current profile |
@@ -123,6 +124,13 @@ Legacy aliases are also available:
 | `PATCH` | `/suppliers/{id}/rate` | Update supplier rate |
 | `PATCH` | `/suppliers/{id}/status` | Update supplier status |
 | `DELETE` | `/suppliers/{id}` | Delete supplier |
+
+The RFP stream emits `event: rfp_ticket_created` frames with a JSON `data:`
+payload. Events are recorded in the relational outbox in the same durable
+workflow as ticket intake and can be replayed independently by each client
+using `Last-Event-ID`. Clients should reconnect with exponential backoff and
+deduplicate by `ticket_id`; the backoffice also reloads active tickets after a
+disconnect to recover its visible state.
 
 ---
 

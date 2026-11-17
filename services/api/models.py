@@ -182,6 +182,23 @@ class RfpTicket(SQLModel, table=True):
     human_reviewed_at: Optional[datetime] = Field(default=None, sa_type=DateTime(timezone=True), nullable=True)
 
 
+class RfpNotificationEvent(SQLModel, table=True):
+    """Durable outbox row for the shared RFP SSE feed."""
+
+    __tablename__ = "rfp_notification_events"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    ticket_id: str = Field(
+        foreign_key="rfp_tickets.ticket_id",
+        sa_type=Uuid(as_uuid=False),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    payload: dict = Field(sa_type=_JSONB, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_type=DateTime(timezone=True), nullable=False, index=True)
+
+
 class RfpMetadata(SQLModel, table=True):
     """Metadatos extraídos; valores ausentes permanecen nulos y no se inventan."""
 
