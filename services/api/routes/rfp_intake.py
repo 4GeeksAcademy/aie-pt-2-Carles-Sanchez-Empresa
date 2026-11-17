@@ -341,10 +341,12 @@ def get_rfp_ticket(
     sections = session.exec(
         select(DepartmentSection).where(DepartmentSection.ticket_id == ticket.ticket_id)
     ).all()
-    if (current_user.get("role") == "admin" and ticket.status == "en_evaluación"
-            and sections and all(section.draft_content for section in sections)):
-        # Supports manually generated tickets and recovery if the Celery worker
-        # persisted Parte 2 but stopped before writing its approval gate.
+    if (current_user.get("role") == "admin"
+            and ticket.status in {"en_evaluación", "needs_human_review"}
+            and sections and all(section.draft_content for section in sections)
+            and any(not section.checkpoint_thread_id for section in sections)):
+        # Recover approval gates for both passing and manually-reviewable drafts.
+        # A failed evaluator must not hide a department's draft or its controls.
         from data.pipelines.rfp_approval import start_approval
         start_approval(ticket.ticket_id, db_engine=session.get_bind())
         session.refresh(ticket)
@@ -410,19 +412,58 @@ def decide_rfp_section(ticket_id: str, department_id: str, payload: ApprovalDeci
     try:
         UUID(ticket_id)
         from data.pipelines.rfp_approval import resume_approval
+        if payload.decision == "reject" and (not payload.comment or not payload.comment.strip()):
+            raise HTTPException(status_code=422, detail="El rechazo requiere un motivo.")
         approvers = {"warehouse": "Ana Whitfield", "lastmile": "Carlos Vega", "reverse": "Sofía Ramos"}
         if payload.approver_name != approvers.get(department_id):
             raise HTTPException(status_code=403, detail="El aprobador no corresponde al departamento.")
+        if payload.decision in {"approve", "reject", "request_changes"}:
+            ticket = session.get(RfpTicket, ticket_id)
+            section = session.exec(select(DepartmentSection).where(
+                DepartmentSection.ticket_id == ticket_id,
+                DepartmentSection.department_id == department_id,
+            )).first()
+            if (ticket and ticket.status == "needs_human_review" and section
+                    and section.checkpoint_thread_id
+                    and section.approval_status in {"pending", "changes_requested"}):
+                ticket.status = "waiting_for_approval"
+                session.add(ticket)
+                session.commit()
         resume_approval(ticket_id, department_id, payload.decision,
                         db_engine=session.get_bind(), approver_name=payload.approver_name,
                         comment=payload.comment, request_id=payload.request_id)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    session.expire_all()
     ticket = session.get(RfpTicket, ticket_id)
     metadata = session.get(RfpMetadata, ticket_id)
     sections = session.exec(select(DepartmentSection).where(DepartmentSection.ticket_id == ticket_id)).all()
     traces = session.exec(select(RfpApprovalTrace).where(RfpApprovalTrace.ticket_id == ticket_id)
                           .order_by(RfpApprovalTrace.created_at, RfpApprovalTrace.id)).all()
+    rejected_traces = {
+        trace.department_id: trace for trace in traces
+        if trace.node_name == "resume_department"
+        and trace.output_payload.get("decision") == "reject"
+        and trace.department_id
+    }
+    for section in sections:
+        trace = rejected_traces.get(section.department_id)
+        if trace:
+            section.approval_status = "rejected"
+            section.approver_name = trace.agent_name
+            section.approved_at = None
+            section.approval_comment = trace.output_payload.get("comment")
+            session.add(section)
+    if rejected_traces:
+        all_decided = bool(sections) and all(
+            section.approval_status in {"approved", "rejected"} for section in sections
+        )
+        ticket.status = "needs_human_review" if all_decided else "waiting_for_approval"
+        ticket.final_proposal = None
+        ticket.final_proposal_created_at = None
+        ticket.updated_at = datetime.now(timezone.utc)
+        session.add(ticket)
+        session.commit()
     return TicketDetail(
         **_summary(ticket, metadata).model_dump(), retry_count=ticket.retry_count,
         last_error=ticket.last_error, failed_at=_iso(ticket.failed_at), metadata=_metadata_payload(metadata),
@@ -511,6 +552,8 @@ def review_rfp(ticket_id: str, payload: HumanReviewAction,
     elif payload.action == "approve":
         if payload.return_to_client:
             raise HTTPException(status_code=422, detail="La aprobación no puede devolver el ticket al cliente.")
+        if any(section.approval_status == "rejected" for section in sections):
+            raise HTTPException(status_code=409, detail="No se puede aprobar la RFP: un departamento ha rechazado su propuesta.")
         active_sections = [section for section in sections if section.draft_content]
         if not active_sections:
             raise HTTPException(status_code=409, detail="No hay borradores para generar la propuesta final; edita o devuelve el ticket al cliente.")

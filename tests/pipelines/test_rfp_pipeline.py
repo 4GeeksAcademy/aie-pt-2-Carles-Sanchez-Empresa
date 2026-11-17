@@ -297,6 +297,59 @@ def test_classifier_retries_truncated_output_with_bounded_document():
     assert calls[0]["max_tokens"] > 3000
 
 
+def test_classifier_fills_missing_is_rfp_as_rfp_for_human_review():
+    payload = classification().model_dump()
+    payload.pop("is_rfp")
+    response = SimpleNamespace(choices=[SimpleNamespace(
+        message=SimpleNamespace(content=json.dumps(payload)), finish_reason="stop"
+    )])
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(
+        create=lambda **_kwargs: response
+    )))
+
+    result = pipeline.classify_markdown("A valid logistics request", client=client)
+
+    assert result.is_rfp is True
+    assert result.confidence == "low"
+    assert "omitió is_rfp" in result.reason
+    assert pipeline._manual_review(result)[0] is True
+
+
+def test_classifier_routes_unassigned_rfp_to_every_department_for_review():
+    payload = classification(departments_needed=[]).model_dump()
+    response = SimpleNamespace(choices=[SimpleNamespace(
+        message=SimpleNamespace(content=json.dumps(payload)), finish_reason="stop"
+    )])
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(
+        create=lambda **_kwargs: response
+    )))
+
+    result = pipeline.classify_markdown("A valid logistics request", client=client)
+
+    assert result.departments_needed == ["warehouse", "lastmile", "reverse"]
+    assert result.confidence == "low"
+    assert result.open_questions
+
+
+def test_classifier_adds_departments_detected_in_document_to_review():
+    payload = classification(departments_needed=["warehouse"]).model_dump()
+    response = SimpleNamespace(choices=[SimpleNamespace(
+        message=SimpleNamespace(content=json.dumps(payload)), finish_reason="stop"
+    )])
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(
+        create=lambda **_kwargs: response
+    )))
+
+    result = pipeline.classify_markdown(
+        "Solicitamos almacenamiento en warehouse y cobertura de delivery con gestión de returns.",
+        client=client,
+    )
+
+    assert result.departments_needed == ["warehouse", "lastmile", "reverse"]
+    assert result.confidence == "low"
+    assert any("áreas detectadas" in question for question in result.open_questions)
+
+
 def test_classifier_normalizes_exact_string_monthly_volume():
     payload = classification().model_dump()
     payload["monthly_volume"] = "1,200 shipments per month"

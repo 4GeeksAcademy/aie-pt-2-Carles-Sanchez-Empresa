@@ -195,13 +195,60 @@ def classify_markdown(markdown: str, *, client=None, model: str | None = None) -
         ) from exc
     except ValueError as exc:
         raise ValueError(f"El clasificador devolvió JSON inválido (finish_reason={finish_reason}).") from exc
+    if result.is_rfp:
+        # Treat classifier routing as a suggestion, not as a reason to silently
+        # omit a department whose scope is explicitly present in the request.
+        # These extra sections still require their department's human approval.
+        document_departments = [
+            department_id
+            for department_id in DEPARTMENTS
+            if select_relevant_extracts(source, department_id, result.evidence)
+        ]
+        routed_departments = list(dict.fromkeys([
+            *result.departments_needed,
+            *document_departments,
+        ]))
+        if routed_departments != result.departments_needed:
+            questions = list(result.open_questions)
+            note = "Se añadieron áreas detectadas en el documento para revisión departamental."
+            if note not in questions:
+                questions.append(note)
+            result = result.model_copy(update={
+                "departments_needed": routed_departments,
+                "confidence": "low",
+                "open_questions": questions[:30],
+            })
     _validate_classification(result)
     return result
 
 
 def _normalize_classifier_payload(payload: dict) -> dict:
-    """Normalize safe number representations while leaving unknown quantities unclaimed."""
+    """Normalize safe omissions while ensuring uncertain RFPs reach human review."""
     normalized = dict(payload)
+    # Compatible model endpoints occasionally omit this routing field even in JSON
+    # mode. Its absence is not evidence that a document is not an RFP: retain it
+    # and force human review rather than failing all Celery attempts or discarding it.
+    if "is_rfp" not in normalized:
+        normalized["is_rfp"] = True
+        normalized["confidence"] = "low"
+        reason = normalized.get("reason")
+        note = "El clasificador omitió is_rfp; validar manualmente antes de descartar."
+        normalized["reason"] = f"{reason} {note}".strip() if isinstance(reason, str) else note
+
+    # A positive classification without departmental routing is still a viable
+    # request. Generate reviewable drafts for every supported department instead
+    # of persisting an empty handoff with no approval controls.
+    if normalized.get("is_rfp") is True and not normalized.get("departments_needed"):
+        normalized["departments_needed"] = list(DEPARTMENTS)
+        normalized["confidence"] = "low"
+        questions = normalized.get("open_questions")
+        if not isinstance(questions, list):
+            questions = []
+        note = "Confirma qué áreas de TrackFlow deben preparar una propuesta."
+        if note not in questions:
+            questions.append(note)
+        normalized["open_questions"] = questions
+
     value = normalized.get("monthly_volume")
     if isinstance(value, str):
         candidate = value.strip()

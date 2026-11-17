@@ -48,8 +48,6 @@ interface TicketDetail extends TicketSummary {
   failed_at: string | null;
   metadata: Record<string, unknown> | null;
   sections: TicketSection[];
-  handoff_schema_version: string | null;
-  handoff_payload: Record<string, unknown> | null;
   final_proposal: string | null;
   final_document_available: boolean;
   human_review_comment: string | null;
@@ -263,10 +261,6 @@ export default function RfpIntakePage() {
         <p className="mt-1 text-sm">{t("rfp.subtitle")}</p>
       </header>
 
-      <aside role="note" className="rounded-lg border-l-4 border-amber-600 bg-amber-50 p-4 text-sm text-amber-950">
-        <strong>{t("rfp.access_notice_title")}</strong> {t("rfp.access_notice")}
-      </aside>
-
       {notice && <div role="status" className="rounded-lg border border-emerald-700 bg-emerald-50 p-4 text-sm text-emerald-950">{notice}</div>}
       {error && <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900">{error}</div>}
 
@@ -418,8 +412,8 @@ function TicketResult({ detail, t }: { detail: TicketDetail; t: ReturnType<typeo
               <h3 className="font-semibold text-[#14263a]">{section.department_id}</h3>
               <p className="mt-1 text-sm">{t("rfp.owner")}: {section.owner}</p>
               {section.draft_content && <div className="mt-3 rounded-lg bg-white/70 p-4"><h4 className="font-semibold text-[#14263a]">{t("rfp.draft_title")}</h4><pre className="mt-2 whitespace-pre-wrap break-words text-sm font-sans">{section.draft_content}</pre></div>}
-              {section.approval_status && <div className="mt-3 text-sm"><strong>{t("rfp.approval_label")}:</strong> {approvalStatusLabel(section.approval_status, t)}{section.approver_name ? ` · ${section.approver_name}` : ""}{section.approval_comment ? ` · ${section.approval_comment}` : ""}</div>}
-              {detail.status === "waiting_for_approval" && section.checkpoint_thread_id && section.approval_status !== "approved" && section.approval_status !== "rejected" && <ApprovalControls ticketId={detail.ticket_id} section={section} onUpdated={() => window.dispatchEvent(new CustomEvent("rfp-ticket-refresh", { detail: detail.ticket_id }))} />}
+              {section.approval_status && <div className="mt-3 text-sm"><strong>{t("rfp.approval_label")}:</strong>{section.approval_status === "approved" ? <span className="ml-1 font-semibold text-emerald-800" aria-label={t("rfp.status_approval_approved")}>✓ {approvalStatusLabel(section.approval_status, t)}</span> : section.approval_status === "rejected" ? <span className="ml-1 font-semibold text-red-800" aria-label={t("rfp.status_approval_rejected")}>✕ {approvalStatusLabel(section.approval_status, t)}</span> : <span className="ml-1">{approvalStatusLabel(section.approval_status, t)}</span>}{section.approver_name ? ` · ${section.approver_name}` : ""}{section.approval_comment ? ` · ${section.approval_comment}` : ""}</div>}
+              {section.draft_content && section.checkpoint_thread_id && ["pending", "changes_requested"].includes(section.approval_status ?? "pending") && <ApprovalControls ticketId={detail.ticket_id} section={section} onUpdated={() => window.dispatchEvent(new CustomEvent("rfp-ticket-refresh", { detail: detail.ticket_id }))} />}
               <SectionList label={t("rfp.key_aspects")} items={section.key_aspects} />
               <SectionList label={t("rfp.relevant_extracts")} items={section.relevant_extracts} />
               <SectionList label={t("rfp.open_questions")} items={section.open_questions} />
@@ -435,15 +429,8 @@ function TicketResult({ detail, t }: { detail: TicketDetail; t: ReturnType<typeo
         </section>
       )}
 
-      {detail.handoff_payload && (
-        <section className="rounded-xl border border-[#c89d66] bg-[#f3ddba] p-4 shadow-sm">
-          <h2 className="font-semibold text-[#14263a]">{t("rfp.handoff_title")}</h2>
-          {detail.handoff_schema_version && <p className="mt-1 text-xs">{t("rfp.schema_version")}: {detail.handoff_schema_version}</p>}
-          <pre className="mt-3 max-h-96 overflow-auto rounded-lg bg-[#14263a] p-4 text-xs text-white">{JSON.stringify(detail.handoff_payload, null, 2)}</pre>
-        </section>
-      )}
       {detail.final_proposal && <section className="rounded-xl border border-emerald-700 bg-emerald-50 p-4 shadow-sm"><h2 className="font-semibold text-emerald-950">{t("rfp.final_proposal")}</h2><pre className="mt-3 whitespace-pre-wrap break-words text-sm font-sans">{detail.final_proposal}</pre></section>}
-      {detail.final_document_available && <a className="inline-flex min-h-10 items-center rounded bg-emerald-800 px-4 font-semibold text-white" href={`/api/rfp-intake/tickets/${encodeURIComponent(detail.ticket_id)}/final-document`} target="_blank" rel="noreferrer">{t("rfp.final_document_link")}</a>}
+      {detail.final_document_available && <a className="inline-flex min-h-10 items-center rounded bg-emerald-800 px-4 font-semibold text-white" href={`/api/rfp-intake/tickets/${encodeURIComponent(detail.ticket_id)}/final-document`} download={`rfp-${detail.ticket_id}-final.md`}>{t("rfp.final_document_link")}</a>}
       {detail.status === "needs_human_review" && <HumanReviewControls key={`${detail.ticket_id}:${detail.updated_at}`} detail={detail} onUpdated={() => window.dispatchEvent(new CustomEvent("rfp-ticket-refresh", { detail: detail.ticket_id }))} />}
     </>
   );
@@ -466,6 +453,7 @@ function HumanReviewControls({ detail, onUpdated }: { detail: TicketDetail; onUp
   const [comment, setComment] = useState(detail.human_review_comment ?? "");
   const [monthlyVolume, setMonthlyVolume] = useState(String(detail.metadata?.monthly_volume ?? ""));
   const [currency, setCurrency] = useState(String(detail.metadata?.currency ?? ""));
+  const hasDepartmentRejection = detail.sections.some((section) => section.approval_status === "rejected");
   const [drafts, setDrafts] = useState<Record<string, string>>(() => Object.fromEntries(
     detail.sections.map((section) => [section.department_id, section.draft_content ?? ""]),
   ));
@@ -500,11 +488,12 @@ function HumanReviewControls({ detail, onUpdated }: { detail: TicketDetail; onUp
     </div>
     {detail.sections.map((section) => <label key={section.department_id} className="block text-sm font-semibold">{t("rfp.human_review_draft", { department: section.department_id })}<textarea className="mt-1 block min-h-32 w-full rounded border p-2 font-normal" value={drafts[section.department_id] ?? ""} onChange={(event) => setDrafts((current) => ({ ...current, [section.department_id]: event.target.value }))} /></label>)}
     <label className="block text-sm font-semibold">{t("rfp.human_review_comment")}<textarea className="mt-1 block w-full rounded border p-2 font-normal" rows={2} value={comment} onChange={(event) => setComment(event.target.value)} /></label>
+    {hasDepartmentRejection && <p role="status" className="text-sm font-semibold text-red-800">{t("rfp.final_approval_blocked")}</p>}
     {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
     <div className="flex flex-wrap gap-2">
       <button type="button" disabled={busy} onClick={() => void submit("edit")} className="min-h-10 rounded border border-blue-800 px-3 font-semibold text-blue-950 transition-colors hover:bg-blue-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_save")}</button>
       <button type="button" disabled={busy} onClick={() => void submit("edit", { returnToClient: true })} className="min-h-10 rounded bg-amber-700 px-3 font-semibold text-white transition-colors hover:bg-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_return")}</button>
-      <button type="button" disabled={busy} onClick={() => void submit("approve")} className="min-h-10 rounded bg-emerald-800 px-3 font-semibold text-white transition-colors hover:bg-emerald-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_approve")}</button>
+      <button type="button" disabled={busy || hasDepartmentRejection} onClick={() => void submit("approve")} className="min-h-10 rounded bg-emerald-800 px-3 font-semibold text-white transition-colors hover:bg-emerald-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_approve")}</button>
       <button type="button" disabled={busy} onClick={() => void submit("reject", { disposition: "descartado" })} className="min-h-10 rounded bg-red-800 px-3 font-semibold text-white transition-colors hover:bg-red-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-900 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_discard")}</button>
       <button type="button" disabled={busy} onClick={() => void submit("reject", { disposition: "archived" })} className="min-h-10 rounded border border-slate-700 px-3 font-semibold text-slate-900 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-800 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_archive")}</button>
     </div>
@@ -512,6 +501,7 @@ function HumanReviewControls({ detail, onUpdated }: { detail: TicketDetail; onUp
 }
 
 function ApprovalControls({ ticketId, section, onUpdated }: { ticketId: string; section: TicketSection; onUpdated: () => void }) {
+  const { t } = useTranslation();
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -527,17 +517,19 @@ function ApprovalControls({ ticketId, section, onUpdated }: { ticketId: string; 
       if (!response.ok) throw new Error(await readError(response));
       onUpdated();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se pudo registrar la decisión.");
+      setError(reason instanceof Error ? reason.message : t("rfp.department_review_error"));
     } finally { setBusy(false); }
   };
   return <div className="mt-4 space-y-2 rounded-lg border border-blue-300 bg-blue-50 p-3">
-    <label className="block text-sm font-semibold text-[#14263a]">Decisión humana · {section.department_id}</label>
-    <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={2} className="w-full rounded border border-slate-300 bg-white p-2 text-sm" placeholder="Comentario o cambios solicitados" />
+    <label className="block text-sm font-semibold text-[#14263a]">{t("rfp.department_review_decision", { department: section.department_id })}
+      <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={2} className="mt-1 w-full rounded border border-slate-300 bg-white p-2 text-sm" placeholder={t("rfp.department_review_comment_placeholder")} />
+    </label>
+    <p className="text-xs text-slate-700">{t("rfp.department_reject_requires_reason")}</p>
     {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
     <div className="flex flex-wrap gap-2">
-      <button type="button" disabled={busy} onClick={() => void submit("approve")} className="min-h-10 rounded bg-emerald-800 px-3 text-sm font-semibold text-white disabled:opacity-50">Aprobar</button>
-      <button type="button" disabled={busy} onClick={() => void submit("request_changes")} className="min-h-10 rounded bg-amber-700 px-3 text-sm font-semibold text-white disabled:opacity-50">Solicitar cambios</button>
-      <button type="button" disabled={busy} onClick={() => void submit("reject")} className="min-h-10 rounded bg-red-800 px-3 text-sm font-semibold text-white disabled:opacity-50">Rechazar</button>
+      <button type="button" disabled={busy} onClick={() => void submit("approve")} className="min-h-10 rounded bg-emerald-800 px-3 text-sm font-semibold text-white disabled:opacity-50">{t("rfp.department_approve")}</button>
+      <button type="button" disabled={busy} onClick={() => void submit("request_changes")} className="min-h-10 rounded bg-amber-700 px-3 text-sm font-semibold text-white disabled:opacity-50">{t("rfp.department_request_changes")}</button>
+      <button type="button" disabled={busy || !comment.trim()} onClick={() => void submit("reject")} className="min-h-10 rounded bg-red-800 px-3 text-sm font-semibold text-white disabled:opacity-50">{t("rfp.department_reject")}</button>
     </div>
   </div>;
 }

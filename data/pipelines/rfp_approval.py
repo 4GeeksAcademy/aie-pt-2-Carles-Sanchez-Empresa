@@ -57,7 +57,7 @@ def start_approval(ticket_id: str, *, db_engine) -> dict:
         ticket = session.get(RfpTicket, ticket_id)
         if ticket is None:
             raise ValueError("Ticket RFP no encontrado.")
-        if ticket.status not in {"en_evaluación", "waiting_for_approval"}:
+        if ticket.status not in {"en_evaluación", "needs_human_review", "waiting_for_approval"}:
             raise ValueError("El ticket todavía no está listo para aprobación.")
         sections = _active_sections(session, ticket_id)
         if not sections or any(not section.draft_content for section in sections):
@@ -67,7 +67,15 @@ def start_approval(ticket_id: str, *, db_engine) -> dict:
                     "threads": {section.department_id: section.checkpoint_thread_id for section in sections}}
         from data.pipelines.rfp_approval_graph import pause_for_approval, thread_config
         for section in sections:
-            if section.needs_human_review:
+            # Recovery may be needed after only some durable checkpoints were
+            # created. Preserve those threads; rebuilding them would orphan the
+            # UI's existing decision controls and could invalidate an in-flight
+            # approver's thread.
+            if section.approval_status in {"approved", "rejected"}:
+                continue
+            if section.checkpoint_thread_id:
+                continue
+            if section.approval_status != "changes_requested":
                 section.approval_status = "pending"
             section.approval_iteration += 1
             config = thread_config(ticket_id, section.department_id, section.approval_iteration)
@@ -87,7 +95,10 @@ def start_approval(ticket_id: str, *, db_engine) -> dict:
         session.add(ticket)
         session.commit()
         return {"ticket_id": ticket_id, "status": ticket.status,
-                "threads": {section.department_id: section.checkpoint_thread_id for section in sections}}
+                "threads": {
+                    section.department_id: section.checkpoint_thread_id
+                    for section in sections if section.checkpoint_thread_id
+                }}
 
 
 def _conflicts(sections, metadata):

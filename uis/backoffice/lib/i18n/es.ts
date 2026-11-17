@@ -111,9 +111,7 @@ const es: Record<string, string> = {
   "knowledge.footer_note": "Documentación y datos operativos de TrackFlow.",
 
   "rfp.title": "Intake de RFP",
-  "rfp.subtitle": "Carga una propuesta en PDF y consulta el análisis y el traspaso a los equipos.",
-  "rfp.access_notice_title": "Aviso del mock-up:",
-  "rfp.access_notice": "todos los usuarios autenticados pueden ver los tickets y sus resultados. Restringe estos permisos antes de producción.",
+  "rfp.subtitle": "Carga una propuesta en PDF y consulta su análisis y el estado de aprobación de cada equipo.",
   "rfp.upload_title": "Nueva solicitud",
   "rfp.upload_help": "Solo PDF, hasta 10 MiB. El análisis se ejecuta en segundo plano.",
   "rfp.file_label": "Documento PDF",
@@ -165,8 +163,6 @@ const es: Record<string, string> = {
   "rfp.key_aspects": "Aspectos clave",
   "rfp.relevant_extracts": "Extractos relevantes",
   "rfp.open_questions": "Preguntas abiertas",
-  "rfp.handoff_title": "Traspaso estructurado",
-  "rfp.schema_version": "Versión del esquema",
   "rfp.status_waiting_approval": "Pendiente de aprobación humana",
   "rfp.status_needs_human_review": "Revisión humana final",
   "rfp.status_returned_to_client": "Devuelta al cliente",
@@ -179,6 +175,7 @@ const es: Record<string, string> = {
   "rfp.status_approval_approved": "Aprobada",
   "rfp.status_approval_rejected": "Rechazada",
   "rfp.status_approval_changes_requested": "Cambios solicitados",
+  "rfp.final_approval_blocked": "No se puede aprobar la propuesta final porque un departamento ha rechazado su borrador.",
   "rfp.draft_title": "Borrador de respuesta",
   "rfp.approval_label": "Aprobación",
   "rfp.final_proposal": "Propuesta final",
@@ -200,6 +197,7 @@ const es: Record<string, string> = {
   "rfp.department_approve": "Aprobar",
   "rfp.department_request_changes": "Solicitar cambios",
   "rfp.department_reject": "Rechazar",
+  "rfp.department_reject_requires_reason": "El motivo es obligatorio para rechazar.",
   "rfp.department_review_error": "No se pudo registrar la decisión.",
 
   // ─── Suppliers ───

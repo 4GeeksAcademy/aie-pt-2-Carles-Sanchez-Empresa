@@ -148,7 +148,7 @@ def process_rfp_ticket(self, ticket_id: str) -> dict:
             from data.pipelines.rfp_intake.pipeline import engine as rfp_engine
 
             result["response_generation"] = generate_ticket_responses(ticket_id, db_engine=rfp_engine)
-            if result["response_generation"].get("status") == "en_evaluación":
+            if result["response_generation"].get("status") in {"en_evaluación", "needs_human_review"}:
                 from data.pipelines.rfp_approval import start_approval
 
                 result["approval"] = start_approval(ticket_id, db_engine=rfp_engine)
@@ -160,7 +160,7 @@ def process_rfp_ticket(self, ticket_id: str) -> dict:
             from data.pipelines.rfp_intake.pipeline import engine as rfp_engine
 
             result["response_generation"] = generate_ticket_responses(ticket_id, db_engine=rfp_engine)
-            if result["response_generation"].get("status") == "en_evaluación":
+            if result["response_generation"].get("status") in {"en_evaluación", "needs_human_review"}:
                 from data.pipelines.rfp_approval import start_approval
 
                 result["approval"] = start_approval(ticket_id, db_engine=rfp_engine)

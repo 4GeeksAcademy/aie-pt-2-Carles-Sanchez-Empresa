@@ -111,9 +111,7 @@ const en: Record<string, string> = {
   "knowledge.footer_note": "TrackFlow documentation and operational data.",
 
   "rfp.title": "RFP Intake",
-  "rfp.subtitle": "Upload a proposal PDF and review its analysis and team handoff.",
-  "rfp.access_notice_title": "Mock-up notice:",
-  "rfp.access_notice": "all authenticated users can view tickets and their results. Restrict these permissions before production.",
+  "rfp.subtitle": "Upload a proposal PDF and review its analysis and each team's approval status.",
   "rfp.upload_title": "New request",
   "rfp.upload_help": "PDF only, up to 10 MiB. Analysis runs in the background.",
   "rfp.file_label": "PDF document",
@@ -165,8 +163,6 @@ const en: Record<string, string> = {
   "rfp.key_aspects": "Key aspects",
   "rfp.relevant_extracts": "Relevant extracts",
   "rfp.open_questions": "Open questions",
-  "rfp.handoff_title": "Structured handoff",
-  "rfp.schema_version": "Schema version",
   "rfp.status_waiting_approval": "Awaiting human approval",
   "rfp.status_needs_human_review": "Final human review",
   "rfp.status_returned_to_client": "Returned to client",
@@ -179,6 +175,7 @@ const en: Record<string, string> = {
   "rfp.status_approval_approved": "Approved",
   "rfp.status_approval_rejected": "Rejected",
   "rfp.status_approval_changes_requested": "Changes requested",
+  "rfp.final_approval_blocked": "The final proposal cannot be approved because a department rejected its draft.",
   "rfp.draft_title": "Response draft",
   "rfp.approval_label": "Approval",
   "rfp.final_proposal": "Final proposal",
@@ -200,6 +197,7 @@ const en: Record<string, string> = {
   "rfp.department_approve": "Approve",
   "rfp.department_request_changes": "Request changes",
   "rfp.department_reject": "Reject",
+  "rfp.department_reject_requires_reason": "A reason is required to reject.",
   "rfp.department_review_error": "The decision could not be submitted.",
 
   // ─── Suppliers ───
