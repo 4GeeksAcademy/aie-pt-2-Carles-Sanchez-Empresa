@@ -55,9 +55,12 @@ export default function KnowledgePage(): ReactElement {
       const wsOrigin = configuredWsUrl || `${window.location.origin.replace(/^http/, "ws")}/api`;
       const wsUrl = new URL(wsOrigin, window.location.origin.replace(/^http/, "ws"));
       if (wsUrl.hostname === "api" && window.location.hostname !== "api") {
-        throw new Error("NEXT_PUBLIC_API_WS_URL debe usar un host accesible desde el navegador.");
+        throw new Error("NEXT_PUBLIC_API_WS_URL debe usar un host accesible desde el navegador, no el nombre interno 'api'.");
       }
-      const ws = new WebSocket(`${wsUrl.href.replace(/\/$/, "")}/agent/chat/ws/${sessionId.current}?token=${encodeURIComponent(token)}`);
+      const ws = new WebSocket(
+        `${wsUrl.href.replace(/\/$/, "")}/agent/chat/ws/${sessionId.current}`,
+        ["trackflow-chat-v1", `bearer.${token}`],
+      );
       socket.current = ws;
       ws.onopen = () => { setConnected(true); retryDelay.current = 1000; };
       ws.onclose = () => {

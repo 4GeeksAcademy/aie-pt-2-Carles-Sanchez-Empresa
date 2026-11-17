@@ -15,14 +15,17 @@ services:
     ports:
       - "3000:3000"   # website
       - "3001:3001"   # backoffice
+      - "3002:3002"   # talent pipeline / RR. HH.
     command: >
       sh -c "cd /app/uis/website && npx next dev --webpack --port 3000 &
              cd /app/uis/backoffice && npx next dev --webpack --port 3001 &
+             cd /app/uis/talent-pipeline-tracker && npx next dev --webpack --port 3002 &
              wait"
     volumes:
       # Bind mounts para recarga en caliente
       - ./uis/website:/app/uis/website
       - ./uis/backoffice:/app/uis/backoffice
+      - ./uis/talent-pipeline-tracker:/app/uis/talent-pipeline-tracker
       - ./src:/app/src
       - ./packages/shared:/app/packages/shared
       - ./package.json:/app/package.json
@@ -31,12 +34,15 @@ services:
     environment:
       - NEXT_PUBLIC_API_HOST=api
       - NEXT_PUBLIC_API_PORT=8000
+      - NEXT_PUBLIC_TALENT_PIPELINE_URL=http://localhost:3002
+      - AUTH_API_BASE=http://api:8000
       # Browser-side WebSocket URL: use the published host port, not Docker DNS `api`.
       - NEXT_PUBLIC_API_WS_URL=${NEXT_PUBLIC_API_WS_URL:-ws://localhost:8000}
       # Ruta relativa: el rewrite de next.config.ts proxyea /telemetry → API interna
       - NEXT_PUBLIC_TELEMETRY_ENDPOINT=/telemetry/events
     networks:
       - trackflow-net
+    profiles: [dev]
 
   # ─── Servicio backend (FastAPI) ──────────────────────────
   api:
@@ -53,12 +59,13 @@ services:
       # Exponemos también el módulo Celery para que la API pueda encolar.
       - ./services/celery_app.py:/app/api/celery_app.py:ro
       - ./packages/shared-py:/app/packages/shared-py
-      - ./data/raw:/app/data/raw
-      - ./data/support_agent:/var/lib/trackflow-agent
+      - trackflow-raw:/app/data/raw
+      - trackflow-agent:/var/lib/trackflow-agent
     env_file:
       - .env
     environment:
       - TELEMETRY_ENDPOINT=/telemetry/events
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - QDRANT_URL=http://qdrant:6333
       - SUPPORT_AGENT_STATE_DIR=/var/lib/trackflow-agent
@@ -68,15 +75,15 @@ services:
       - qdrant
     networks:
       - trackflow-net
+    profiles: [dev]
 
   redis:
     image: redis:7-alpine
     container_name: trackflow-redis
     command: redis-server --maxmemory-policy noeviction
-    ports:
-      - "6379:6379"
     networks:
       - trackflow-net
+    profiles: [dev]
 
   worker:
     build:
@@ -90,11 +97,12 @@ services:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - TRACKFLOW_RAW_DATA_DIR=/app/data/raw
     volumes:
-      - ./data/raw:/app/data/raw
+      - trackflow-raw:/app/data/raw
     depends_on:
       - redis
     networks:
       - trackflow-net
+    profiles: [dev]
 
   flower:
     build:
@@ -102,8 +110,6 @@ services:
       dockerfile: services/Dockerfile
     container_name: trackflow-flower
     command: celery -A services.celery_app flower --port=5555 --persistent --db=/data/flower.db
-    ports:
-      - "5555:5555"
     env_file:
       - .env
     environment:
@@ -114,20 +120,23 @@ services:
       - redis
     networks:
       - trackflow-net
+    profiles: [dev]
 
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.15.3
     container_name: trackflow-qdrant
-    ports:
-      - "6333:6333"
-      - "6334:6334"
     volumes:
       - ./data/qdrant:/qdrant/storage
     networks:
       - trackflow-net
+    profiles: [dev]
 
 # ─── Red Docker ────────────────────────────────────────────
 networks:
   trackflow-net:
     name: trackflow-network
     driver: bridge
+
+volumes:
+  trackflow-raw:
+  trackflow-agent:

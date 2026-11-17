@@ -228,7 +228,21 @@ class TrackFlowApi:
     """HTTP client using a private service credential, never the user's OAuth token."""
 
     def __init__(self, *, base_url: str, service_token: str | None = None, timeout: float = 5.0, transport=None):
-        self.base_url = base_url.rstrip("/")
+        parsed_url = httpx.URL(base_url)
+        if (
+            parsed_url.scheme not in {"http", "https"}
+            or not parsed_url.host
+            or parsed_url.username
+            or parsed_url.password
+            or parsed_url.query
+            or parsed_url.fragment
+        ):
+            raise ValueError("TRACKFLOW_API_BASE_URL must be an absolute HTTP(S) origin without credentials or URL parameters")
+        if parsed_url.path not in {"", "/"}:
+            raise ValueError("TRACKFLOW_API_BASE_URL must be an origin without a path")
+        if parsed_url.scheme == "http" and parsed_url.host not in {"localhost", "127.0.0.1", "::1"}:
+            raise ValueError("TRACKFLOW_API_BASE_URL must use HTTPS outside localhost")
+        self.base_url = str(parsed_url.copy_with(path="", query=None, fragment=None)).rstrip("/")
         self.service_token = service_token if service_token is not None else os.getenv("MCP_API_SERVICE_TOKEN", "").strip()
         self.timeout = timeout
         self.transport = transport

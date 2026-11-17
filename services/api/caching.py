@@ -162,13 +162,36 @@ def cached(ttl: float = 30.0) -> Callable:
             if request is not None and request.method != "GET":
                 return await func(*args, **kwargs)
 
-            # Construir clave de caché
+            # Results that depend on the authenticated actor must never be
+            # shared between principals. Include a stable identity in the key
+            # whenever the endpoint declares a current_user dependency.
+            user = kwargs.get("current_user")
+            has_user_dependency = "current_user" in inspect.signature(func).parameters
+            if user is None and has_user_dependency:
+                user = next((value for value in args if isinstance(value, dict) and "role" in value), None)
+                if user is None:
+                    # Be conservative if an authenticated endpoint's actor is
+                    # not visible to this wrapper: skip caching rather than
+                    # serve a possibly shared response.
+                    return await func(*args, **kwargs)
+            identity = None
+            if user is not None:
+                identity = user.get("id") or user.get("user_id") or user.get("sub")
+                if identity is None:
+                    # Fail closed for authenticated response caching: a caller
+                    # without a stable principal must not hit a shared entry.
+                    return await func(*args, **kwargs)
+
+            # Construir clave de caché. Keep public endpoints shared, but
+            # namespace authenticated data by principal.
             if request is not None:
                 cache_key = f"{request.method}:{request.url.path}"
                 if request.url.query:
                     cache_key += f"?{request.url.query}"
             else:
                 cache_key = f"GET:{func.__name__}"
+            if identity is not None:
+                cache_key += f"|user:{identity}"
 
             # Intentar recuperar de caché
             cached_value = _cache.get(cache_key)

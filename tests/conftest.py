@@ -15,6 +15,10 @@ from unittest.mock import patch
 
 import pytest
 
+# Tests use an isolated, deliberately non-production signing key. Set this
+# before application modules (including auth.py) are imported.
+os.environ.setdefault("SECRET_KEY", "test-secret-key-not-secure")
+
 # Añadir services/api al path para poder importar los módulos
 _SERVICES_API = Path(__file__).resolve().parent.parent / "services" / "api"
 sys.path.insert(0, str(_SERVICES_API))

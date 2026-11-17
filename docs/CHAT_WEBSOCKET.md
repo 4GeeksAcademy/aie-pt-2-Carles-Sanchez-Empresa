@@ -2,19 +2,23 @@
 
 The backoffice chat creates an authenticated `ChatSession` with
 `POST /agent/chat/sessions` before opening `WS /agent/chat/ws/{session_id}`.
-The WebSocket authenticates with the existing JWT as the `token` query
-parameter, validates session ownership, and sends a persisted `session_snapshot`
-on every connection. Messages are persisted in the agent state directory's
-`chat.sqlite3`; each session UUID is also the LangGraph conversation/thread ID.
+The WebSocket authenticates with the existing JWT in the `bearer.<JWT>`
+subprotocol, alongside the `trackflow-chat-v1` protocol. It validates session
+ownership and sends a persisted `session_snapshot` on every connection.
+Messages are persisted in the agent state directory's `chat.sqlite3`; each
+session UUID is also the LangGraph conversation/thread ID.
 
 ## Client/server frames
 
 Frames have `{ "event": string, "data": object }` shape. Client events are
 `user_message` (`session_id`, `text`), `interrupt_requested` (`session_id`,
 `new_input`) and `close_session` (`session_id`). Server events include
-`session_snapshot`, `user_message`, `assistant_message`, `token_chunk`
-(`message_id`, `token`, `sequence`), `generation_completed`,
-`generation_interrupted`, `generation_failed` and `protocol_error`.
+`session_snapshot`, `user_message`, `assistant_message`, `token_chunk` (`message_id`, `token`,
+`sequence`), `generation_completed`, `generation_interrupted`,
+`generation_failed` and `protocol_error`.
+
+the available assistant prefix with `interrupted` status, waits for the prior
+If the API process restarts while an assistant row is still marked `streaming`, the next connection marks that row `interrupted` before sending its snapshot.
 
 The producer calls the existing First-line CX graph. The plain RAG answer path
 emits provider stream chunks as they arrive. The structured memory-response
@@ -24,9 +28,7 @@ the client. An interruption sets a cancellation event, closes the provider
 stream where available, persists the available assistant prefix with
 `interrupted` status, waits for the prior worker, and only then starts the
 redirected input. A reconnect reuses the same session and rehydrates stored
-messages before the client accepts new turns. If the API process restarts while
-an assistant row is still marked `streaming`, the next connection marks that
-row `interrupted` before sending its snapshot.
+messages before the client accepts new turns.
 
 ## Deployment notes
 
@@ -37,6 +39,6 @@ ownership before scaling the API horizontally. Configure
 WebSocket origin; otherwise the backoffice uses its own origin at `/api`. The
 backoffice CSP allows `ws:` and `wss:`; production should use `wss:`.
 
-The query token is required by browser WebSocket APIs, so access logs and proxy
-logs must redact the `token` query parameter. Chat messages are scoped to their
-creating user and are not RFP/SSE events.
+The JWT is sent as a WebSocket subprotocol because browser WebSocket APIs cannot
+set an Authorization header. This avoids exposing it in URLs and access logs.
+Chat messages are scoped to their creating user and are not RFP/SSE events.

@@ -111,6 +111,26 @@ class TestListSuppliers:
     """Pruebas para GET /suppliers."""
 
     @pytest.mark.asyncio
+    async def test_list_suppliers_legacy_record_without_updated_at(self, mock_db):
+        """Registros históricos sin updated_at siguen siendo listables."""
+        from routes.suppliers import list_suppliers
+
+        mock_db["suppliers"].insert({
+            "name": "Legacy Carrier",
+            "country": "Spain",
+            "categories": ["carrier_last_mile"],
+            "rate_per_shipment": 5.0,
+            "currency": "EUR",
+            "status": "active",
+        })
+
+        results = await list_suppliers(country=None, category=None)
+
+        assert len(results) == 1
+        assert results[0].name == "Legacy Carrier"
+        assert results[0].updated_at is None
+
+    @pytest.mark.asyncio
     async def test_list_suppliers_all(self, mock_db):
         """
         S-H2: list_suppliers_all
@@ -135,6 +155,7 @@ class TestListSuppliers:
         names = [s.name for s in results]
         assert "Test Carrier Inc." in names
         assert "Transportes España SL" in names
+        assert all(hasattr(supplier, "updated_at") for supplier in results)
 
     @pytest.mark.asyncio
     async def test_list_suppliers_filter_country(self, mock_db):
