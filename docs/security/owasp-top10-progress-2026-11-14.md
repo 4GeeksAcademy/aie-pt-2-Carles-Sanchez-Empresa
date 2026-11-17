@@ -93,3 +93,9 @@ La política de mutaciones administrativas es provisional: debe ser aprobada por
 ## Alcance y cautelas
 
 Todos los cambios son locales y no se han desplegado. No se leyó `.env`, no se modificó el servidor remoto y no se infiere exposición pública de los puertos Compose. Las pruebas realizadas son unitarias/selectivas; no prueban eficacia productiva ni cumplimiento de una rúbrica externa. RGPD/CCPA-CPRA, propietarios, política de acceso y retención requieren validación por responsables correspondientes. Ninguna de las diez categorías se declara cerrada integralmente en esta fase.
+
+## Delta posterior: hardening de host propuesto (2026-11-17)
+
+Se añadieron `infra/security/harden-linux-server.sh` y `collect-linux-hardening-evidence.sh`, con procedimiento en `infra/security/README.es.md`. El aplicador configura `PermitRootLogin no`, usuario de servicio sin login, permisos de directorios y UFW con denegación entrante por defecto y entrada mínima SSH detectado + HTTPS 443 (HTTP 80 opt-in). Hace backup antes de reset UFW, exige confirmación y rechaza Docker activo porque sus puertos publicados pueden sortear UFW. Ver `docs/security/server-hardening-evidence.md`.
+
+**Sin cierre del hallazgo:** no hay host/credenciales aprobados disponibles; no se ejecutó ni SSH ni firewall en un servidor, no hay salida del colector y no se verificó firewall cloud. A05 sigue parcial y estos controles permanecen no verificados hasta adjuntar evidencia objetivo y probar una segunda sesión SSH/aplicación.
