@@ -72,8 +72,16 @@ def agent_query(
             return JSONResponse(status_code=401, content={
                 "detail": {"message": "Debes iniciar sesión con una cuenta activa para consultar datos de TrackFlow.", "run_id": None},
             }, headers={"WWW-Authenticate": "Bearer"})
+        # Never send the legacy HS256 browser bearer to MCP. A future deployed
+        # delegation path may populate this state with a short-lived RS256 token;
+        # until then, configured MCP operations fail closed without a bearer.
+        mcp_token = getattr(request.state, "support_agent_mcp_token", None)
+        if os.getenv("SUPPORT_AGENT_MCP_URL"):
+            token = mcp_token
+        else:
+            token = credentials.credentials if credentials else None
         result = request.app.state.support_agent.run(
-            payload.question, token=credentials.credentials if credentials else None,
+            payload.question, token=token,
             actor_id=str(current_user["id"]),
             conversation_id=payload.conversation_id,
         )

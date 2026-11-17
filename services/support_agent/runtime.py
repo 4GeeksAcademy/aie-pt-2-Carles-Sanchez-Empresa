@@ -233,7 +233,7 @@ class AgentRuntime:
                 unavailable = isinstance(exc, (
                     ConnectionError, TimeoutError, APIError, httpx.HTTPError,
                     ResponseHandlingException, UnexpectedResponse,
-                ))
+                )) or type(exc).__name__ in {"MCPError", "McpError", "MCPException"}
                 message = "Servicio de conocimiento no disponible temporalmente." if unavailable else "Error interno al procesar la consulta."
                 trace = self.traces.get(run_id)
                 trace.update(status="failed", error={"code": "dependency_unavailable" if unavailable else "internal_error"}, finished_at=timestamp())

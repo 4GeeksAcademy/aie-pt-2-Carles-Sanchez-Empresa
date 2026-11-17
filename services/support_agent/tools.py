@@ -14,7 +14,16 @@ INVENTORY_TIMEOUT_SECONDS = 5.0
 class TicketInput(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
 
-    ticket_id: int = Field(gt=0)
+    ticket_id: int | None = Field(default=None, gt=0)
+    status: Literal["open", "in_progress", "resolved", "discarded"] | None = None
+
+    @model_validator(mode="after")
+    def validate_query(self):
+        if self.ticket_id is None and self.status is None:
+            raise ValueError("Specify an incident ID or status filter.")
+        if self.ticket_id is not None and self.status is not None:
+            raise ValueError("An incident ID lookup cannot include a status filter.")
+        return self
 
 
 class Incident(BaseModel):
@@ -31,16 +40,32 @@ class Incident(BaseModel):
     updated_at: str
 
 
+class IncidentSummary(BaseModel):
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    id: int = Field(gt=0)
+    title: str
+    category: str
+    status: str
+    origin: str
+    branch: str
+    created_at: str
+
+
 class TicketResult(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
 
     outcome: Literal["found", "not_found", "timeout", "unauthorized", "unavailable", "invalid_response"]
     incident: Incident | None = None
+    incidents: list[IncidentSummary] = Field(default_factory=list, max_length=10)
 
     @model_validator(mode="after")
     def validate_payload(self):
-        if (self.outcome == "found") != (self.incident is not None):
-            raise ValueError("Only a found result may contain an incident.")
+        has_data = self.incident is not None or bool(self.incidents)
+        if (self.outcome == "found") != has_data:
+            raise ValueError("Only a found result may contain incident data.")
+        if self.incident is not None and self.incidents:
+            raise ValueError("A result cannot contain both one incident and an incident list.")
         return self
 
 
@@ -62,19 +87,30 @@ class IncidentTool:
                     base_url=self.base_url, transport=self.transport,
                     timeout=httpx.Timeout(INCIDENT_TIMEOUT_SECONDS), follow_redirects=False,
                 ) as client:
-                    response = await client.get(
-                        f"/api/incidents/{payload.ticket_id}",
-                        headers={"Authorization": f"Bearer {token}"},
-                    )
-                    if response.status_code == 404:
-                        return TicketResult(outcome="not_found")
+                    path = f"/api/incidents/{payload.ticket_id}" if payload.ticket_id else "/api/incidents"
+                    params = {"status": payload.status} if payload.status else None
+                    response = await client.get(path, params=params, headers={"Authorization": f"Bearer {token}"})
+                    if payload.ticket_id:
+                        if response.status_code == 404:
+                            return TicketResult(outcome="not_found")
+                        if response.status_code in {401, 403}:
+                            return TicketResult(outcome="unauthorized")
+                        response.raise_for_status()
+                        incident = Incident.model_validate(response.json())
+                        if incident.id != payload.ticket_id:
+                            return TicketResult(outcome="invalid_response")
+                        return TicketResult(outcome="found", incident=incident)
+                    if not payload.status:
+                        return TicketResult(outcome="invalid_response")
                     if response.status_code in {401, 403}:
                         return TicketResult(outcome="unauthorized")
                     response.raise_for_status()
-                    incident = Incident.model_validate(response.json())
-                    if incident.id != payload.ticket_id:
+                    incidents = TypeAdapter(list[IncidentSummary]).validate_python(response.json())
+                    if payload.status and any(item.status != payload.status for item in incidents):
                         return TicketResult(outcome="invalid_response")
-                    return TicketResult(outcome="found", incident=incident)
+                    if not incidents:
+                        return TicketResult(outcome="not_found")
+                    return TicketResult(outcome="found", incidents=incidents[:10])
         except (TimeoutError, httpx.TimeoutException):
             return TicketResult(outcome="timeout")
         except (ValidationError, ValueError):
@@ -91,6 +127,8 @@ class InventoryInput(BaseModel):
     product_name: str | None = Field(default=None, min_length=1, max_length=200)
     warehouse: Literal["LA", "ZGZ"] | None = None
     category: Literal["fashion", "electronics", "cosmetics"] | None = None
+    low_stock: bool = False
+    low_stock_threshold: int | None = Field(default=None, ge=0, le=1000000)
 
     @field_validator("sku_code", "product_name")
     @classmethod
@@ -103,7 +141,13 @@ class InventoryInput(BaseModel):
 
     @model_validator(mode="after")
     def validate_identifier(self):
-        if sum(value is not None for value in (self.product_id, self.sku_code, self.product_name)) != 1:
+        identifier_count = sum(value is not None for value in (self.product_id, self.sku_code, self.product_name))
+        if self.low_stock:
+            if identifier_count:
+                raise ValueError("Low-stock listings cannot include a single-product identifier.")
+            if self.low_stock_threshold is None:
+                raise ValueError("Low-stock listings require an explicit threshold.")
+        elif identifier_count != 1 or self.low_stock_threshold is not None:
             raise ValueError("Select exactly one product ID, SKU code or name.")
         return self
 
@@ -130,7 +174,7 @@ class InventoryResult(BaseModel):
 
     @model_validator(mode="after")
     def validate_payload(self):
-        if self.outcome == "found" and len(self.products) == 1:
+        if self.outcome == "found" and 1 <= len(self.products) <= 10:
             return self
         if self.outcome == "ambiguous" and len(self.products) >= 2:
             return self
@@ -157,6 +201,7 @@ class InventoryTool:
             async with asyncio.timeout(INVENTORY_TIMEOUT_SECONDS):
                 params = {key: value for key, value in {
                     "warehouse": payload.warehouse, "category": payload.category,
+                    "low_stock_threshold": payload.low_stock_threshold if payload.low_stock else None,
                 }.items() if value is not None}
                 path = f"/inventory/products/{payload.product_id}" if payload.product_id else "/inventory/products"
                 async with httpx.AsyncClient(
@@ -179,6 +224,8 @@ class InventoryTool:
                     products = [product for product in products
                                 if (not payload.warehouse or product.warehouse == payload.warehouse)
                                 and (not payload.category or product.category == payload.category)]
+                    if payload.low_stock:
+                        products = [product for product in products if product.current_stock < payload.low_stock_threshold]
                     if payload.sku_code:
                         products = [product for product in products if product.sku_code.casefold() == payload.sku_code.casefold()]
                     if payload.product_name:
@@ -186,7 +233,10 @@ class InventoryTool:
                         products = exact or [product for product in products if payload.product_name.casefold() in product.name.casefold()]
                     if not products:
                         return InventoryResult(outcome="not_found")
-                    return InventoryResult(outcome="found" if len(products) == 1 else "ambiguous", products=products[:10])
+                    return InventoryResult(
+                        outcome="found" if payload.low_stock or len(products) == 1 else "ambiguous",
+                        products=products[:10],
+                    )
         except (TimeoutError, httpx.TimeoutException):
             return InventoryResult(outcome="timeout")
         except (ValidationError, ValueError):
@@ -244,13 +294,23 @@ class MCPTrackFlowTools:
         if token is not None and not token:
             return TicketResult(outcome="unauthorized")
         try:
+            if payload.ticket_id is not None:
+                raw = self._structured(self._call(
+                    "incidents_get", {"incident_id": payload.ticket_id}, token=token,
+                ))
+                result = TicketResult(outcome="found", incident=Incident.model_validate(raw))
+                if result.incident.id != payload.ticket_id:
+                    return TicketResult(outcome="invalid_response")
+                return result
             raw = self._structured(self._call(
-                "incidents_get", {"incident_id": payload.ticket_id}, token=token,
+                "incidents_list", {"status": payload.status}, token=token,
             ))
-            result = TicketResult(outcome="found", incident=Incident.model_validate(raw))
-            if result.incident.id != payload.ticket_id:
+            incidents = TypeAdapter(list[IncidentSummary]).validate_python(raw["result"])
+            if payload.status and any(incident.status != payload.status for incident in incidents):
                 return TicketResult(outcome="invalid_response")
-            return result
+            if not incidents:
+                return TicketResult(outcome="not_found")
+            return TicketResult(outcome="found", incidents=incidents[:10])
         except PermissionError:
             return TicketResult(outcome="unauthorized")
         except TimeoutError:
@@ -275,7 +335,7 @@ class MCPTrackFlowTools:
                     "inventory_list_products", {
                         key: value for key, value in {"warehouse": payload.warehouse, "category": payload.category}.items()
                         if value is not None
-                    }, token=token,
+                    } | ({"low_stock_threshold": payload.low_stock_threshold} if payload.low_stock else {}), token=token,
                 ))
                 products = TypeAdapter(list[InventoryProduct]).validate_python(raw["result"])
             products = [product for product in products
@@ -286,9 +346,16 @@ class MCPTrackFlowTools:
             if payload.product_name:
                 exact = [product for product in products if product.name.casefold() == payload.product_name.casefold()]
                 products = exact or [product for product in products if payload.product_name.casefold() in product.name.casefold()]
+            if payload.low_stock:
+                products = [product for product in products if product.current_stock < payload.low_stock_threshold]
+                if any(product.current_stock >= payload.low_stock_threshold for product in products):
+                    return InventoryResult(outcome="invalid_response")
             if not products:
                 return InventoryResult(outcome="not_found")
-            return InventoryResult(outcome="found" if len(products) == 1 else "ambiguous", products=products[:10])
+            return InventoryResult(
+                outcome="found" if len(products) == 1 or payload.low_stock else "ambiguous",
+                products=products[:10],
+            )
         except PermissionError:
             return InventoryResult(outcome="unauthorized")
         except TimeoutError:
