@@ -67,6 +67,22 @@ SKU_LIST_OUTPUT_SCHEMA = {
     "required": ["result"],
     "additionalProperties": False,
 }
+INCIDENT_SUMMARY_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "integer", "minimum": 1}, "title": {"type": "string"},
+        "category": {"type": "string"}, "status": {"type": "string"},
+        "origin": {"type": "string"}, "branch": {"type": "string"},
+        "created_at": {"type": "string", "format": "date-time"},
+    },
+    "required": ["id", "title", "category", "status", "origin", "branch", "created_at"],
+    "additionalProperties": False,
+}
+INCIDENT_LIST_OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {"result": {"type": "array", "items": INCIDENT_SUMMARY_SCHEMA}},
+    "required": ["result"], "additionalProperties": False,
+}
 
 
 class ToolExecutionError(ToolError):
@@ -201,6 +217,7 @@ class InventoryQueryInput(BaseModel):
     product_id: int | None = Field(default=None, gt=0, description="ID numérico del SKU; exclusivo con filtros de lista.")
     warehouse: Literal["LA", "ZGZ"] | None = Field(default=None, description="Almacén: LA o ZGZ.")
     category: Literal["fashion", "electronics", "cosmetics"] | None = Field(default=None, description="Categoría del SKU.")
+    low_stock_threshold: int | None = Field(default=None, ge=0, le=1000000, description="Filtrar stock actual estrictamente inferior a este umbral.")
 
 
 class ServiceError(RuntimeError):
@@ -268,6 +285,7 @@ class _ToolScopeHttpMiddleware(BaseHTTPMiddleware):
         self.required_by_tool = {
             "incidents_create": (INCIDENT_WRITE_SCOPE,),
             "incidents_get": (INCIDENT_SCOPE,),
+            "incidents_list": (INCIDENT_SCOPE,),
             "incidents_update_status": (INCIDENT_WRITE_SCOPE,),
             "inventory_list_products": (INVENTORY_READ_SCOPE,),
             "inventory_get_product": (INVENTORY_READ_SCOPE,),
@@ -329,7 +347,8 @@ def create_mcp_app(*, api: TrackFlowApi | None = None, auth: MCPAuth | None = No
         name="TrackFlow Operations",
         instructions=(
             "TrackFlow operations tools. Use incidents_create to create incidents, "
-            "incidents_get to retrieve full incident state, incidents_update_status for "
+            "incidents_get to retrieve full incident state, incidents_list to list incidents by status, "
+            "incidents_update_status for "
             "lifecycle transitions, inventory_list_products/inventory_get_product for reads. "
             "Inventory mutations are unsupported and explicitly rejected."
         ),
@@ -385,6 +404,34 @@ def create_mcp_app(*, api: TrackFlowApi | None = None, auth: MCPAuth | None = No
         return await _call_api(api, "GET", f"/api/incidents/{incident_id}")
 
     @mcp.tool(
+        name="incidents_list",
+        output_schema=INCIDENT_LIST_OUTPUT_SCHEMA,
+        description=(
+            "List TrackFlow incidents using GET /api/incidents, optionally filtered by status "
+            "open|in_progress|resolved|discarded. Returns at most ten matching summary records. "
+            "Requires OAuth scope incidents:read; this tool is read-only."
+        ),
+    )
+    @_audited_tool(auth, "incidents_list")
+    async def incidents_list(
+        status: Literal["open", "in_progress", "resolved", "discarded"] | None = None,
+    ) -> dict[str, list[dict]]:
+        """List at most ten incidents, optionally filtered by lifecycle status."""
+        _authorized_token(auth, INCIDENT_SCOPE)
+        result = await _call_api(api, "GET", "/api/incidents", params={"status": status} if status else None)
+        if not isinstance(result, list):
+            raise ServiceError("invalid_incident_response")
+        summaries = []
+        for item in result[:10]:
+            try:
+                summaries.append({key: item[key] for key in INCIDENT_SUMMARY_SCHEMA["required"]})
+            except (TypeError, KeyError):
+                raise ServiceError("invalid_incident_response") from None
+        if status and any(item["status"] != status for item in summaries):
+            raise ServiceError("invalid_incident_response")
+        return {"result": summaries}
+
+    @mcp.tool(
         name="incidents_update_status",
         output_schema=INCIDENT_RESPONSE_SCHEMA,
         description=(
@@ -413,7 +460,8 @@ def create_mcp_app(*, api: TrackFlowApi | None = None, auth: MCPAuth | None = No
         output_schema=SKU_LIST_OUTPUT_SCHEMA,
         description=(
             "Read-only query to GET /inventory/products with optional warehouse (LA|ZGZ) and category "
-            "(fashion|electronics|cosmetics) filters. Requires OAuth scope inventory:read. Returns a list of SKUResponse "
+            "(fashion|electronics|cosmetics) filters. Optional low_stock_threshold returns only products whose "
+            "current_stock is strictly below the threshold (not equal). Requires OAuth scope inventory:read. Returns a list of SKUResponse "
             "objects: id, name, sku_code, client_name, category, warehouse, threshold_min, current_stock, created_at. "
             "This tool cannot create, receive, dispatch, delete, or otherwise modify inventory."
         ),
@@ -422,15 +470,20 @@ def create_mcp_app(*, api: TrackFlowApi | None = None, auth: MCPAuth | None = No
     async def inventory_list_products(
         warehouse: Literal["LA", "ZGZ"] | None = None,
         category: Literal["fashion", "electronics", "cosmetics"] | None = None,
+        low_stock_threshold: int | None = None,
     ) -> dict[str, list[dict]]:
         """List SKUs and calculated stock using only the existing API GET endpoint."""
         _authorized_token(auth, INVENTORY_READ_SCOPE)
-        query = InventoryQueryInput(warehouse=warehouse, category=category)
+        query = InventoryQueryInput(warehouse=warehouse, category=category, low_stock_threshold=low_stock_threshold)
         result = await _call_api(
             api, "GET", "/inventory/products", params=query.model_dump(exclude_none=True),
         )
         if not isinstance(result, list):
             raise ServiceError("invalid_inventory_response")
+        if query.low_stock_threshold is not None:
+            if any(not isinstance(item, dict) or type(item.get("current_stock")) is not int for item in result):
+                raise ServiceError("invalid_inventory_response")
+            result = [item for item in result if item["current_stock"] < query.low_stock_threshold]
         # The declared MCP output schema is an object with a `result` array;
         # return that exact shape so FastMCP can validate/serialize it.
         return {"result": result}

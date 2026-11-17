@@ -7,20 +7,44 @@
 
 # Dependencias
 node_modules/
+**/node_modules/
+**/.venv/
+**/venv/
 
 # Build / caché
 .next/
+**/.next/
+**/dist/
+**/coverage/
+**/.turbo/
 __pycache__/
+**/__pycache__/
 *.pyc
 *.pyo
 *.egg-info/
+**/*.egg-info/
 build/
+**/build/
 dist/
 
 # Entorno
 .env*
 venv/
 .venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.db
+
+# Generated data and local runtime state (mounted into Compose when needed)
+data/qdrant/
+data/flower/
+data/support_agent/
+data/raw/
+data/*checkpoint*.sqlite*
 
 # Control de versiones
 .git/

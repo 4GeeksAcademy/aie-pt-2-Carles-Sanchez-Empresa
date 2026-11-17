@@ -31,3 +31,7 @@ htmlcov/
 *.tfstate
 *.tfstate.backup
 node_modules
+*.db
+*.sqlite
+*.sqlite3
+data/support_agent/*.sqlite3*

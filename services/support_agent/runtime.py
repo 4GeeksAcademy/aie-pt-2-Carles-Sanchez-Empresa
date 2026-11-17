@@ -5,6 +5,7 @@ import json
 import sqlite3
 import threading
 import time
+import contextvars
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -22,6 +23,7 @@ from .graph import (
     after_inventory, after_inventory_fallback,
 )
 from .memory import MemoryStore
+from .chat_store import ChatStore
 
 
 class AgentRunError(Exception):
@@ -91,6 +93,7 @@ class AgentRuntime:
         state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.traces = TraceStore(state_dir / "traces.sqlite3")
         self.memory = MemoryStore(state_dir / "agent_memory.sqlite3")
+        self.chat_store = ChatStore(state_dir / "chat.sqlite3")
         self.connection = sqlite3.connect(state_dir / "checkpoints.sqlite3", check_same_thread=False)
         self.checkpointer = SqliteSaver(self.connection)
         self.lock = threading.RLock()
@@ -195,6 +198,31 @@ class AgentRuntime:
                   "conversation_id": thread_id}
         return self._execute(inputs, thread_id, token=token)
 
+    def stream(
+        self, question: str, *, token: str | None = None, actor_id: str | None = None,
+        conversation_id: str | None = None, on_token=None, on_stream=None,
+        cancel_event=None,
+    ) -> dict:
+        """Invoke the graph with callbacks for any provider token streams."""
+        from data.pipelines import rag
+        from . import memory as memory_module
+
+        try:
+            thread_id = validate_id(conversation_id)
+        except ValueError as exc:
+            raise ValueError("Invalid conversation_id") from exc
+
+        rag_callbacks = rag.STREAM_CALLBACKS.set((on_token, on_stream))
+        memory_callbacks = memory_module.STREAM_CALLBACKS.set((on_token, on_stream))
+        try:
+            return self.run(
+                question, token=token, actor_id=actor_id,
+                conversation_id=thread_id,
+            )
+        finally:
+            rag.STREAM_CALLBACKS.reset(rag_callbacks)
+            memory_module.STREAM_CALLBACKS.reset(memory_callbacks)
+
     def resume(self, thread_id: str, *, token: str | None = None) -> dict:
         thread_id = validate_id(thread_id)
         with self.lock:
@@ -233,7 +261,7 @@ class AgentRuntime:
                 unavailable = isinstance(exc, (
                     ConnectionError, TimeoutError, APIError, httpx.HTTPError,
                     ResponseHandlingException, UnexpectedResponse,
-                ))
+                )) or type(exc).__name__ in {"MCPError", "McpError", "MCPException"}
                 message = "Servicio de conocimiento no disponible temporalmente." if unavailable else "Error interno al procesar la consulta."
                 trace = self.traces.get(run_id)
                 trace.update(status="failed", error={"code": "dependency_unavailable" if unavailable else "internal_error"}, finished_at=timestamp())
@@ -249,4 +277,5 @@ class AgentRuntime:
     def close(self) -> None:
         with self.lock:
             self.memory.close()
+            self.chat_store.close()
             self.connection.close()
