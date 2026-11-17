@@ -208,9 +208,12 @@ legacy knowledge endpoint remains available for other callers.
 ## Persistence and inspection
 
 `SUPPORT_AGENT_STATE_DIR` optionally selects the state directory. The local
-default is `~/.local/state/trackflow/support_agent`. Compose maps
-`./data/support_agent` to `/var/lib/trackflow-agent`, surviving container
-recreation. Do not delete that directory if runs must remain inspectable.
+default is `~/.local/state/trackflow/support_agent`. Compose mounts the named
+Docker volume `trackflow-agent` at `/var/lib/trackflow-agent`; it survives
+container recreation and is writable by the non-root `trackflow` user. Do not
+remove the volume if runs must remain inspectable. The legacy host directory
+`data/support_agent` is not mounted by Compose; if it contains state from an
+older setup, preserve it until it has been reviewed or migrated explicitly.
 
 - `checkpoints.sqlite3`: official LangGraph `SqliteSaver`, checkpointing at
   superstep boundaries (one node per step in this graph).
