@@ -150,9 +150,7 @@ def _notification_payload(ticket: RfpTicket) -> dict:
         "client_name": None,
         "client_country": None,
         "services_requested": [],
-        # API/database retain the Spanish business state; the wire uses the
-        # English equivalent specified by the notification contract.
-        "status": "analyzing" if ticket.status == "analizando" else ticket.status,
+        "status": ticket.status,
         "created_at": _iso(ticket.created_at),
     }
 
@@ -176,10 +174,14 @@ async def stream_rfp_ticket_events(
         raise HTTPException(status_code=400, detail="Last-Event-ID debe ser un entero no negativo.") from exc
 
     if cursor is None:
-        # Replay from the beginning on first connection. The browser persists
-        # every received id; defaulting to "now" here could lose events if the
-        # initial connection drops before the client receives its first frame.
-        cursor = 0
+        # A new client subscribes from now on; only clients that send a durable
+        # Last-Event-ID request replay previously persisted notifications.
+        latest_event = session.exec(
+            select(RfpNotificationEvent.id)
+            .order_by(RfpNotificationEvent.id.desc())
+            .limit(1)
+        ).first()
+        cursor = latest_event or 0
 
     async def event_stream():
         import asyncio
