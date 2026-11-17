@@ -20,6 +20,12 @@ printf 'Kernel: %s\n\n' "$(uname -sr)"
 if command -v sshd >/dev/null 2>&1; then
   effective="$(sudo sshd -T 2>/dev/null | awk '$1 == "permitrootlogin" {print $2; exit}')"
   check 'SSH PermitRootLogin=no' "$( [[ "$effective" == no ]] && echo PASS || echo FAIL )" "effective=${effective:-unknown}"
+  ops_settings="$(sudo sshd -T -C "user=trackflow-ops,host=$(hostname -f 2>/dev/null || hostname),addr=127.0.0.1" 2>/dev/null)"
+  auth_methods="$(printf '%s\n' "$ops_settings" | awk '$1 == "authenticationmethods" {print $2; exit}')"
+  pubkey_auth="$(printf '%s\n' "$ops_settings" | awk '$1 == "pubkeyauthentication" {print $2; exit}')"
+  password_auth="$(printf '%s\n' "$ops_settings" | awk '$1 == "passwordauthentication" {print $2; exit}')"
+  keyboard_auth="$(printf '%s\n' "$ops_settings" | awk '$1 == "kbdinteractiveauthentication" {print $2; exit}')"
+  check 'Operator SSH public-key only' "$( [[ "$auth_methods" == publickey && "$pubkey_auth" == yes && "$password_auth" == no && "$keyboard_auth" == no ]] && echo PASS || echo FAIL )" "methods=${auth_methods:-unknown}; pubkey=${pubkey_auth:-unknown}; password=${password_auth:-unknown}; keyboard-interactive=${keyboard_auth:-unknown}"
 else
   check 'OpenSSH server config' FAIL 'sshd not found'
 fi
@@ -47,6 +53,26 @@ else
   check 'UFW installed' FAIL 'ufw not found'
 fi
 
+if id trackflow-ops >/dev/null 2>&1; then
+  ops_shell="$(getent passwd trackflow-ops | cut -d: -f7)"
+  ops_groups="$(id -nG trackflow-ops)"
+  check 'trackflow-ops operator account' "$( [[ "$ops_shell" == /bin/bash && " $ops_groups " == *' sudo '* ]] && echo PASS || echo FAIL )" "shell=${ops_shell:-unknown}; groups=${ops_groups:-unknown}"
+  if [[ -f /home/trackflow-ops/.ssh/authorized_keys ]]; then
+    metadata="$(stat -c '%U:%G %a' /home/trackflow-ops/.ssh/authorized_keys)"
+    check 'Operator authorized_keys mode' "$( [[ "$metadata" == 'trackflow-ops:trackflow-ops 600' ]] && echo PASS || echo FAIL )" "$metadata"
+  else
+    check 'Operator authorized_keys mode' FAIL 'missing'
+  fi
+  if [[ -d /home/trackflow-ops/.ssh ]]; then
+    metadata="$(stat -c '%U:%G %a' /home/trackflow-ops/.ssh)"
+    check 'Operator .ssh directory mode' "$( [[ "$metadata" == 'trackflow-ops:trackflow-ops 700' ]] && echo PASS || echo FAIL )" "$metadata"
+  else
+    check 'Operator .ssh directory mode' FAIL 'missing'
+  fi
+else
+  check 'trackflow-ops operator account' FAIL 'account not found'
+fi
+
 if id trackflow-svc >/dev/null 2>&1; then
   shell="$(getent passwd trackflow-svc | cut -d: -f7)"
   check 'trackflow-svc service account' "$( [[ "$shell" == */nologin ]] && echo PASS || echo FAIL )" "shell=${shell:-unknown}"
@@ -55,12 +81,12 @@ else
   check 'trackflow-svc service account' FAIL 'account not found'
 fi
 
-for path in /var/lib/trackflow /opt/trackflow /var/log/trackflow; do
+for path in /var/lib/trackflow /opt/trackflow /etc/trackflow /var/log/trackflow; do
   if [[ -d "$path" ]]; then
     metadata="$(stat -c '%U:%G %a' "$path")"
-    expected_owner=trackflow-svc
-    [[ "$path" == /opt/trackflow ]] && expected_owner=root
-    check "Directory ${path}" "$( [[ "$metadata" == "${expected_owner}:trackflow-svc 750" ]] && echo PASS || echo FAIL )" "$metadata"
+    expected="trackflow-svc:trackflow-svc 750"
+    [[ "$path" == /opt/trackflow || "$path" == /etc/trackflow ]] && expected="root:trackflow-svc 750"
+    check "Directory ${path}" "$( [[ "$metadata" == "$expected" ]] && echo PASS || echo FAIL )" "$metadata"
   else
     check "Directory ${path}" FAIL 'missing'
   fi
