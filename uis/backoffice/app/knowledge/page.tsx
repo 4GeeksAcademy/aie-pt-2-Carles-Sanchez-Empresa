@@ -51,13 +51,20 @@ export default function KnowledgePage(): ReactElement {
       }
       const token = getToken();
       if (!token) throw new Error("Sesión expirada. Inicia sesión de nuevo.");
+      // In Docker, `localhost:8000` from the browser is the host-published API
+      // port; the container-only hostname `api` must never be exposed here.
+      // Otherwise use the same-origin API path only when an upstream proxy is
+      // explicitly configured to support WebSocket upgrades.
       const configuredWsUrl = process.env.NEXT_PUBLIC_API_WS_URL?.trim();
       const wsOrigin = configuredWsUrl || `${window.location.origin.replace(/^http/, "ws")}/api`;
       const wsUrl = new URL(wsOrigin, window.location.origin.replace(/^http/, "ws"));
       if (wsUrl.hostname === "api" && window.location.hostname !== "api") {
-        throw new Error("NEXT_PUBLIC_API_WS_URL debe usar un host accesible desde el navegador.");
+        throw new Error("NEXT_PUBLIC_API_WS_URL debe usar un host accesible desde el navegador, no el nombre interno 'api'.");
       }
-      const ws = new WebSocket(`${wsUrl.href.replace(/\/$/, "")}/agent/chat/ws/${sessionId.current}?token=${encodeURIComponent(token)}`);
+      const ws = new WebSocket(
+        `${wsUrl.href.replace(/\/$/, "")}/agent/chat/ws/${sessionId.current}`,
+        ["trackflow-chat-v1", `bearer.${token}`],
+      );
       socket.current = ws;
       ws.onopen = () => { setConnected(true); retryDelay.current = 1000; };
       ws.onclose = () => {
@@ -77,7 +84,10 @@ export default function KnowledgePage(): ReactElement {
           const snapshotMessages = data.messages as ChatMessage[];
           setMessages(snapshotMessages);
           setLoading(snapshotMessages.some((item) => item.status === "streaming"));
-        } else if ((frame.event === "user_message" || frame.event === "assistant_message") && typeof data.message_id === "string") {
+        } else if (frame.event === "user_message" && typeof data.message_id === "string") {
+          setMessages((current) => [...current.filter((item) => item.message_id !== data.message_id), data as unknown as ChatMessage]);
+          setLoading(true);
+        } else if (frame.event === "assistant_message" && typeof data.message_id === "string") {
           setMessages((current) => [...current.filter((item) => item.message_id !== data.message_id), data as unknown as ChatMessage]);
           setLoading(true);
         } else if (frame.event === "token_chunk" && typeof data.message_id === "string" && typeof data.token === "string") {

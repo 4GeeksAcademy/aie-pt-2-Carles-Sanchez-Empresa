@@ -35,6 +35,10 @@ _TRACKING_LOOKUP = re.compile(
     r"(?i)\b(?:estado|situaci[oó]n|d[oó]nde est[aá]|track(?:ing)?)\b.{0,60}\b(?:pedido|env[ií]o|paquete|shipment|order|tracking)\b"
     r"|\b(?:pedido|env[ií]o|paquete|shipment|order|tracking)\b.{0,60}\b(?:estado|situaci[oó]n|d[oó]nde est[aá]|track(?:ing)?)\b"
 )
+_DELIVERY_ADDRESS_LOOKUP = re.compile(
+    r"(?i)\b(?:direcci[oó]n|address)\b.{0,80}\b(?:entrega|delivery|pedido|order|env[ií]o|shipment)\b"
+    r"|\b(?:entrega|delivery|pedido|order|env[ií]o|shipment)\b.{0,80}\b(?:direcci[oó]n|address)\b"
+)
 _COUNTRY_MISMATCH = re.compile(
     r"(?i)\b(?:pol[ií]tica|devoluci[oó]n|return)\b.{0,100}\b(?:espa[nñ]a|spain)\b.{0,100}\b(?:los [aá]ngeles|california|united states|estados unidos|ee\.?\s*uu\.?)\b"
     r"|\b(?:los [aá]ngeles|california|united states|estados unidos|ee\.?\s*uu\.?)\b.{0,100}\b(?:pol[ií]tica|devoluci[oó]n|return)\b.{0,100}\b(?:espa[nñ]a|spain)\b"
@@ -65,6 +69,12 @@ class InputDecision:
 
 def inspect_input(text: str) -> InputDecision:
     """Apply deterministic priority: jailbreak, personal-use, allowed small talk, then business flow."""
+    if _DELIVERY_ADDRESS_LOOKUP.search(text):
+        return InputDecision(
+            "reject", "security",
+            "No puedo consultar ni revelar una dirección de entrega sin verificar que el pedido pertenece a la sesión autenticada. No dispongo de una herramienta de pedidos con esa verificación; contacta con soporte autenticado.",
+            "delivery_address_authorization",
+        )
     if any(pattern.search(text) for pattern in _JAILBREAK_PATTERNS):
         return InputDecision("reject", "security", JAILBREAK_REFUSAL, "instruction_change")
     if any(pattern.search(text) for pattern in _PERSONAL_PATTERNS):

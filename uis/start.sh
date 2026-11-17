@@ -14,6 +14,10 @@ echo "🚀 Arrancando TrackFlow backoffice en el puerto 3001..."
 cd /app/uis/backoffice
 npx next start --port 3001 &
 
-# Esperar a que ambos procesos terminen (o mantener el contenedor vivo)
-echo "✅ Ambos frontends iniciados. Esperando..."
+echo "🚀 Arrancando TrackFlow Talent Pipeline en el puerto 3002..."
+cd /app/uis/talent-pipeline-tracker
+npx next start --port 3002 &
+
+# Esperar a que los tres procesos terminen (o mantener el contenedor vivo)
+echo "✅ Los tres frontends iniciados. Esperando..."
 wait

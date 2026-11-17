@@ -102,6 +102,17 @@ Cada servicio corre en un puerto diferente para poder coexistir localmente o en 
 npm install
 ```
 
+### 🐳 Entorno completo con Docker Compose (perfil `dev`)
+
+Los servicios de desarrollo del archivo `docker-compose.yml` pertenecen al perfil `dev`. Para arrancar el entorno completo desde la raíz del repositorio:
+
+```bash
+cp .env.example .env   # si todavía no tienes un archivo .env
+docker compose --profile dev up --build
+```
+
+El perfil es necesario: sin `--profile dev`, Compose no selecciona ningún servicio y puede mostrar `no service selected`. Para detener el entorno, pulsa `Ctrl+C`; para iniciarlo en segundo plano, añade `-d` al comando.
+
 ### 🖥️ Backend FastAPI (puerto 8000)
 
 ```bash

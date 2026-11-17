@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict
 from auth import get_current_user
 from .chat_pubsub import ChatPubSub
 from .runtime import AgentRunError
+from .rate_limit import enforce_actor_rate_limit
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Support Chat"])
@@ -42,12 +43,21 @@ async def create_chat_session(payload: ChatSessionCreate, request: Request,
 
 
 @router.websocket("/agent/chat/ws/{session_id}")
-async def chat_websocket(websocket: WebSocket, session_id: str, token: str | None = None):
+async def chat_websocket(websocket: WebSocket, session_id: str):
     try:
         session_id = str(UUID(session_id))
     except ValueError:
         await websocket.close(code=4400)
         return
+    # Browser WebSocket APIs cannot set Authorization headers. Accept the
+    # bearer token via the WebSocket subprotocol instead of the URL, where
+    # query strings are routinely captured by proxies and access logs.
+    offered_protocols = websocket.scope.get("subprotocols", [])
+    auth_protocols = [value for value in offered_protocols if value.startswith("bearer.")]
+    if len(auth_protocols) != 1 or "trackflow-chat-v1" not in offered_protocols:
+        await websocket.close(code=4401)
+        return
+    token = auth_protocols[0][len("bearer."):]
     if not token:
         await websocket.close(code=4401)
         return
@@ -81,7 +91,7 @@ async def chat_websocket(websocket: WebSocket, session_id: str, token: str | Non
                 store.set_session_status(session_id, "interrupted")
                 break
 
-    await websocket.accept()
+    await websocket.accept(subprotocol="trackflow-chat-v1")
     bus = pubsub_for(websocket.app)
     queue = bus.subscribe(session_id)
     await websocket.send_json({
@@ -202,11 +212,31 @@ async def chat_websocket(websocket: WebSocket, session_id: str, token: str | Non
                     if not isinstance(text, str) or not text.strip() or len(text) > 10000:
                         await websocket.send_json({"event": "protocol_error", "data": {"message": "Mensaje vacío o demasiado largo."}})
                         continue
+                    try:
+                        enforce_actor_rate_limit(user["id"])
+                    except HTTPException as exc:
+                        if exc.status_code != 429:
+                            raise
+                        await websocket.send_json({"event": "rate_limited", "data": {
+                            "message": exc.detail["message"],
+                            "retry_after": int(exc.headers["Retry-After"]),
+                        }})
+                        continue
                     start_turn(text)
                 elif event == "interrupt_requested":
                     new_input = data.get("new_input")
                     if not isinstance(new_input, str) or not new_input.strip() or len(new_input) > 10000:
                         await websocket.send_json({"event": "protocol_error", "data": {"message": "new_input vacío o demasiado largo."}})
+                        continue
+                    try:
+                        enforce_actor_rate_limit(user["id"])
+                    except HTTPException as exc:
+                        if exc.status_code != 429:
+                            raise
+                        await websocket.send_json({"event": "rate_limited", "data": {
+                            "message": exc.detail["message"],
+                            "retry_after": int(exc.headers["Retry-After"]),
+                        }})
                         continue
                     if not active or not generation_task or generation_task.done():
                         start_turn(new_input)

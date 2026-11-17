@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from .runtime import AgentRunError, AgentRuntime
+from .rate_limit import enforce_agent_rate_limit
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Support Agent"])
@@ -57,11 +58,13 @@ class ErrorResponse(BaseModel):
 
 @router.post("/agent/query", response_model=QueryResponse, responses={
     400: {"model": ErrorResponse}, 401: {"model": ErrorResponse},
+    429: {"description": "Límite temporal de consultas excedido."},
     500: {"model": ErrorResponse}, 503: {"model": ErrorResponse},
 })
 def agent_query(
     payload: QueryRequest, request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    _rate_limit: None = Depends(enforce_agent_rate_limit),
 ):
     try:
         current_user = getattr(request.state, "current_user", None)

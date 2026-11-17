@@ -13,16 +13,17 @@ services:
       target: deps  # Solo dependencias (dev, con bind mounts para recarga)
     container_name: trackflow-interfaces
     ports:
-      - "3000:3000"   # website
-      - "3001:3001"   # backoffice
+      - "3000-3002:3000-3002" # website, backoffice y app de candidatos
     command: >
-      sh -c "cd /app/uis/website && npx next dev --webpack --port 3000 &
-             cd /app/uis/backoffice && npx next dev --webpack --port 3001 &
+            sh -c "cd /app/uis/website && npx next dev --webpack --port 3000 &
+              cd /app/uis/backoffice && npx next dev --webpack --port 3001 &
+              cd /app/uis/talent-pipeline-tracker && npx next dev --webpack --port 3002 &
              wait"
     volumes:
       # Bind mounts para recarga en caliente
       - ./uis/website:/app/uis/website
       - ./uis/backoffice:/app/uis/backoffice
+      - ./uis/talent-pipeline-tracker:/app/uis/talent-pipeline-tracker
       - ./src:/app/src
       - ./packages/shared:/app/packages/shared
       - ./package.json:/app/package.json
@@ -31,6 +32,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_HOST=api
       - NEXT_PUBLIC_API_PORT=8000
+      - AUTH_API_BASE=http://api:8000
       # Browser-side WebSocket URL: use the published host port, not Docker DNS `api`.
       - NEXT_PUBLIC_API_WS_URL=${NEXT_PUBLIC_API_WS_URL:-ws://localhost:8000}
       # Ruta relativa: el rewrite de next.config.ts proxyea /telemetry → API interna
@@ -54,11 +56,12 @@ services:
       - ./services/celery_app.py:/app/api/celery_app.py:ro
       - ./packages/shared-py:/app/packages/shared-py
       - ./data/raw:/app/data/raw
-      - ./data/support_agent:/var/lib/trackflow-agent
+      - trackflow-agent:/var/lib/trackflow-agent
     env_file:
       - .env
     environment:
       - TELEMETRY_ENDPOINT=/telemetry/events
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - QDRANT_URL=http://qdrant:6333
       - SUPPORT_AGENT_STATE_DIR=/var/lib/trackflow-agent
@@ -131,3 +134,6 @@ networks:
   trackflow-net:
     name: trackflow-network
     driver: bridge
+
+volumes:
+  trackflow-agent:

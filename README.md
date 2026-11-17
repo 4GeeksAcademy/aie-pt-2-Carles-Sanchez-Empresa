@@ -112,6 +112,17 @@ Each service runs on a different port so they can coexist locally or in Codespac
 npm install
 ```
 
+### 🐳 Full environment with Docker Compose (`dev` profile)
+
+The development services in `docker-compose.yml` belong to the `dev` profile. To start the full environment from the repository root:
+
+```bash
+cp .env.example .env   # if you don't already have a .env file
+docker compose --profile dev up --build
+```
+
+The profile is required: without `--profile dev`, Compose selects no services and may report `no service selected`. Press `Ctrl+C` to stop the environment; add `-d` to run it in the background.
+
 ### 🖥️ FastAPI Backend (port 8000)
 
 ```bash

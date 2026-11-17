@@ -87,8 +87,12 @@ def websocket_test_app(store, runtime, monkeypatch):
 
 
 def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, monkeypatch):
+    from support_agent import rate_limit as rate_limit_module
+    from support_agent.rate_limit import SlidingWindowRateLimiter
+
     store = ChatStore(tmp_path / "chat.sqlite3")
     session = store.create_session("user-1")
+    monkeypatch.setattr(rate_limit_module, "limiter", SlidingWindowRateLimiter(1, 60))
 
     class NonStreamingRuntime(FakeRuntime):
         def stream(self, question, **kwargs):
@@ -98,7 +102,8 @@ def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, m
 
     with TestClient(app) as client:
         with client.websocket_connect(
-            f"/agent/chat/ws/{session['session_id']}?token=test-token"
+            f"/agent/chat/ws/{session['session_id']}",
+            subprotocols=["trackflow-chat-v1", "bearer.test-token"]
         ) as websocket:
             snapshot = websocket.receive_json()
             assert snapshot["event"] == "session_snapshot"
@@ -110,6 +115,11 @@ def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, m
             events = []
             while not any(event["event"] == "generation_completed" for event in events):
                 events.append(websocket.receive_json())
+            websocket.send_json({
+                "event": "user_message",
+                "data": {"session_id": session["session_id"], "text": "Segunda pregunta"},
+            })
+            limited = websocket.receive_json()
 
     assistant_message = next(event for event in events if event["event"] == "assistant_message")
     completed = next(event for event in events if event["event"] == "generation_completed")
@@ -118,6 +128,8 @@ def test_websocket_sends_completed_answer_when_agent_does_not_stream(tmp_path, m
     saved_assistant = store.messages(session["session_id"])[-1]
     assert saved_assistant["content"] == "Respuesta final sin chunks"
     assert saved_assistant["status"] == "completed"
+    assert limited["event"] == "rate_limited"
+    assert limited["data"]["retry_after"] == 60
 
 
 def test_websocket_publishes_token_chunks_in_sequence(tmp_path, monkeypatch):
@@ -127,7 +139,8 @@ def test_websocket_publishes_token_chunks_in_sequence(tmp_path, monkeypatch):
 
     with TestClient(app) as client:
         with client.websocket_connect(
-            f"/agent/chat/ws/{session['session_id']}?token=test-token"
+            f"/agent/chat/ws/{session['session_id']}",
+            subprotocols=["trackflow-chat-v1", "bearer.test-token"]
         ) as websocket:
             assert websocket.receive_json()["event"] == "session_snapshot"
             websocket.send_json({
@@ -190,7 +203,8 @@ def test_websocket_interrupt_persists_partial_and_emits_interrupted_event(tmp_pa
 
     with TestClient(app) as client:
         with client.websocket_connect(
-            f"/agent/chat/ws/{session['session_id']}?token=test-token"
+            f"/agent/chat/ws/{session['session_id']}",
+            subprotocols=["trackflow-chat-v1", "bearer.test-token"]
         ) as websocket:
             assert websocket.receive_json()["event"] == "session_snapshot"
             websocket.send_json({
@@ -239,7 +253,8 @@ def test_websocket_reconnect_rehydrates_same_session_history(tmp_path, monkeypat
     app = websocket_test_app(store, FakeRuntime(store), monkeypatch)
 
     with TestClient(app) as client:
-        with client.websocket_connect(f"/agent/chat/ws/{session['session_id']}?token=test-token") as websocket:
+        with client.websocket_connect(f"/agent/chat/ws/{session['session_id']}",
+            subprotocols=["trackflow-chat-v1", "bearer.test-token"]) as websocket:
             snapshot = websocket.receive_json()
 
     assert snapshot["event"] == "session_snapshot"
