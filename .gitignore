@@ -22,6 +22,11 @@ dist/
 .coverage
 htmlcov/
 *.log
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
 .terraform/
 *.tfstate
 *.tfstate.backup
