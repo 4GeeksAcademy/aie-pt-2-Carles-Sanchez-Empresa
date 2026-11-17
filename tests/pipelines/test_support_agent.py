@@ -18,6 +18,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from support_agent.api import router
 from support_agent import api as agent_api
+from support_agent.chat_api import router as chat_router
+from auth import get_current_user
 
 import httpx
 from support_agent.tools import IncidentTool, TicketInput, TicketResult, InventoryInput, InventoryResult, InventoryTool
@@ -267,6 +269,50 @@ def test_trace_contains_activation_summary_for_guardrail_events(tmp_path):
             "by_failure_type": {"security": 1},
             "by_action": {"reject": 1},
         }
+    finally:
+        runtime.close()
+
+
+def test_runtime_stream_installs_and_resets_provider_callbacks(tmp_path, monkeypatch):
+    runtime = AgentRuntime(
+        tmp_path,
+        retrieve_fn=lambda question: [{"text": "Policy", "score": 0.9}],
+        generate_fn=lambda question, context: "Grounded answer",
+    )
+    import data.pipelines.rag as rag
+    observed = []
+    monkeypatch.setattr(
+        runtime, "run",
+        lambda *args, **kwargs: (rag.STREAM_CALLBACKS.get()[0]("chunk"), {"answer": "chunk"})[1],
+    )
+    try:
+        result = runtime.stream(
+            "Question", actor_id="chat-user", conversation_id="00000000-0000-0000-0000-000000000001",
+            on_token=observed.append,
+        )
+
+        assert result["answer"] == "chunk"
+        assert observed == ["chunk"]
+        assert rag.STREAM_CALLBACKS.get() == (None, None)
+    finally:
+        runtime.close()
+
+
+def test_authenticated_chat_session_endpoint_uses_runtime_store(tmp_path):
+    runtime = AgentRuntime(tmp_path)
+    application = FastAPI()
+    application.state.support_agent = runtime
+    application.include_router(chat_router)
+    application.dependency_overrides[get_current_user] = lambda: {"id": "chat-user"}
+
+    try:
+        with TestClient(application) as client:
+            response = client.post("/agent/chat/sessions", json={})
+
+        assert response.status_code == 200
+        session = response.json()
+        assert session["user_id"] == "chat-user"
+        assert runtime.chat_store.get_session(session["session_id"], "chat-user") == session
     finally:
         runtime.close()
 

@@ -12,11 +12,10 @@ on every connection. Messages are persisted in the agent state directory's
 Frames have `{ "event": string, "data": object }` shape. Client events are
 `user_message` (`session_id`, `text`), `interrupt_requested` (`session_id`,
 `new_input`) and `close_session` (`session_id`). Server events include
-`session_snapshot`, `user_message`, `assistant_message`, `token_chunk` (`message_id`, `token`,
-`sequence`), `generation_completed`, `generation_interrupted`,
-`generation_failed` and `protocol_error`.
+`session_snapshot`, `user_message`, `assistant_message`, `token_chunk`
+(`message_id`, `token`, `sequence`), `generation_completed`,
+`generation_interrupted`, `generation_failed` and `protocol_error`.
 
-the available assistant prefix with `interrupted` status, waits for the prior
 The producer calls the existing First-line CX graph. The plain RAG answer path
 emits provider stream chunks as they arrive. The structured memory-response
 path buffers and validates its JSON before use, and deliberately emits no
@@ -25,7 +24,9 @@ the client. An interruption sets a cancellation event, closes the provider
 stream where available, persists the available assistant prefix with
 `interrupted` status, waits for the prior worker, and only then starts the
 redirected input. A reconnect reuses the same session and rehydrates stored
-messages before the client accepts new turns.
+messages before the client accepts new turns. If the API process restarts while
+an assistant row is still marked `streaming`, the next connection marks that
+row `interrupted` before sending its snapshot.
 
 ## Deployment notes
 

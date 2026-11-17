@@ -15,8 +15,9 @@ COPY packages/shared-py/ ./packages/shared-py/
 
 # ─── Instalar dependencias ─────────────────────────────────
 # Primero instalamos la shared-py local
-RUN uv pip install --system ./packages/shared-py/
-RUN uv pip install --system -r ./api/requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv \
+	uv pip install --system ./packages/shared-py/ \
+	&& uv pip install --system -r ./api/requirements.txt
 
 # ─── Copiar código fuente ──────────────────────────────────
 # Copiar el módulo de telemetría (analysis.py) a /app/telemetry/

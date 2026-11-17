@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import threading
 import types
 from unittest.mock import patch
 from fastapi import FastAPI
@@ -14,10 +15,20 @@ from support_agent.chat_store import ChatStore
 _STUB_MODULES = (
     "langchain_core", "langchain_core.runnables", "langgraph",
     "langgraph.checkpoint", "langgraph.checkpoint.sqlite", "langgraph.graph",
+    "support_agent.runtime",
 )
 _PREVIOUS_MODULES = {name: sys.modules.get(name) for name in _STUB_MODULES}
 for module_name in ("support_agent.chat_api", "support_agent.runtime", "support_agent.graph"):
     sys.modules.pop(module_name, None)
+runtime_stub = types.ModuleType("support_agent.runtime")
+
+
+class AgentRunError(Exception):
+    pass
+
+
+runtime_stub.AgentRunError = AgentRunError
+sys.modules["support_agent.runtime"] = runtime_stub
 if "langchain_core.runnables" not in sys.modules:
     langchain_core = types.ModuleType("langchain_core")
     runnables = types.ModuleType("langchain_core.runnables")
@@ -142,23 +153,40 @@ def test_websocket_publishes_token_chunks_in_sequence(tmp_path, monkeypatch):
 def test_websocket_interrupt_persists_partial_and_emits_interrupted_event(tmp_path, monkeypatch):
     import support_agent.chat_api as chat_api
 
+    class CloseableStream:
+        def __init__(self):
+            self.closed = threading.Event()
+
+        def close(self):
+            self.closed.set()
+
     class InterruptibleRuntime(FakeRuntime):
         def __init__(self, store):
             super().__init__(store)
             self.calls = 0
+            self.first_stream = None
 
-        def stream(self, question, *, on_token, cancel_event, **kwargs):
+        def stream(self, question, *, on_token, on_stream, cancel_event, **kwargs):
             self.calls += 1
             if self.calls == 1:
+                self.first_stream = CloseableStream()
+                on_stream(self.first_stream)
                 on_token("Texto parcial")
-                assert cancel_event.wait(timeout=5), "El stream no recibió la cancelación"
-                raise chat_api.GenerationCancelled()
+                assert self.first_stream.closed.wait(timeout=5), "El provider stream no se cerró"
+                # Simulate a provider yielding one final delta as close races
+                # with its worker thread. The cancellation gate must reject it.
+                try:
+                    on_token(" NO debe publicarse")
+                except chat_api.GenerationCancelled:
+                    raise
+                raise AssertionError("Se aceptó un token después de cerrar el stream")
             on_token("Nueva respuesta")
             return {"answer": "Nueva respuesta"}
 
     store = ChatStore(tmp_path / "chat.sqlite3")
     session = store.create_session("user-1")
-    app = websocket_test_app(store, InterruptibleRuntime(store), monkeypatch)
+    runtime = InterruptibleRuntime(store)
+    app = websocket_test_app(store, runtime, monkeypatch)
 
     with TestClient(app) as client:
         with client.websocket_connect(
@@ -190,6 +218,9 @@ def test_websocket_interrupt_persists_partial_and_emits_interrupted_event(tmp_pa
     interrupted = next(event for event in events if event["event"] == "generation_interrupted")
     assert interrupted["data"]["content"] == "Texto parcial"
     assert interrupted["data"]["status"] == "interrupted"
+    chunks = [event["data"]["token"] for event in events if event["event"] == "token_chunk"]
+    assert chunks == ["Nueva respuesta"]
+    assert runtime.first_stream.closed.is_set()
     messages = store.messages(session["session_id"])
     first_assistant = next(message for message in messages if message["role"] == "assistant")
     assert first_assistant["content"] == "Texto parcial"
@@ -198,6 +229,22 @@ def test_websocket_interrupt_persists_partial_and_emits_interrupted_event(tmp_pa
     second_assistant = [message for message in messages if message["role"] == "assistant"][-1]
     assert second_assistant["content"] == "Nueva respuesta"
     assert second_assistant["status"] == "completed"
+
+
+def test_websocket_reconnect_rehydrates_same_session_history(tmp_path, monkeypatch):
+    store = ChatStore(tmp_path / "chat.sqlite3")
+    session = store.create_session("user-1")
+    user_message = store.add_message(session["session_id"], "user", "Historial previo")
+    assistant_message = store.add_message(session["session_id"], "assistant", "Respuesta guardada", "completed")
+    app = websocket_test_app(store, FakeRuntime(store), monkeypatch)
+
+    with TestClient(app) as client:
+        with client.websocket_connect(f"/agent/chat/ws/{session['session_id']}?token=test-token") as websocket:
+            snapshot = websocket.receive_json()
+
+    assert snapshot["event"] == "session_snapshot"
+    assert snapshot["data"]["session_id"] == session["session_id"]
+    assert snapshot["data"]["messages"] == [user_message, assistant_message]
 
 
 def make_client(tmp_path, monkeypatch):

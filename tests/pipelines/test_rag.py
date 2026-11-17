@@ -222,6 +222,41 @@ class TestQueryAndGeneration:
             mock_get_client.assert_not_called()
             assert "no disponemos de información suficiente" in answer.lower()
 
+    def test_generate_answer_streams_provider_chunks_and_closes_stream(self, monkeypatch):
+        from types import SimpleNamespace
+
+        chunks = [
+            SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content="Respuesta "), finish_reason=None)]),
+            SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content="incremental"), finish_reason="stop")]),
+        ]
+
+        class ProviderStream:
+            closed = False
+
+            def __iter__(self):
+                return iter(chunks)
+
+            def close(self):
+                self.closed = True
+
+        stream = ProviderStream()
+        client = MagicMock()
+        client.chat.completions.create.return_value = stream
+        monkeypatch.setattr("data.pipelines.rag.validate_model_separation", lambda: None)
+        tokens = []
+        observed_streams = []
+
+        answer = generate_answer(
+            "Pregunta", [{"text": "Contexto"}], client=client,
+            on_token=tokens.append, on_stream=observed_streams.append,
+        )
+
+        assert answer == "Respuesta incremental"
+        assert tokens == ["Respuesta ", "incremental"]
+        assert observed_streams == [stream]
+        assert stream.closed
+        assert client.chat.completions.create.call_args.kwargs["stream"] is True
+
     def test_query_returns_model_output_and_not_raw_chunk_text(self, monkeypatch):
         """Verifica que query() devuelve la síntesis generada por el LLM y nunca el texto crudo del chunk."""
         raw_chunk_text = "RAW_CHUNK_BODY: Tarifa estándar 18 USD por m3 al mes en Los Ángeles."
