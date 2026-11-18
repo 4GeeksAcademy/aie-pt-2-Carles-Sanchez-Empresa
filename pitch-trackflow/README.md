@@ -77,6 +77,7 @@ Explica la tecnología en función del valor, no como una lista:
 - **Pipeline:** etapas explícitas de procesamiento, en vez de una única llamada opaca al modelo.
 - **Workers asíncronos:** permiten procesar trabajo largo fuera de la petición web inmediata.
 - **LangGraph y checkpoints:** el flujo puede pausarse y conservar estado para continuar una aprobación.
+- **Manejo de incertidumbre y fallos parciales:** si el PDF produce texto insuficiente o no se asigna un departamento compatible, el flujo puede pedir revisión manual; si falla la generación de un área, conserva un placeholder que declara que necesita revisión, en vez de presentar contenido inventado como propuesta.
 - **FastAPI y backoffice:** API para procesar y persistir el flujo; interfaz para subir, revisar y decidir.
 - **Pruebas:** el repositorio contiene pruebas del flujo, permisos y aprobación. La prueba E2E de RFP documentada utiliza componentes simulados para el recorrido reproducible; no la describas como una validación de modelo en vivo.
 
@@ -84,13 +85,17 @@ Explica la tecnología en función del valor, no como una lista:
 
 > La decisión principal fue automatizar la preparación y la generación de borradores, pero no la aprobación final. Elegí aprobaciones por sección y una revisión humana final en vez de publicar automáticamente, porque una propuesta comercial puede contener compromisos sobre volumen, moneda o devoluciones. También añadí controles deterministas para ciertos conflictos y para contenido sospechoso en documentos de entrada; esos controles ayudan, pero no garantizan detectar toda instrucción maliciosa.
 
-> El reto técnico fue coordinar etapas que pueden pausarse, reanudarse o terminar en revisión. Para eso separé el estado de negocio de la pausa del workflow, y añadí persistencia y pruebas para comprobar que aprobar un departamento no desbloquea por error los demás.
+> El reto técnico fue manejar entradas imperfectas y fallos parciales sin perder el control del proceso. En vez de tratar una clasificación incompleta como certeza o descartar la solicitud, el flujo fuerza baja confianza y revisión. Si falla la generación de un área, deja un placeholder transparente. Además, las aprobaciones por departamento se pueden pausar y reanudar sin que aprobar una sección desbloquee las demás.
 
 > De lo que estoy más orgulloso es de haber tratado la revisión humana como parte del diseño del sistema, no como una comprobación añadida al final.
 
 **Trade-off en una frase:**
 
 > Elegí una aprobación humana por sección más una revisión final, en vez de publicar automáticamente, porque el borrador puede incluir compromisos comerciales. El coste es que sigue habiendo intervención humana; el beneficio es que el flujo no confunde texto generado con una decisión autorizada.
+
+**Trade-off alternativo:**
+
+> Elegí enviar una clasificación incompleta a revisión con baja confianza y mostrar un borrador-placeholder cuando falla una generación, en vez de descartar el ticket o rellenar datos por inferencia. Se sacrifica automatización completa para no ocultar incertidumbre ni presentar compromisos inventados.
 
 ### 5. Tu historia 4Geeks — cierre Q&A — 30–45 segundos
 
@@ -177,4 +182,4 @@ El pitch debería hacer visibles evidencias de estas habilidades, más que una l
 1. Elegir el foco: RFP es el trabajo visible de la rama actual; soporte conecta de forma más directa con el briefing.
 2. Confirmar qué recorrido puede ejecutarse durante la grabación: PDF y ticket RFP, o asistente con datos de demo.
 3. Completar las respuestas personales del Q&A con motivos y experiencias reales.
-4. Decidir si se presenta el trabajo de la rama actual o el recorrido completo del proyecto TrackFlow. El estado actual es `feature/nist-security-practices`; si el pitch resume el proyecto completo, conviene decirlo claramente.
+4. Decidir si se presenta el trabajo de la rama actual o el recorrido completo del proyecto TrackFlow. El estado actual es `Presentacion`; si el pitch resume el proyecto completo, conviene decirlo claramente.

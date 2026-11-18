@@ -179,7 +179,8 @@ const es: Record<string, string> = {
   "rfp.draft_title": "Borrador de respuesta",
   "rfp.approval_label": "Aprobación",
   "rfp.final_proposal": "Propuesta final",
-  "rfp.final_document_link": "Visualizar / descargar documento final",
+  "rfp.final_document_link": "Abrir propuesta Markdown en otra ventana",
+  "rfp.final_document_popup_blocked": "El navegador no pudo abrir la ventana. Puedes seleccionar y copiar el Markdown de arriba.",
   "rfp.human_review_title": "Revisión humana final",
   "rfp.human_review_description": "Revisa y corrige los datos de la solicitud o los borradores antes de aprobar, devolver o archivar.",
   "rfp.human_review_monthly_volume": "Volumen mensual",
@@ -198,6 +199,7 @@ const es: Record<string, string> = {
   "rfp.department_request_changes": "Solicitar cambios",
   "rfp.department_reject": "Rechazar",
   "rfp.department_reject_requires_reason": "El motivo es obligatorio para rechazar.",
+  "rfp.human_review_request_changes": "Solicitar nueva validación",
   "rfp.department_review_error": "No se pudo registrar la decisión.",
 
   // ─── Suppliers ───

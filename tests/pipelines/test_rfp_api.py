@@ -385,6 +385,32 @@ def test_delete_ticket_cancels_retrying_analysis(client, tmp_path, monkeypatch):
     assert client.get(f"/rfp-intake/tickets/{ticket_id}").status_code == 404
 
 
+def test_delete_ticket_continues_when_retry_cannot_be_revoked(client, tmp_path, monkeypatch):
+    upload = client.post(
+        "/rfp-intake/tickets",
+        files={"file": ("brief.pdf", b"%PDF-1.7\ncontent", "application/pdf")},
+    )
+    ticket_id = upload.json()["ticket_id"]
+    with Session(client.app.state.test_engine) as session:
+        ticket = session.get(RfpTicket, ticket_id)
+        ticket.retry_count = 1
+        ticket.last_error = "Worker validation failed"
+        ticket.celery_task_id = "unreachable-broker-task"
+        session.add(ticket)
+        session.commit()
+
+    def fail_revoke(_task_id):
+        raise RuntimeError("broker unavailable")
+
+    monkeypatch.setattr(rfp_intake, "_revoke_celery_task", fail_revoke)
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
+    response = client.delete(f"/rfp-intake/tickets/{ticket_id}")
+
+    assert response.status_code == 204
+    assert client.get(f"/rfp-intake/tickets/{ticket_id}").status_code == 404
+    assert list((tmp_path / "raw").glob("rfp-*.pdf")) == []
+
+
 def test_delete_ticket_allows_failed_analysis_after_retries(client, tmp_path):
     upload = client.post(
         "/rfp-intake/tickets",

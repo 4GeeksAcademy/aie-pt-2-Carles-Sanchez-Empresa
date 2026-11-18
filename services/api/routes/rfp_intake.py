@@ -448,13 +448,13 @@ def decide_rfp_section(ticket_id: str, department_id: str, payload: ApprovalDeci
     }
     for section in sections:
         trace = rejected_traces.get(section.department_id)
-        if trace:
+        if trace and trace.output_payload.get("resumed_thread_id") == section.checkpoint_thread_id:
             section.approval_status = "rejected"
             section.approver_name = trace.agent_name
             section.approved_at = None
             section.approval_comment = trace.output_payload.get("comment")
             session.add(section)
-    if rejected_traces:
+    if any(section.approval_status == "rejected" for section in sections):
         all_decided = bool(sections) and all(
             section.approval_status in {"approved", "rejected"} for section in sections
         )
@@ -504,7 +504,7 @@ def review_rfp(ticket_id: str, payload: HumanReviewAction,
     section_fields = {"draft_content", "open_questions", "key_aspects"}
     actor = str(current_user.get("id") or current_user.get("user_id") or current_user.get("sub") or "admin")
 
-    if payload.action == "edit":
+    if payload.action in {"edit", "request_changes"}:
         updates = payload.field_updates
         unknown_top = set(updates) - {"metadata", "sections"}
         if unknown_top:
@@ -534,7 +534,32 @@ def review_rfp(ticket_id: str, payload: HumanReviewAction,
             for field_name, value in values.items():
                 setattr(by_department[department_id], field_name, value)
             session.add(by_department[department_id])
-        if payload.return_to_client:
+        if payload.action == "request_changes":
+            if payload.return_to_client:
+                raise HTTPException(status_code=422, detail="La validación interna no puede devolver el ticket al cliente.")
+            active_sections = [section for section in sections if section.draft_content and section.draft_content.strip()]
+            if not active_sections:
+                raise HTTPException(status_code=409, detail="No hay borradores para volver a validar.")
+            from data.pipelines.rfp_approval_graph import pause_for_approval, thread_config
+
+            for section in active_sections:
+                section.approval_iteration += 1
+                config = thread_config(ticket_id, section.department_id, section.approval_iteration)
+                pause_for_approval(ticket_id=ticket_id, department_id=section.department_id,
+                                   approval_iteration=section.approval_iteration,
+                                   draft=section.draft_content, config=config)
+                section.checkpoint_thread_id = config["configurable"]["thread_id"]
+                section.approval_status = "pending"
+                section.approver_name = None
+                section.approved_at = None
+                section.approval_comment = None
+                section.approval_request_id = None
+                session.add(section)
+            ticket.status = "waiting_for_approval"
+            ticket.final_proposal = None
+            ticket.final_proposal_created_at = None
+            ticket.human_review_comment = payload.comment
+        elif payload.return_to_client:
             ticket.status = "returned_to_client"
             ticket.human_review_comment = payload.comment or "Información adicional solicitada al cliente."
             ticket.human_reviewed_by = actor
@@ -545,7 +570,7 @@ def review_rfp(ticket_id: str, payload: HumanReviewAction,
         if metadata:
             session.add(metadata)
         from models import RfpApprovalTrace
-        session.add(RfpApprovalTrace(ticket_id=ticket_id, node_name="human_review_edit",
+        session.add(RfpApprovalTrace(ticket_id=ticket_id, node_name=f"human_review_{payload.action}",
                                      agent_name=actor, input_payload=updates,
                                      output_payload={"status": ticket.status,
                                                      "returned_to_client": payload.return_to_client}))
@@ -600,7 +625,7 @@ def review_rfp(ticket_id: str, payload: HumanReviewAction,
                                      agent_name=actor, input_payload={"comment": payload.comment},
                                      output_payload={"status": disposition}))
     else:
-        raise HTTPException(status_code=422, detail="action debe ser approve, edit o reject.")
+        raise HTTPException(status_code=422, detail="action debe ser approve, edit, reject o request_changes.")
 
     ticket.updated_at = datetime.now(timezone.utc)
     session.commit()
@@ -692,16 +717,17 @@ def delete_rfp_ticket(
                 detail="El análisis está ejecutándose; espera a que falle o termine antes de eliminarlo.",
             )
         # Revoke queued retries, but don't force-kill a currently running task.
-        # Pipeline persistence checks the ticket still exists before committing.
+        # The ticket is the source of truth; a worker cannot persist after it is
+        # deleted, so an unavailable broker must not block operational cleanup.
         if ticket.celery_task_id:
             try:
                 _revoke_celery_task(ticket.celery_task_id)
-            except Exception as exc:
-                logger.exception("No se pudo cancelar la tarea Celery del ticket RFP %s", ticket_id)
-                raise HTTPException(
-                    status_code=503,
-                    detail="No se pudo cancelar el reintento; el ticket no se eliminó.",
-                ) from exc
+            except Exception:
+                logger.warning(
+                    "No se pudo cancelar la tarea Celery del ticket RFP %s; se continuará con la eliminación",
+                    ticket_id,
+                    exc_info=True,
+                )
 
     raw_path = Path(ticket.raw_pdf_path).resolve()
     allowed_raw_dir = RAW_DATA_DIR.resolve()

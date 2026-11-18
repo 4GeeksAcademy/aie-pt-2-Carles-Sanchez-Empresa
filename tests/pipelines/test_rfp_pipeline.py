@@ -312,7 +312,8 @@ def test_classifier_fills_missing_is_rfp_as_rfp_for_human_review():
     assert result.is_rfp is True
     assert result.confidence == "low"
     assert "omitió is_rfp" in result.reason
-    assert pipeline._manual_review(result)[0] is True
+    assert result.departments_needed == ["warehouse"]
+    assert pipeline._manual_review(result)[0] is False
 
 
 def test_classifier_routes_unassigned_rfp_to_every_department_for_review():
@@ -326,9 +327,11 @@ def test_classifier_routes_unassigned_rfp_to_every_department_for_review():
 
     result = pipeline.classify_markdown("A valid logistics request", client=client)
 
-    assert result.departments_needed == ["warehouse", "lastmile", "reverse"]
-    assert result.confidence == "low"
-    assert result.open_questions
+    assert result.departments_needed == []
+    assert pipeline._manual_review(result) == (
+        True,
+        "La solicitud no permite asignar un workstream soportado con confianza.",
+    )
 
 
 def test_classifier_adds_departments_detected_in_document_to_review():
@@ -345,9 +348,9 @@ def test_classifier_adds_departments_detected_in_document_to_review():
         client=client,
     )
 
-    assert result.departments_needed == ["warehouse", "lastmile", "reverse"]
-    assert result.confidence == "low"
-    assert any("áreas detectadas" in question for question in result.open_questions)
+    assert result.departments_needed == ["warehouse"]
+    assert result.confidence == "high"
+    assert pipeline._manual_review(result)[0] is False
 
 
 def test_classifier_normalizes_exact_string_monthly_volume():
@@ -645,21 +648,27 @@ def test_rfp_model_can_be_overridden_without_changing_classifier_default(monkeyp
     assert captured["model"] == "madrid-spain/openrouter/xiaomi/mimo-v2.5"
 
 
-def test_failed_conversion_does_not_change_business_status(tmp_path):
+def test_empty_conversion_requires_manual_review(tmp_path):
     engine = database()
-    pdf_path = tmp_path / "broken.pdf"
+    pdf_path = tmp_path / "empty.pdf"
     pdf_path.write_bytes(b"%PDF-mock")
     ticket_id = seed_ticket(engine, pdf_path)
-    with pytest.raises(ValueError, match="no produjo texto"):
-        pipeline.process_ticket(
-            ticket_id,
-            converter=FakeConverter(""),
-            classifier=lambda _markdown: classification(),
-            db_engine=engine,
-        )
+
+    result = pipeline.process_ticket(
+        ticket_id,
+        converter=FakeConverter(""),
+        db_engine=engine,
+    )
+
+    assert result["manual_review_required"] is True
+
     with Session(engine) as session:
-        assert session.get(RfpTicket, ticket_id).status == "analizando"
-        assert session.get(RfpMetadata, ticket_id) is None
+        metadata = session.get(RfpMetadata, ticket_id)
+        assert metadata.manual_review_required is True
+        assert metadata.manual_review_reason == (
+            "El documento contiene texto insuficiente y requiere revisión manual."
+        )
+
     engine.dispose()
 
 

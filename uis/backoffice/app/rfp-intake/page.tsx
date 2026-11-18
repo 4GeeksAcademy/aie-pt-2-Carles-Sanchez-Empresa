@@ -49,7 +49,6 @@ interface TicketDetail extends TicketSummary {
   metadata: Record<string, unknown> | null;
   sections: TicketSection[];
   final_proposal: string | null;
-  final_document_available: boolean;
   human_review_comment: string | null;
   human_reviewed_by: string | null;
   human_reviewed_at: string | null;
@@ -429,10 +428,46 @@ function TicketResult({ detail, t }: { detail: TicketDetail; t: ReturnType<typeo
         </section>
       )}
 
-      {detail.final_proposal && <section className="rounded-xl border border-emerald-700 bg-emerald-50 p-4 shadow-sm"><h2 className="font-semibold text-emerald-950">{t("rfp.final_proposal")}</h2><pre className="mt-3 whitespace-pre-wrap break-words text-sm font-sans">{detail.final_proposal}</pre></section>}
-      {detail.final_document_available && <a className="inline-flex min-h-10 items-center rounded bg-emerald-800 px-4 font-semibold text-white" href={`/api/rfp-intake/tickets/${encodeURIComponent(detail.ticket_id)}/final-document`} download={`rfp-${detail.ticket_id}-final.md`}>{t("rfp.final_document_link")}</a>}
-      {detail.status === "needs_human_review" && <HumanReviewControls key={`${detail.ticket_id}:${detail.updated_at}`} detail={detail} onUpdated={() => window.dispatchEvent(new CustomEvent("rfp-ticket-refresh", { detail: detail.ticket_id }))} />}
+      {detail.status === "needs_human_review" ? (
+        <HumanReviewControls key={`${detail.ticket_id}:${detail.updated_at}`} detail={detail} onUpdated={() => window.dispatchEvent(new CustomEvent("rfp-ticket-refresh", { detail: detail.ticket_id }))} />
+      ) : detail.status === "done" && detail.final_proposal ? (
+        <FinalProposal key={detail.ticket_id} markdown={detail.final_proposal} />
+      ) : null}
     </>
+  );
+}
+
+function FinalProposal({ markdown }: { markdown: string }) {
+  const { t } = useTranslation();
+  const [popupBlocked, setPopupBlocked] = useState(false);
+
+  const openProposal = () => {
+    const popup = window.open("about:blank", "_blank");
+    setPopupBlocked(!popup);
+    if (!popup) return;
+
+    popup.opener = null;
+    const doc = popup.document;
+    doc.title = t("rfp.final_proposal");
+    doc.documentElement.lang = document.documentElement.lang;
+    const heading = doc.createElement("h1");
+    heading.textContent = doc.title;
+    const content = doc.createElement("pre");
+    content.style.whiteSpace = "pre-wrap";
+    content.style.overflowWrap = "anywhere";
+    content.textContent = markdown;
+    doc.body.append(heading, content);
+  };
+
+  return (
+    <section className="rounded-xl border border-emerald-700 bg-emerald-50 p-4 shadow-sm">
+      <h2 className="font-semibold text-emerald-950">{t("rfp.final_proposal")}</h2>
+      <pre className="mt-3 whitespace-pre-wrap break-words text-sm font-sans">{markdown}</pre>
+      <button type="button" onClick={openProposal} className="mt-3 inline-flex min-h-10 items-center rounded bg-emerald-800 px-4 font-semibold text-white">
+        {t("rfp.final_document_link")}
+      </button>
+      {popupBlocked && <p role="alert" className="mt-2 text-sm text-red-900">{t("rfp.final_document_popup_blocked")}</p>}
+    </section>
   );
 }
 
@@ -458,9 +493,9 @@ function HumanReviewControls({ detail, onUpdated }: { detail: TicketDetail; onUp
     detail.sections.map((section) => [section.department_id, section.draft_content ?? ""]),
   ));
 
-  const submit = async (action: "edit" | "approve" | "reject", options: { returnToClient?: boolean; disposition?: "archived" | "descartado" } = {}) => {
+  const submit = async (action: "edit" | "approve" | "reject" | "request_changes", options: { returnToClient?: boolean; disposition?: "archived" | "descartado" } = {}) => {
     setBusy(true); setError(null);
-    const field_updates = action === "edit" ? {
+    const field_updates = action === "edit" || action === "request_changes" ? {
       metadata: {
         ...(monthlyVolume.trim() ? { monthly_volume: Number(monthlyVolume) } : {}),
         ...(currency.trim() ? { currency: currency.trim() } : {}),
@@ -492,6 +527,7 @@ function HumanReviewControls({ detail, onUpdated }: { detail: TicketDetail; onUp
     {error && <p role="alert" className="text-sm text-red-800">{error}</p>}
     <div className="flex flex-wrap gap-2">
       <button type="button" disabled={busy} onClick={() => void submit("edit")} className="min-h-10 rounded border border-blue-800 px-3 font-semibold text-blue-950 transition-colors hover:bg-blue-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_save")}</button>
+      <button type="button" disabled={busy} onClick={() => void submit("request_changes")} className="min-h-10 rounded border border-blue-800 px-3 font-semibold text-blue-950 transition-colors hover:bg-blue-800 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-800 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_request_changes")}</button>
       <button type="button" disabled={busy} onClick={() => void submit("edit", { returnToClient: true })} className="min-h-10 rounded bg-amber-700 px-3 font-semibold text-white transition-colors hover:bg-amber-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_return")}</button>
       <button type="button" disabled={busy || hasDepartmentRejection} onClick={() => void submit("approve")} className="min-h-10 rounded bg-emerald-800 px-3 font-semibold text-white transition-colors hover:bg-emerald-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-900 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_approve")}</button>
       <button type="button" disabled={busy} onClick={() => void submit("reject", { disposition: "descartado" })} className="min-h-10 rounded bg-red-800 px-3 font-semibold text-white transition-colors hover:bg-red-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-900 disabled:cursor-not-allowed disabled:opacity-50">{t("rfp.human_review_discard")}</button>
@@ -515,10 +551,12 @@ function ApprovalControls({ ticketId, section, onUpdated }: { ticketId: string; 
           request_id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}` }),
       });
       if (!response.ok) throw new Error(await readError(response));
-      onUpdated();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t("rfp.department_review_error"));
-    } finally { setBusy(false); }
+    } finally {
+      onUpdated();
+      setBusy(false);
+    }
   };
   return <div className="mt-4 space-y-2 rounded-lg border border-blue-300 bg-blue-50 p-3">
     <label className="block text-sm font-semibold text-[#14263a]">{t("rfp.department_review_decision", { department: section.department_id })}

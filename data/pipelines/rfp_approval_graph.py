@@ -89,6 +89,31 @@ def pause_for_approval(*, ticket_id: str, department_id: str, approval_iteration
 def resume_department(*, ticket_id: str, department_id: str, approval_iteration: int,
                       decision: dict, config: dict | None = None) -> dict:
     config = config or thread_config(ticket_id, department_id, approval_iteration)
+
+    resume_value = {
+        **decision,
+        "ticket_id": ticket_id,
+        "department_id": department_id,
+        "approval_iteration": approval_iteration,
+    }
+
     with approval_graph() as graph:
-        state = graph.invoke(Command(resume=decision), config=config)
-    return state.get("checkpoint", {})
+        state = graph.invoke(
+            Command(
+                update={
+                    "ticket_id": ticket_id,
+                    "department_id": department_id,
+                    "approval_iteration": approval_iteration,
+                },
+                resume=resume_value,
+            ),
+            config=config,
+        )
+
+    checkpoint = state.get("checkpoint")
+    if not isinstance(checkpoint, dict):
+        raise RuntimeError(
+            f"El checkpoint no devolvió una decisión para {ticket_id}/{department_id}."
+        )
+
+    return checkpoint

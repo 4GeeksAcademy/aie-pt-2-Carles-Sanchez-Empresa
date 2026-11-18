@@ -179,7 +179,8 @@ const en: Record<string, string> = {
   "rfp.draft_title": "Response draft",
   "rfp.approval_label": "Approval",
   "rfp.final_proposal": "Final proposal",
-  "rfp.final_document_link": "View / download final document",
+  "rfp.final_document_link": "Open Markdown proposal in a new window",
+  "rfp.final_document_popup_blocked": "The browser could not open the window. You can select and copy the Markdown above.",
   "rfp.human_review_title": "Final human review",
   "rfp.human_review_description": "Review and edit the request details or drafts before approving, returning, or archiving.",
   "rfp.human_review_monthly_volume": "Monthly volume",
@@ -198,6 +199,7 @@ const en: Record<string, string> = {
   "rfp.department_request_changes": "Request changes",
   "rfp.department_reject": "Reject",
   "rfp.department_reject_requires_reason": "A reason is required to reject.",
+  "rfp.human_review_request_changes": "Request a new approval round",
   "rfp.department_review_error": "The decision could not be submitted.",
 
   // ─── Suppliers ───

@@ -26,3 +26,4 @@ htmlcov/
 *.tfstate
 *.tfstate.backup
 node_modules
+pitch-trackflow

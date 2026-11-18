@@ -95,9 +95,14 @@ Esto evita problemas de CORS en desarrollo y Codespaces.
 | `/incidents` | JWT | Analizador CSV de incidencias |
 | `/incidents-manager` | JWT | Gestor centralizado: alta, listado, estados y métricas |
 | `/knowledge` | JWT | Asistente de conocimiento con preguntas sugeridas y respuestas generadas |
+| `/rfp-intake` | JWT | Recepción de RFP y consulta de la propuesta final en Markdown |
 | `/account/profile` | JWT | Gestión de perfil de usuario |
 
 > Las rutas protegidas requieren un JWT válido en `localStorage` (`trackflow_token`).
+
+Tras aprobar la **Revisión Humana Final**, el formulario se sustituye por la
+**Propuesta Final**. El botón **Abrir propuesta Markdown en otra ventana**
+permite seleccionar y copiar el texto sin descargar un archivo.
 
 ---
 

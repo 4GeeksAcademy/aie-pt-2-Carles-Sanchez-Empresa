@@ -93,7 +93,7 @@ The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls t
 | `/suppliers` | JWT | Supplier directory CRUD |
 | `/incidents` | JWT | CSV incident analyzer |
 | `/knowledge` | JWT | Knowledge assistant with suggested questions and generated answers |
-| `/rfp-intake` | JWT | RFP PDF intake, ticket status, analysis and departmental handoff |
+| `/rfp-intake` | JWT | RFP PDF intake, ticket status, analysis, departmental handoff and a copyable final Markdown proposal |
 | `/admin/demo` | Admin JWT | Legacy inventory demonstration dashboard (administrators only) |
 | `/sales-forecast` | JWT | TrackFlow consolidated revenue forecast, test metrics, variability band and annual filters |
 | `/account/profile` | JWT | User profile management |
@@ -101,6 +101,11 @@ The backoffice uses Next.js **rewrites** (`next.config.ts`) to proxy API calls t
 > Protected routes require a valid JWT stored in `localStorage` (`trackflow_token`).
 
 ### RFP dashboard notifications
+
+After final human approval, the final proposal replaces the review form in the
+RFP panel. Open it in a separate window to select and copy the original
+Markdown. The viewer uses the proposal already shown in the panel and does not
+request a file from the server.
 
 The home page currently contains the RFP notification card. It opens an
 authenticated `fetch` stream to `/api/rfp-intake/tickets/events` and parses
