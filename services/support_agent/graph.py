@@ -73,7 +73,7 @@ def after_routing(state: AgentState) -> str:
     if state.decision.source == "rag":
         return "retrieve_context"
     if state.decision.uses_incidents:
-        return "lookup_incident" if state.decision.ticket_id else "clarify_ticket"
+        return "lookup_incident" if (state.decision.ticket_id or state.decision.incident_status) else "clarify_ticket"
     return "lookup_inventory" if state.decision.inventory_query else "clarify_inventory"
 
 
@@ -109,20 +109,35 @@ def ticket_answer(state: AgentState) -> str:
     result = state.ticket_result
     ticket_id = state.decision.ticket_id
     if result.outcome == "found":
-        incident = result.incident
-        return (f"Ticket {incident.id}: {incident.title}. Estado: {incident.status}. "
-                f"Categoria: {incident.category}. Origen: {incident.origin}. Sede: {incident.branch}. "
-                f"Creado: {incident.created_at}. Ultima actualizacion: {incident.updated_at}.")
+        if result.incident is not None:
+            incident = result.incident
+            return (f"Incidencia {incident.id}: {incident.title}. Estado: {incident.status}. "
+                    f"Categoria: {incident.category}. Origen: {incident.origin}. Sede: {incident.branch}. "
+                    f"Creada: {incident.created_at}. Ultima actualizacion: {incident.updated_at}.")
+        listing = "; ".join(
+            f"#{item.id} {item.title} ({item.status}, {item.branch})" for item in result.incidents
+        )
+        return f"Incidencias con estado {state.decision.incident_status} ({len(result.incidents)} mostradas, máximo 10): {listing}."
     if result.outcome == "not_found":
-        return f"No se encontro el ticket {ticket_id} en el gestor de incidentes."
+        return (f"No se encontro la incidencia {ticket_id} en el gestor de incidentes."
+                if ticket_id else f"No se encontraron incidencias con estado {state.decision.incident_status}.")
     if result.outcome == "unauthorized":
-        return f"No pude confirmar el estado del ticket {ticket_id}: se requiere una sesion valida con acceso a incidentes."
-    return f"No pude confirmar el estado del ticket {ticket_id} ahora mismo. Intentalo mas tarde."
+        return "No pude confirmar el estado de las incidencias: se requiere una sesión válida con acceso a incidentes."
+    return "No pude confirmar el estado de las incidencias ahora mismo. Inténtalo más tarde."
 
 
 def inventory_answer(state: AgentState) -> str:
     result = state.inventory_result
     if result.outcome == "found":
+        if state.decision.inventory_query.low_stock:
+            if not result.products:
+                return f"No hay productos con stock inferior a {state.decision.inventory_query.low_stock_threshold} unidades."
+            products = "; ".join(
+                f"{item.name} (SKU {item.sku_code}, {item.current_stock} unidades, almacén {item.warehouse})"
+                for item in result.products
+            )
+            return (f"Productos con stock inferior a {state.decision.inventory_query.low_stock_threshold} "
+                    f"unidades ({len(result.products)} mostrados, máximo 10): {products}.")
         product = result.products[0]
         return (f"Producto {product.id}: {product.name}. SKU: {product.sku_code}. "
                 f"Almacen: {product.warehouse}. Stock informado: {product.current_stock} unidades. "
@@ -131,6 +146,9 @@ def inventory_answer(state: AgentState) -> str:
         candidates = "; ".join(f"{product.sku_code} (ID {product.id}, {product.warehouse})" for product in result.products)
         return f"Hay varios productos coincidentes: {candidates}. Indica un ID o SKU y, si procede, el almacen; no he confirmado un stock unico."
     if result.outcome == "not_found":
+        if state.decision.inventory_query.low_stock:
+            return (f"No hay productos con stock inferior a "
+                    f"{state.decision.inventory_query.low_stock_threshold} unidades.")
         return "No se encontro un producto que coincida con la consulta en el gestor de inventario."
     if result.outcome == "unauthorized":
         return "No pude confirmar el stock: se requiere una sesion valida con acceso al inventario."
@@ -269,13 +287,15 @@ def build_graph(
 
     def lookup_incident(state: AgentState) -> dict:
         try:
-            ticket_input = TicketInput(ticket_id=state.decision.ticket_id)
+            ticket_input = TicketInput(ticket_id=state.decision.ticket_id, status=state.decision.incident_status)
             if using_mcp:
                 raw_result = incidents.incident(ticket_input, token=credentials())
             else:
                 raw_result = incidents(ticket_input, token=credentials())
             result = TicketResult.model_validate(raw_result)
             if result.incident and result.incident.id != state.decision.ticket_id:
+                result = TicketResult(outcome="invalid_response")
+            if result.incidents and any(item.status != state.decision.incident_status for item in result.incidents):
                 result = TicketResult(outcome="invalid_response")
         except TimeoutError:
             result = TicketResult(outcome="timeout")
@@ -298,7 +318,8 @@ def build_graph(
                         or (query.sku_code and product.sku_code.casefold() != query.sku_code.casefold())
                         or (query.product_name and query.product_name.casefold() not in product.name.casefold())
                         or (query.warehouse and product.warehouse != query.warehouse)
-                        or (query.category and product.category != query.category)):
+                    or (query.category and product.category != query.category)
+                    or (query.low_stock and product.current_stock >= query.low_stock_threshold)):
                     result = InventoryResult(outcome="invalid_response")
                     break
         except TimeoutError:

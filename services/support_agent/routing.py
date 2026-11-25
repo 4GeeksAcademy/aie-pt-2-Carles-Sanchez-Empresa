@@ -15,6 +15,7 @@ class RouteDecision(BaseModel):
 
     source: Literal["rag", "incidents", "both", "inventory", "inventory_rag", "operations", "all"]
     ticket_id: int | None = Field(default=None, gt=0)
+    incident_status: Literal["open", "in_progress", "resolved", "discarded"] | None = None
     knowledge_question: str | None = None
     inventory_query: InventoryInput | None = None
 
@@ -34,6 +35,10 @@ class RouteDecision(BaseModel):
     def validate_sources(self):
         if not self.uses_incidents and self.ticket_id is not None:
             raise ValueError("This route must not select a ticket.")
+        if not self.uses_incidents and self.incident_status is not None:
+            raise ValueError("This route must not select an incident status.")
+        if self.ticket_id is not None and self.incident_status is not None:
+            raise ValueError("Select an incident ID or status filter, not both.")
         if self.uses_rag and not (self.knowledge_question or "").strip():
             raise ValueError("Documentation routes require a documentation question.")
         if not self.uses_rag and self.knowledge_question is not None:
@@ -44,17 +49,22 @@ class RouteDecision(BaseModel):
 
 
 ROUTING_PROMPT = """Clasifica la pregunta de soporte de TrackFlow. No respondas la pregunta.
-Devuelve solo un objeto JSON con source, ticket_id, knowledge_question e inventory_query.
+Devuelve solo un objeto JSON con source, ticket_id, incident_status, knowledge_question e inventory_query.
 source: rag para politicas, procedimientos o conocimiento estable; incidents para
 datos actuales de un ticket/incidencia; both para ticket y documentacion;
 inventory para stock de un producto; inventory_rag para stock y documentacion;
 operations para ticket y stock sin documentacion; all para las tres fuentes.
 ticket_id: entero positivo escrito por el usuario, o null si falta o hay ambiguedad.
+incident_status: estado literal open, in_progress, resolved o discarded si pide
+listar incidencias por estado; null cuando pide una incidencia por ID o no aplica.
+Las listas de incidencias se limitan a 10 resultados.
 Nunca inventes un identificador. No puedes crear, modificar ni eliminar datos.
 Si piden modificar un ticket/producto, selecciona su fuente: solo se permite consultar.
 inventory_query: null si no se consulta inventario o falta identificar el producto.
-En otro caso un objeto con exactamente uno de product_id (entero positivo),
+Para consultar un producto, objeto con exactamente uno de product_id (entero positivo),
 sku_code (codigo literal escrito por el usuario), product_name (nombre literal).
+Para listar productos con stock bajo, usa product_id/sku_code/product_name null,
+low_stock true y low_stock_threshold 50; esta consulta significa current_stock < 50.
 Un codigo SKU no es un product_id: no extraigas su parte numerica como ID.
 Puede incluir warehouse (LA para Los Angeles o ZGZ para Zaragoza) y category
 (fashion, electronics, cosmetics), solo si esos filtros se piden expresamente;
@@ -90,4 +100,6 @@ def validate_decision(decision: RouteDecision, question: str) -> RouteDecision:
         for value in (query.sku_code, query.product_name):
             if value is not None and value.casefold() not in question.casefold():
                 raise ValueError("The product reference must occur in the question.")
+        if query.low_stock and not re.search(r"\b(bajo|bajos|baja|bajas|low)\b", question, re.IGNORECASE):
+            raise ValueError("Low-stock selection must be requested by the user.")
     return decision

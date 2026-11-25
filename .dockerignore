@@ -39,7 +39,7 @@ venv/
 *.sqlite-*
 *.db
 
-# Datos locales de runtime: en Compose se montan desde volúmenes/rutas del host.
+# Datos generados y estado local de runtime; Compose los monta cuando aplica.
 data/qdrant/
 data/flower/
 data/support_agent/

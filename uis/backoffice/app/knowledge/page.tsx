@@ -84,10 +84,7 @@ export default function KnowledgePage(): ReactElement {
           const snapshotMessages = data.messages as ChatMessage[];
           setMessages(snapshotMessages);
           setLoading(snapshotMessages.some((item) => item.status === "streaming"));
-        } else if (frame.event === "user_message" && typeof data.message_id === "string") {
-          setMessages((current) => [...current.filter((item) => item.message_id !== data.message_id), data as unknown as ChatMessage]);
-          setLoading(true);
-        } else if (frame.event === "assistant_message" && typeof data.message_id === "string") {
+        } else if ((frame.event === "user_message" || frame.event === "assistant_message") && typeof data.message_id === "string") {
           setMessages((current) => [...current.filter((item) => item.message_id !== data.message_id), data as unknown as ChatMessage]);
           setLoading(true);
         } else if (frame.event === "token_chunk" && typeof data.message_id === "string" && typeof data.token === "string") {

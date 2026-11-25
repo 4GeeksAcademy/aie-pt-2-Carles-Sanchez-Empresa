@@ -22,8 +22,17 @@ dist/
 .coverage
 htmlcov/
 *.log
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
 .terraform/
 *.tfstate
 *.tfstate.backup
 node_modules
 pitch-trackflow
+*.db
+*.sqlite
+*.sqlite3
+data/support_agent/*.sqlite3*

@@ -54,14 +54,21 @@ flowchart TD
 `embed` remains the existing function imported by the RAG pipeline. The old
 `query` remains in use by the old endpoint; the graph never calls it.
 
-  `IncidentTool` accepts `TicketInput(ticket_id: int > 0)` and returns `TicketResult`:
-  `outcome` plus an `Incident` only when found. The incident mirrors `IncidentResponse`
+  `TicketInput` accepts exactly one positive `ticket_id` or lifecycle `status`
+  (`open`, `in_progress`, `resolved`, `discarded`). ID lookups return the full
+  incident; status lookups return at most ten validated summaries through the
+  read-only `incidents_list` MCP tool. Empty status lists are reported honestly,
+  and every returned record is checked against the requested status. Both paths
+  require `incidents:read` and never mutate incident state. The result is a
+  `TicketResult` with an `Incident` or bounded `IncidentSummary` list only when
+  found. The incident mirrors `IncidentResponse`
   (`id`, `title`, `description`, `category`, `status`, `origin`, `branch`, `created_at`,
   `updated_at`). Outcomes are `found`, `not_found`, `timeout`, `unauthorized`,
   `unavailable`, and `invalid_response`. A mismatched ID or invalid JSON is rejected.
-  The tool exclusively calls `GET /api/incidents/{id}`; it never writes to TinyDB,
-  indexes tickets, follows redirects, or calls a write endpoint. The existing
-  detail endpoint is uncached; cached list/filter search is outside this increment.
+  The legacy detail adapter calls `GET /api/incidents/{id}`; the list path calls
+  `GET /api/incidents?status=...`. Both are read-only, never write to TinyDB,
+  index tickets, follow redirects or call a write endpoint. The detail endpoint
+  is uncached.
 
   Each lookup has a **5.0-second total deadline**, including connection/read time,
   plus explicit HTTPX timeouts, with no retries. Tool errors enter `tool_fallback`
@@ -88,7 +95,11 @@ never a summed or guessed stock. Zero stock remains a valid found result.
 
 Each returned `InventoryProduct` mirrors `SKUResponse`: `id`, `name`, `sku_code`,
 `client_name`, `category`, `warehouse`, `threshold_min`, `current_stock`,
-`created_at`. Outcomes are `found`, `not_found`, `ambiguous`, `timeout`,
+`created_at`. Low-stock queries use the strict threshold `current_stock < 50`;
+stock exactly 50 is excluded. The MCP list tool applies the threshold to API
+results, and the agent independently rechecks it before answering. Results are
+capped at ten; an empty list is reported as no products below the threshold.
+Outcomes are `found`, `not_found`, `ambiguous`, `timeout`,
 `unauthorized`, `unavailable`, `invalid_response`. Product/stock facts are
 rendered deterministically and never passed as RAG context.
 
@@ -152,17 +163,23 @@ timeout with SDK retries disabled; classification failure has its own fallback.
 
 | Setting | Purpose |
 | --- | --- |
-| `SUPPORT_AGENT_MCP_URL` | Required MCP Streamable HTTP server URL for production graph construction without injected operational tools. |
+| `SUPPORT_AGENT_MCP_URL` | Optional MCP Streamable HTTP server URL for graph construction. A browser-session-to-MCP delegation path is not deployed; operational calls will fail closed. |
+| `MCP_AUTH_ISSUER`, `MCP_AUTH_RESOURCE`, `TRACKFLOW_OIDC_ISSUER`, `TRACKFLOW_OIDC_PRIVATE_KEY`, `TRACKFLOW_OIDC_KEY_ID` | Must be provisioned consistently so MCP can discover/verify TrackFlow RS256 tokens and the issuer can sign them. Never commit the private key. |
+| `MCP_API_SERVICE_TOKEN` | Separate server-to-server API credential held only by MCP, not by the browser or support-agent graph. |
 | `SUPPORT_INCIDENTS_BASE_URL` | Legacy direct API origin for isolated compatibility tests only; default `http://127.0.0.1:8000`. |
 | `SUPPORT_INVENTORY_BASE_URL` | Legacy optional inventory API origin for isolated compatibility tests only. |
 | `SUPPORT_AGENT_TOKEN` | CLI/live-capture user's TrackFlow OAuth access token. The adapter sends it only as the bearer to MCP, never directly to the API. |
 | `SUPPORT_INCIDENTS_TOKEN` | Backward-compatible CLI/capture fallback when `SUPPORT_AGENT_TOKEN` is absent. |
 
-When `SUPPORT_AGENT_MCP_URL` is configured, the user's TrackFlow OAuth access token
-is sent only to MCP. MCP validates its signature, issuer, audience, expiry and
-per-tool scope, then calls the API with the independent `MCP_API_SERVICE_TOKEN`
-service credential. Inventory remains read-only. Without a user token, no MCP
-request is sent; invalid/expired tokens produce an honest access fallback. Public
+When `SUPPORT_AGENT_MCP_URL` is configured, the unified HTTP API validates the
+user's existing session, but delegated OAuth for the MCP resource is not yet
+deployed. It will not forward the legacy HS256 browser token to MCP, so
+operational requests fail closed as unavailable until a separately scoped,
+short-lived RS256 delegation path is configured and verified. Do not enable MCP
+operational lookups through the chat WebSocket; its handler remains unchanged
+and has no delegated-token path. MCP itself must validate signature, issuer,
+audience, expiry and per-tool scope, then call the API with the independent
+`MCP_API_SERVICE_TOKEN` service credential. Inventory remains read-only. Public
 RAG access is unchanged. Never put a token in the question or store it in source
 control. Tokens are held only for the current locked runtime invocation and
 cleared in `finally`; they never enter LangGraph state/config, checkpoints,
@@ -191,9 +208,12 @@ legacy knowledge endpoint remains available for other callers.
 ## Persistence and inspection
 
 `SUPPORT_AGENT_STATE_DIR` optionally selects the state directory. The local
-default is `~/.local/state/trackflow/support_agent`. Compose maps
-`./data/support_agent` to `/var/lib/trackflow-agent`, surviving container
-recreation. Do not delete that directory if runs must remain inspectable.
+default is `~/.local/state/trackflow/support_agent`. Compose mounts the named
+Docker volume `trackflow-agent` at `/var/lib/trackflow-agent`; it survives
+container recreation and is writable by the non-root `trackflow` user. Do not
+remove the volume if runs must remain inspectable. The legacy host directory
+`data/support_agent` is not mounted by Compose; if it contains state from an
+older setup, preserve it until it has been reviewed or migrated explicitly.
 
 - `checkpoints.sqlite3`: official LangGraph `SqliteSaver`, checkpointing at
   superstep boundaries (one node per step in this graph).

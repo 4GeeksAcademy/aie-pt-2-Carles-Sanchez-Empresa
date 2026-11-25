@@ -12,12 +12,11 @@ interface RfpNotification {
   client_name: string | null;
   client_country: string | null;
   status: string;
-  processing_failed: boolean;
+  processing_failed?: boolean;
   created_at: string;
 }
 
 const VISIBLE_NOTIFICATIONS = 3;
-const POLL_INTERVAL_MS = 4_000;
 const INACTIVE_STATUSES = new Set(["done", "descartado", "archived", "returned_to_client"]);
 const STATUS_KEYS: Record<string, string> = {
   analizando: "rfp.status_analyzing",
@@ -56,7 +55,7 @@ export default function DashboardPage() {
   const [connection, setConnection] = useState<"connecting" | "connected" | "reconnecting">("connecting");
   const [recovered, setRecovered] = useState(false);
   const [recoveryFailed, setRecoveryFailed] = useState(false);
-  const lastEventId = useRef(typeof window === "undefined" ? "0" : window.sessionStorage.getItem("rfp-sse-last-id") ?? "0");
+  const lastEventId = useRef<string | null>(typeof window === "undefined" ? null : window.sessionStorage.getItem("rfp-sse-last-id"));
 
   useEffect(() => {
     setCompanyWebsiteUrl(forwardedPortUrl(3000, COMPANY_WEBSITE_FALLBACK_URL));
@@ -107,7 +106,17 @@ export default function DashboardPage() {
       let frameId = "";
       const dispatch = () => {
         if (eventName === "rfp_ticket_created" && data) {
-          void recoverMissed();
+          try {
+            const notification = JSON.parse(data) as RfpNotification;
+            setNotifications((current) => {
+              const withoutDuplicate = current.filter((item) => item.ticket_id !== notification.ticket_id);
+              return [notification, ...withoutDuplicate].sort(
+                (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
+              );
+            });
+          } catch (error) {
+            console.error("Invalid RFP notification event", error);
+          }
           if (frameId) {
             lastEventId.current = frameId;
             window.sessionStorage.setItem("rfp-sse-last-id", frameId);
@@ -150,7 +159,7 @@ export default function DashboardPage() {
         const token = getToken();
         if (!token) throw new Error("Missing access token");
         const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: "text/event-stream" };
-        headers["Last-Event-ID"] = lastEventId.current;
+        if (lastEventId.current !== null) headers["Last-Event-ID"] = lastEventId.current;
         const response = await fetch("/api/rfp-intake/tickets/events", {
           headers,
           cache: "no-store",
@@ -170,7 +179,6 @@ export default function DashboardPage() {
       }
     };
 
-    const refreshTimer = window.setInterval(() => void recoverMissed(), POLL_INTERVAL_MS);
     void recoverMissed().finally(() => {
       if (!stopped) void connect();
     });
@@ -178,7 +186,6 @@ export default function DashboardPage() {
       stopped = true;
       controller?.abort();
       recoveryController.abort();
-      window.clearInterval(refreshTimer);
       if (reconnectTimer !== undefined) window.clearTimeout(reconnectTimer);
     };
   }, []);
