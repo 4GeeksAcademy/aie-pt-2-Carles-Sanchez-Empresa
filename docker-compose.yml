@@ -13,11 +13,13 @@ services:
       target: deps  # Solo dependencias (dev, con bind mounts para recarga)
     container_name: trackflow-interfaces
     ports:
-      - "3000-3002:3000-3002" # website, backoffice y app de candidatos
+      - "3000:3000"   # website
+      - "3001:3001"   # backoffice
+      - "3002:3002"   # talent pipeline / RR. HH.
     command: >
-            sh -c "cd /app/uis/website && npx next dev --webpack --port 3000 &
-              cd /app/uis/backoffice && npx next dev --webpack --port 3001 &
-              cd /app/uis/talent-pipeline-tracker && npx next dev --webpack --port 3002 &
+      sh -c "cd /app/uis/website && npx next dev --webpack --port 3000 &
+             cd /app/uis/backoffice && npx next dev --webpack --port 3001 &
+             cd /app/uis/talent-pipeline-tracker && npx next dev --webpack --port 3002 &
              wait"
     volumes:
       # Bind mounts para recarga en caliente
@@ -32,6 +34,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_HOST=api
       - NEXT_PUBLIC_API_PORT=8000
+      - NEXT_PUBLIC_TALENT_PIPELINE_URL=http://localhost:3002
       - AUTH_API_BASE=http://api:8000
       # Browser-side WebSocket URL: use the published host port, not Docker DNS `api`.
       - NEXT_PUBLIC_API_WS_URL=${NEXT_PUBLIC_API_WS_URL:-ws://localhost:8000}

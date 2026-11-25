@@ -2,6 +2,13 @@
 
 ## ✅ Hitos Completados
 
+### Dependency Audit npm (2026-11-17)
+- [x] Instaladas las dependencias con npm y actualizado el lockfile raiz; overrides para glob >=14.0.6 y minimatch >=11.0.9 en las ramas vulnerables.
+- [x] Excepcion temporal autorizada por el usuario exclusivamente para GHSA-fc5q-39xc-vjpf: picomatch no tiene parche publicado. Retirar la excepcion en `scripts/audit_npm.mjs` cuando exista una version corregida.
+- [x] CI usa `npm run audit:dependencies`: mantiene el bloqueo para otros avisos altos/criticos y para errores del audit. Verificados siete escenarios del filtro.
+- [x] Audit de produccion sin vulnerabilidades; compilaciones de core y las tres aplicaciones Next.js correctas; Jest: 31 tests correctos.
+- [ ] Lint de talent-pipeline-tracker: pendientes 5 errores y 7 avisos en archivos ajenos al cambio de dependencias. El audit bruto conserva 49 paquetes afectados por el unico aviso de picomatch, solo en desarrollo.
+
 ### Notificaciones SSE para RFP (implementación en curso)
 - [x] Añadida tabla outbox durable y endpoint SSE autenticado con evento nombrado y replay por `Last-Event-ID`.
 - [x] Home del backoffice sustituida por una tarjeta de nuevas RFP; el dashboard usa `fetch`/`ReadableStream`, recuperación de tickets y reconexión con backoff.

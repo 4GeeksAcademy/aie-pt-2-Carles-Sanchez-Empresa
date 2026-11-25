@@ -93,3 +93,11 @@ La política de mutaciones administrativas es provisional: debe ser aprobada por
 ## Alcance y cautelas
 
 Todos los cambios son locales y no se han desplegado. No se leyó `.env`, no se modificó el servidor remoto y no se infiere exposición pública de los puertos Compose. Las pruebas realizadas son unitarias/selectivas; no prueban eficacia productiva ni cumplimiento de una rúbrica externa. RGPD/CCPA-CPRA, propietarios, política de acceso y retención requieren validación por responsables correspondientes. Ninguna de las diez categorías se declara cerrada integralmente en esta fase.
+
+## Delta posterior: hardening de host y alcance (2026-11-17)
+
+Se actualizaron `infra/security/harden-linux-server.sh` y `collect-linux-hardening-evidence.sh`: el aplicador requiere una clave pública OpenSSH válida para crear el operador diario sudo-capable `trackflow-ops` con autenticación SSH exclusivamente por clave, deshabilita login root (`PermitRootLogin no`) y exige confirmar una segunda sesión de operador antes de cambiar el firewall. Mantiene separada la cuenta bloqueada/no-login `trackflow-svc`; define `/opt/trackflow` (código) y `/etc/trackflow` (config) como `root:trackflow-svc 0750`, y `/var/log/trackflow` y `/var/lib/trackflow` como propiedad de servicio `0750`. UFW queda deny incoming y solo SSH detectado + HTTPS 443 (80 opcional). Crea backup, requiere confirmación del reset y rechaza Docker activo para evitar asumir que UFW filtra puertos publicados. Procedimiento en `infra/security/README.es.md`.
+
+`docs/security/owasp-top10-scope-2026-11-17.md` añade evaluación A01–A10 separada para backend/API, frontend/portales y carril agéntico, con sistemas del briefing y referencias a archivos/pruebas. El briefing literal `empresa-BRIEFING.md` no está en el checkout; se usó el alcance provisto por el usuario.
+
+**Sin cierre del hallazgo:** esta ejecución no tuvo host ni acceso SSH/sudo autorizados. Los scripts y el diseño son reproducibles, pero no se ejecutaron contra servidor alguno; no existe salida del colector, prueba de root-deny ni firewall cloud verificado. No marcar el requisito operativo como cumplido en host; A05 permanece parcial hasta aplicar en staging/producción, verificar segundo login/HTTPS y adjuntar evidencia del host y firewall de proveedor. No se deben fingir resultados ni simular el estado del Codespace como servidor productivo.
