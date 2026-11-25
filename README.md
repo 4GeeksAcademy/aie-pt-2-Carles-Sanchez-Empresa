@@ -1,13 +1,4 @@
-# AI Engineering Company Project — Student Template
-
-[![4Geeks Academy](https://img.shields.io/badge/4Geeks-Academy-blue)](https://4geeksacademy.com)
-[![AI Engineering](https://img.shields.io/badge/track-AI%20Engineering-green)](https://4geeksacademy.com/es/programas-de-carrera/ingenieria-ia)
-
-_Base template for transversal projects in the AI Engineering Career Program — 4Geeks Academy._
-
-> _Instrucciones disponibles en español en [README.es.md](./README.es.md)._
-
----
+# Trackflow - AI Engineering Company Project 
 
 ## Purpose
 
@@ -288,7 +279,6 @@ Each service is available at a unique HTTPS URL:
 ## Links
 
 - [4Geeks Academy — AI Engineering](https://4geeksacademy.com/es/programas-de-carrera/ingenieria-ia)
-- [How to start a coding project](https://4geeks.com/lesson/how-to-start-a-project)
 
 ---
 
