@@ -19,6 +19,8 @@
   },
   "overrides": {
     "glob@>=9.0.0 <=14.0.1": "^14.0.6",
-    "minimatch@>=7.0.0 <11.0.1": "^11.0.9"
+    "minimatch@>=7.0.0 <11.0.1": "^11.0.9",
+    "typescript-eslint": "^8.73.0",
+    "@typescript-eslint/typescript-estree": "^8.73.0"
   }
 }

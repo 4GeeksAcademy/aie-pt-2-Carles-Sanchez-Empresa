@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict
 from auth import get_current_user
 from .chat_pubsub import ChatPubSub
 from .runtime import AgentRunError
+from .rate_limit import enforce_actor_rate_limit
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Support Chat"])
@@ -211,11 +212,31 @@ async def chat_websocket(websocket: WebSocket, session_id: str):
                     if not isinstance(text, str) or not text.strip() or len(text) > 10000:
                         await websocket.send_json({"event": "protocol_error", "data": {"message": "Mensaje vacío o demasiado largo."}})
                         continue
+                    try:
+                        enforce_actor_rate_limit(user["id"])
+                    except HTTPException as exc:
+                        if exc.status_code != 429:
+                            raise
+                        await websocket.send_json({"event": "rate_limited", "data": {
+                            "message": exc.detail["message"],
+                            "retry_after": int(exc.headers["Retry-After"]),
+                        }})
+                        continue
                     start_turn(text)
                 elif event == "interrupt_requested":
                     new_input = data.get("new_input")
                     if not isinstance(new_input, str) or not new_input.strip() or len(new_input) > 10000:
                         await websocket.send_json({"event": "protocol_error", "data": {"message": "new_input vacío o demasiado largo."}})
+                        continue
+                    try:
+                        enforce_actor_rate_limit(user["id"])
+                    except HTTPException as exc:
+                        if exc.status_code != 429:
+                            raise
+                        await websocket.send_json({"event": "rate_limited", "data": {
+                            "message": exc.detail["message"],
+                            "retry_after": int(exc.headers["Retry-After"]),
+                        }})
                         continue
                     if not active or not generation_task or generation_task.done():
                         start_turn(new_input)

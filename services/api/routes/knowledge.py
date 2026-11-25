@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import logging
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from auth import get_current_user
 from data.pipelines.rag import query
+from support_agent.rate_limit import enforce_actor_rate_limit
 
 logger = logging.getLogger("trackflow.knowledge")
 
@@ -20,12 +22,16 @@ router = APIRouter(tags=["Knowledge Base"])
 
 class KnowledgeQueryRequest(BaseModel):
     """Cuerpo de petición para consultar la base de conocimiento."""
-    question: str = Field(..., min_length=1, description="Pregunta en lenguaje natural")
+    question: str = Field(..., min_length=1, max_length=10000, description="Pregunta en lenguaje natural")
 
 
 class KnowledgeQueryResponse(BaseModel):
     """Cuerpo de respuesta conteniendo únicamente el string generado por el modelo."""
     answer: str = Field(..., description="Respuesta final generada a partir del contexto recuperado")
+
+
+def enforce_knowledge_rate_limit(current_user: dict = Depends(get_current_user)) -> None:
+    enforce_actor_rate_limit(current_user["id"])
 
 
 @router.post(
@@ -41,7 +47,10 @@ class KnowledgeQueryResponse(BaseModel):
     status_code=status.HTTP_200_OK,
     include_in_schema=False,
 )
-def handle_knowledge_query(payload: KnowledgeQueryRequest) -> KnowledgeQueryResponse:
+def handle_knowledge_query(
+    payload: KnowledgeQueryRequest,
+    _rate_limit: None = Depends(enforce_knowledge_rate_limit),
+) -> KnowledgeQueryResponse:
     """Procesa una consulta contra la base de conocimiento de TrackFlow."""
     question = payload.question.strip()
     if not question:

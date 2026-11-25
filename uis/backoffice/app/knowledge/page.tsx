@@ -51,6 +51,10 @@ export default function KnowledgePage(): ReactElement {
       }
       const token = getToken();
       if (!token) throw new Error("Sesión expirada. Inicia sesión de nuevo.");
+      // In Docker, `localhost:8000` from the browser is the host-published API
+      // port; the container-only hostname `api` must never be exposed here.
+      // Otherwise use the same-origin API path only when an upstream proxy is
+      // explicitly configured to support WebSocket upgrades.
       const configuredWsUrl = process.env.NEXT_PUBLIC_API_WS_URL?.trim();
       const wsOrigin = configuredWsUrl || `${window.location.origin.replace(/^http/, "ws")}/api`;
       const wsUrl = new URL(wsOrigin, window.location.origin.replace(/^http/, "ws"));

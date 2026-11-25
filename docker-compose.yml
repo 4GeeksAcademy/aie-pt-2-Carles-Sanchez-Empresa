@@ -42,7 +42,6 @@ services:
       - NEXT_PUBLIC_TELEMETRY_ENDPOINT=/telemetry/events
     networks:
       - trackflow-net
-    profiles: [dev]
 
   # ─── Servicio backend (FastAPI) ──────────────────────────
   api:
@@ -59,7 +58,7 @@ services:
       # Exponemos también el módulo Celery para que la API pueda encolar.
       - ./services/celery_app.py:/app/api/celery_app.py:ro
       - ./packages/shared-py:/app/packages/shared-py
-      - trackflow-raw:/app/data/raw
+      - ./data/raw:/app/data/raw
       - trackflow-agent:/var/lib/trackflow-agent
     env_file:
       - .env
@@ -75,15 +74,15 @@ services:
       - qdrant
     networks:
       - trackflow-net
-    profiles: [dev]
 
   redis:
     image: redis:7-alpine
     container_name: trackflow-redis
     command: redis-server --maxmemory-policy noeviction
+    ports:
+      - "6379:6379"
     networks:
       - trackflow-net
-    profiles: [dev]
 
   worker:
     build:
@@ -97,12 +96,11 @@ services:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - TRACKFLOW_RAW_DATA_DIR=/app/data/raw
     volumes:
-      - trackflow-raw:/app/data/raw
+      - ./data/raw:/app/data/raw
     depends_on:
       - redis
     networks:
       - trackflow-net
-    profiles: [dev]
 
   flower:
     build:
@@ -110,6 +108,8 @@ services:
       dockerfile: services/Dockerfile
     container_name: trackflow-flower
     command: celery -A services.celery_app flower --port=5555 --persistent --db=/data/flower.db
+    ports:
+      - "5555:5555"
     env_file:
       - .env
     environment:
@@ -120,16 +120,17 @@ services:
       - redis
     networks:
       - trackflow-net
-    profiles: [dev]
 
   qdrant:
-    image: qdrant/qdrant:v1.15.3
+    image: qdrant/qdrant:latest
     container_name: trackflow-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
     volumes:
       - ./data/qdrant:/qdrant/storage
     networks:
       - trackflow-net
-    profiles: [dev]
 
 # ─── Red Docker ────────────────────────────────────────────
 networks:
@@ -138,5 +139,4 @@ networks:
     driver: bridge
 
 volumes:
-  trackflow-raw:
   trackflow-agent:

@@ -309,6 +309,15 @@
 
 *(Por definir — sección reservada para futuros hitos)*
 
+### Integración de `origin/main` en `feature/nist-security-practices`
+- [x] Resueltos los conflictos conservando controles y documentación NIST, el rate limit por usuario y autenticación WebSocket mediante subprotocol (`trackflow-chat-v1` + `bearer.<JWT>`), sin token en query string.
+- [x] Integradas las mejoras compatibles de `main` para streaming/reconexión del chat, pruebas de transporte, RAG, MCP y herramientas del agente.
+- [x] Conservada la versión de Flower de `main` y retiradas del árbol las bases runtime de checkpoints/traces/memoria de soporte.
+- [x] Validación focalizada: `uv run --no-sync pytest tests/test_chat_transport.py tests/pipelines/test_support_agent.py -q` — 119 passed; queda un aviso deprecado de Starlette/AnyIO.
+- [x] Validación de UI: `npx tsc --noEmit -p uis/backoffice/tsconfig.json`.
+- [x] Validación de Compose: `docker compose config -q`.
+- [ ] Cerrar el merge tras confirmar los cambios de archivos protegidos `.env.example` y `.gitignore`, ejecutar la revisión final y crear el commit de merge.
+
 ---
 
 ## ✅ Pipeline semanal de desempeño de negocio
