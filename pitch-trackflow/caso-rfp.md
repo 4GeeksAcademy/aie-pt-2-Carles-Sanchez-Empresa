@@ -24,15 +24,22 @@ Es el foco más diferenciador del trabajo reciente. Permite mostrar IA integrada
 
 ### 2. Problema y oportunidad — 45–60 segundos
 
-> TrackFlow opera en dos países y depende de que varias áreas coordinen almacén, transportistas, devoluciones y atención al cliente. El briefing describe procesos manuales y sistemas que no comparten una visión común. En una solicitud comercial, el reto es reunir información de distintas áreas sin perder condiciones importantes ni publicar una propuesta que nadie haya revisado. La oportunidad no es quitar a las personas del proceso: es reducir el trabajo repetitivo y hacer más visible qué falta y quién debe decidir.
+> TrackFlow opera en dos países y depende de que varias áreas coordinen almacén, transportistas, devoluciones y atención al cliente. 
+> El briefing describe procesos manuales y sistemas que no comparten una visión común. 
+> En una solicitud comercial, el reto es reunir información de distintas áreas sin perder condiciones importantes ni publicar una propuesta que nadie haya revisado. 
+>La oportunidad no es quitar a las personas del proceso: es reducir el trabajo repetitivo y hacer más visible qué falta y quién debe decidir.
 
 **Pantalla:** lista de tickets; después, detalle de uno con áreas y estados. No digas que el briefing pedía expresamente RFP.
 
 ### 3. Solución y demo — unos 2 minutos
 
-> Este es el backoffice de TrackFlow. Una solicitud PDF entra como un ticket. El sistema procesa el documento, extrae la información relevante y la organiza en secciones de trabajo para los departamentos implicados. Después se generan borradores y preguntas abiertas para que quien revisa vea tanto la propuesta como lo que aún falta por aclarar.
+> Este es el backoffice de TrackFlow. Una solicitud PDF entra como un ticket. 
+> El sistema procesa el documento, extrae la información relevante y la organiza en secciones de trabajo para los departamentos implicados. 
+> Después se generan borradores y preguntas abiertas para que quien revisa vea tanto la propuesta como lo que aún falta por aclarar.
 
-> Si el PDF no produce texto suficiente para procesarse, el flujo conserva la solicitud y la marca para revisión manual en vez de tratarla como una clasificación segura. También puede pedir revisión cuando no logra asignar un departamento compatible. No infiere automáticamente departamentos que el clasificador no haya asignado.
+> Si el PDF no produce texto suficiente para procesarse, el flujo conserva la solicitud y la marca para revisión manual en vez de tratarla como una clasificación segura. 
+> También puede pedir revisión cuando no logra asignar un departamento compatible. 
+> No infiere automáticamente departamentos que el clasificador no haya asignado.
 
 **Recorrido en pantalla:**
 
@@ -41,9 +48,12 @@ Es el foco más diferenciador del trabajo reciente. Permite mostrar IA integrada
 3. Muestra estados y aprobaciones por sección. Si decides enseñar una decisión, una aprobación mantiene cada sección independiente; una solicitud de cambios regenera la sección elegida y tanto los cambios como los rechazos departamentales requieren un comentario.
 4. En la revisión humana final, enseña la edición de volumen/moneda o de un borrador. Para cerrar la historia, muestra el documento final aprobado; usa un ticket preparado para no invertir el tiempo del vídeo esperando la generación.
 
-> La parte de IA está dentro de un flujo controlado: no es un chat libre que escribe directamente en el sistema. El backend coordina las etapas y mantiene el estado del proceso. Si el contenido requiere revisión, el ticket puede pasar a esa etapa; las secciones tienen aprobaciones independientes y las solicitudes de cambios pueden volver a generar solo la sección afectada.
+> La parte de IA está dentro de un flujo controlado: no es un chat libre que escribe directamente en el sistema. 
+> El backend coordina las etapas y mantiene el estado del proceso. 
+> Si el contenido requiere revisión, el ticket puede pasar a esa etapa; las secciones tienen aprobaciones independientes y las solicitudes de cambios pueden volver a generar solo la sección afectada.
 
-> Cuando todas las secciones activas están aprobadas y no hay conflictos bloqueantes, el ticket pasa a revisión humana final; eso no publica todavía la propuesta. La persona revisora puede editar campos permitidos, solicitar una nueva vuelta de aprobación, devolver el ticket al cliente o aprobar. Solo al aprobar se compone y guarda el documento final.
+> Cuando todas las secciones activas están aprobadas y no hay conflictos bloqueantes, el ticket pasa a revisión humana final; eso no publica todavía la propuesta. 
+> La persona revisora puede editar campos permitidos, solicitar una nueva vuelta de aprobación, devolver el ticket al cliente o aprobar. Solo al aprobar se compone y guarda el documento final.
 
 > Si falla la generación de una sección, el flujo puede dejar un borrador explícito que indica que requiere revisión y que no se han asumido precios, capacidades ni compromisos no confirmados. Así el fallo no se disfraza de una respuesta correcta.
 
@@ -57,9 +67,14 @@ Es el foco más diferenciador del trabajo reciente. Permite mostrar IA integrada
 
 ### 4. Decisiones y reto — 45 segundos
 
-> La decisión principal fue automatizar la preparación y la generación de borradores, pero no la aprobación final. Elegí aprobaciones por sección y una revisión humana final en vez de publicar automáticamente, porque una propuesta comercial puede contener compromisos sobre volumen, moneda o devoluciones. También añadí controles deterministas para ciertos conflictos y para contenido sospechoso en documentos de entrada; esos controles ayudan, pero no garantizan detectar toda instrucción maliciosa.
+> La decisión principal fue automatizar la preparación y la generación de borradores, pero no la aprobación final. 
+> Elegí aprobaciones por sección y una revisión humana final en vez de publicar automáticamente, porque una propuesta comercial puede contener compromisos sobre volumen, moneda o devoluciones. 
+> También añadí controles deterministas para ciertos conflictos y para contenido sospechoso en documentos de entrada; esos controles ayudan, pero no garantizan detectar toda instrucción maliciosa.
 
-> El reto técnico fue manejar entradas imperfectas y fallos parciales sin perder el control del proceso. Si el PDF no aporta texto suficiente o no se puede asignar a un departamento compatible, el flujo pide revisión manual en vez de presentar una clasificación como segura. Si falla la generación de un área, deja un placeholder transparente. Además, las aprobaciones por departamento se pueden pausar y reanudar sin que aprobar una sección desbloquee las demás.
+> El reto técnico fue manejar entradas imperfectas y fallos parciales sin perder el control del proceso. 
+> Si el PDF no aporta texto suficiente o no se puede asignar a un departamento compatible, el flujo pide revisión manual en vez de presentar una clasificación como segura. 
+> Si falla la generación de un área, deja un placeholder transparente. 
+> Además, las aprobaciones por departamento se pueden pausar y reanudar sin que aprobar una sección desbloquee las demás.
 
 > De lo que estoy más orgulloso es de haber diseñado la revisión humana y los casos de fallo como parte del flujo, no como una comprobación añadida al final.
 
@@ -77,15 +92,24 @@ Graba a cámara, con dos segundos de silencio antes y después de cada respuesta
 
 **[Pausa de 2 segundos]**
 
-> ¿Qué te hizo decidirte a estudiar Ingeniería de IA — y qué estuvo a punto de detenerte? Me hizo decidirme **[tu motivo real]**; lo que estuvo a punto de detenerme fue **[tu obstáculo real]**.
+> ¿Qué te hizo decidirte a estudiar Ingeniería de IA — y qué estuvo a punto de detenerte? 
+
+> Me hizo decidirme el querer mejorar y aprender una habilidad nueva que ahora mismo se busca en todas partes; mientras que lo que estuvo a punto de detenerme fue que, en el pasado, codificar no se me daba bien. Ahora entiendo los conceptos y puedo desarrollar por mi cuenta proyectos mucho mas grandes y ambiciosos.
 
 **[Pausa de 2 segundos]**
 
-> ¿Hubo un momento, un proyecto o una persona durante el programa en el que todo encajó de verdad? Para mí, todo encajó cuando **[momento real]**, porque vi cómo conectar una necesidad de negocio con una solución que se puede probar.
+> ¿Hubo un momento, un proyecto o una persona durante el programa en el que todo encajó de verdad? 
+
+> A medida que el curso avanzaba, iba aprendiendo nuevos lenguajes, nuevas técnicas, nuevos modos de ver las cosas... 
+> Y entonces te paras a pensar y te dices: "¿Y si aplicará esto en ese proyecto que hice en el pasado?", y empiezas a darle vueltas, comentas tu punto de vista con los profesores, y acabas creando algo completamente nuevo. 
 
 **[Pausa de 2 segundos]**
 
-> ¿Qué le dirías a alguien que está indeciso sobre unirse a 4Geeks? Le diría que **[consejo propio]**, y que valore si quiere construir proyectos prácticos y aprender a explicar las decisiones que toma.
+> ¿Qué le dirías a alguien que está indeciso sobre unirse a 4Geeks? 
+
+> Le diría que tenga paciencia y constancia. 
+> Puede parecer muy abrumador al principio aprender todo a un ritmo acelerado, pero cuando terminas y miras atrás, te das cuenta que has aprendido mucho más de lo que pensabas. 
+> Ahora que se ha acabado, el limite de lo que puedes crear está en tu propia imaginación.
 
 **[Pausa de 2 segundos antes de cortar.]**
 
