@@ -5,7 +5,7 @@ CRUD completo con filtros por país y categoría, más operaciones específicas
 para tarifa y estado con validación Pydantic.
 """
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from caching import cached, invalidate
 from database import suppliers_table, SupplierQuery
@@ -20,6 +20,7 @@ from pydantic_models import (
     VALID_CATEGORIES,
     generate_timestamp,
 )
+from auth import require_admin
 
 router = APIRouter(prefix="/suppliers", tags=["Suppliers"])
 
@@ -47,7 +48,7 @@ def _enrich_with_id(doc: dict, doc_id: int) -> dict:
 # ──────────────────────────── Endpoints ────────────────────────────
 
 @router.post("", response_model=SupplierResponse, status_code=201)
-async def create_supplier(payload: SupplierCreate):
+async def create_supplier(payload: SupplierCreate, current_user: dict = Depends(require_admin)):
     """
     Crea un nuevo proveedor.
 
@@ -124,7 +125,8 @@ async def get_supplier(supplier_id: int):
 
 
 @router.put("/{supplier_id}", response_model=SupplierResponse)
-async def update_supplier(supplier_id: int, payload: SupplierCreate):
+async def update_supplier(supplier_id: int, payload: SupplierCreate,
+                          current_user: dict = Depends(require_admin)):
     """Actualiza todos los datos editables de un proveedor."""
     if suppliers_table.get(doc_id=supplier_id) is None:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
@@ -144,7 +146,8 @@ async def update_supplier(supplier_id: int, payload: SupplierCreate):
 
 
 @router.patch("/{supplier_id}/rate", response_model=SupplierResponse)
-async def update_supplier_rate(supplier_id: int, payload: SupplierUpdateRate):
+async def update_supplier_rate(supplier_id: int, payload: SupplierUpdateRate,
+                               current_user: dict = Depends(require_admin)):
     """
     Actualiza la tarifa de un proveedor.
 
@@ -173,7 +176,8 @@ async def update_supplier_rate(supplier_id: int, payload: SupplierUpdateRate):
 
 
 @router.patch("/{supplier_id}/status", response_model=SupplierResponse)
-async def update_supplier_status(supplier_id: int, payload: SupplierUpdateStatus):
+async def update_supplier_status(supplier_id: int, payload: SupplierUpdateStatus,
+                                current_user: dict = Depends(require_admin)):
     """
     Actualiza el estado de un proveedor (active/suspended).
 
@@ -201,7 +205,7 @@ async def update_supplier_status(supplier_id: int, payload: SupplierUpdateStatus
 
 
 @router.delete("/{supplier_id}", response_model=DeleteResponse)
-async def delete_supplier(supplier_id: int):
+async def delete_supplier(supplier_id: int, current_user: dict = Depends(require_admin)):
     """
     Elimina un proveedor por su ID.
 

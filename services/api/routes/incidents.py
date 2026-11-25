@@ -7,7 +7,7 @@ de métricas agregadas.
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from caching import cached, invalidate
 from database import incidents_table, IncidentQuery
@@ -21,6 +21,7 @@ from pydantic_models import (
     doc_to_response,
 )
 from trackflow_shared import VALID_TRANSITIONS, validate_incident_record
+from auth import require_admin
 
 router = APIRouter(prefix="/api/incidents", tags=["Incidents"])
 
@@ -28,7 +29,7 @@ router = APIRouter(prefix="/api/incidents", tags=["Incidents"])
 # ──────────────────────────── POST ────────────────────────────
 
 @router.post("", response_model=IncidentResponse, status_code=201)
-async def create_incident(payload: IncidentCreate):
+async def create_incident(payload: IncidentCreate, current_user: dict = Depends(require_admin)):
     """
     Crea una nueva incidencia.
 
@@ -164,7 +165,8 @@ async def get_incident(incident_id: int):
 # ──────────────────────────── PATCH status ────────────────────────────
 
 @router.patch("/{incident_id}/status", response_model=IncidentResponse)
-async def update_incident_status(incident_id: int, payload: IncidentStatusUpdate):
+async def update_incident_status(incident_id: int, payload: IncidentStatusUpdate,
+                                 current_user: dict = Depends(require_admin)):
     """
     Actualiza únicamente el estado de una incidencia.
 

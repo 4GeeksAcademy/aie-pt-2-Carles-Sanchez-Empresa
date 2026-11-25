@@ -7,10 +7,10 @@ Todos los endpoints requieren autenticación JWT (TinyDB).
 
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from sqlmodel import Session, select, func
 
-from auth import get_current_user
+from auth import get_current_user, require_admin
 from caching import cached, invalidate
 from database import get_db
 from i18n import get_language_from_request, get_translator
@@ -166,7 +166,7 @@ async def list_products(
 async def create_product(
     payload: SKUCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),
 ):
     """
     Registra un nuevo SKU en el inventario.
@@ -233,7 +233,7 @@ async def get_product(
 async def create_inbound_order(
     payload: StockEntryCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),
 ):
     """
     Registra una recepción de mercancía (StockEntry).
@@ -286,7 +286,11 @@ async def create_inbound_order(
 async def create_outbound_order(
     payload: StockExitCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),
+    human_confirmation: Annotated[
+        str | None,
+        Header(alias="X-TrackFlow-Human-Confirmation"),
+    ] = None,
 ):
     """
     Registra un despacho (dispatch) o pérdida (loss) de mercancía.
@@ -306,6 +310,15 @@ async def create_outbound_order(
         raise HTTPException(
             status_code=422,
             detail="tracking_number debe ser nulo cuando exit_type es 'loss'",
+        )
+
+    # Dispatches and write-offs are operationally irreversible records. Require
+    # a separate explicit confirmation value, in addition to admin auth, so
+    # automation or a stale UI cannot accidentally commit them.
+    if human_confirmation != "confirmed":
+        raise HTTPException(
+            status_code=428,
+            detail="Se requiere confirmación humana explícita en X-TrackFlow-Human-Confirmation.",
         )
 
     # Verificar SKU

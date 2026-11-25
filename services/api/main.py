@@ -15,6 +15,7 @@ Módulos:
 
 import csv
 import asyncio
+import os
 import io
 import logging
 import sys
@@ -38,7 +39,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from analyzer import analyze_rows, build_results_csv
-from auth import get_current_user
+from auth import get_current_user, require_admin
 from database import engine
 from i18n import get_translator, get_language_from_request
 from models import SQLModel
@@ -120,7 +121,7 @@ app.include_router(oauth_issuer_router)
 
 
 @app.get("/tasks/{task_id}", tags=["Tasks"])
-async def get_task_status(task_id: str, current_user: dict = Depends(get_current_user)):
+async def get_task_status(task_id: str, request: Request, current_user: dict = Depends(require_admin)):
     """Devuelve el estado y resultado de una tarea Celery."""
     result = celery_app.AsyncResult(task_id)
     payload = {"task_id": task_id, "status": result.status.lower(), "result": None}
@@ -133,10 +134,17 @@ async def get_task_status(task_id: str, current_user: dict = Depends(get_current
 # ── CORS: permitir peticiones desde el frontend ──
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        origin.strip().rstrip("/")
+        for origin in os.getenv(
+            "CORS_ALLOWED_ORIGINS",
+            "http://localhost:3000,http://localhost:3001",
+        ).split(",")
+        if origin.strip()
+    ],
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin"],
 )
 
 # ── Security Headers Middleware ──
@@ -176,7 +184,10 @@ async def timing_middleware(request: Request, call_next):
 
 
 # Almacén en memoria del último resultado (para la exportación CSV)
-_last_result: dict | None = None
+# CSV analysis results may contain customer incident data. Keep the export
+# scoped to the authenticated principal instead of sharing the latest result
+# process-wide between users.
+_last_results: dict[str, dict] = {}
 
 # ──────────────────── Global Error Handler ────────────────────
 
@@ -215,7 +226,6 @@ def _parse_csv(content: str) -> list[dict]:
 
 
 # ──────────────────────────── Endpoints ────────────────────────────
-
 @app.post("/api/incidents/analyze", response_model=AnalyzeResponse)
 async def post_analyze(
     file: UploadFile = File(...),
@@ -227,40 +237,46 @@ async def post_analyze(
 
     Requiere autenticación (token JWT).
     """
-    global _last_result
-
-    # ── Validación básica del fichero ──
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(
             status_code=400,
             detail="El fichero debe tener extensión .csv",
         )
-
-    # ── Lectura ──
     try:
-        raw = await file.read()
-        content = raw.decode("utf-8-sig")  # tolera BOM
-    except Exception as e:
-        logger.exception("Error al leer fichero CSV")
-        raise HTTPException(status_code=400, detail="Error al leer el fichero.")
+        # ── Lectura acotada: no cargar archivos arbitrariamente grandes en memoria ──
+        try:
+            max_csv_bytes = 10 * 1024 * 1024
+            raw = await file.read(max_csv_bytes + 1)
+            if len(raw) > max_csv_bytes:
+                raise HTTPException(status_code=413, detail="El fichero CSV supera el límite de 10 MB.")
+            content = raw.decode("utf-8-sig")  # tolera BOM
+        except HTTPException:
+            raise
+        except Exception:
+            logger.exception("Error al leer fichero CSV")
+            raise HTTPException(status_code=400, detail="Error al leer el fichero.")
 
-    if not content.strip():
-        raise HTTPException(status_code=400, detail="El fichero está vacío.")
+        if not content.strip():
+            raise HTTPException(status_code=400, detail="El fichero está vacío.")
 
-    # ── Parseo ──
-    try:
-        rows = _parse_csv(content)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception("Error al parsear CSV")
-        raise HTTPException(status_code=400, detail="Error al parsear el archivo CSV.")
+        # ── Parseo ──
+        try:
+            rows = _parse_csv(content)
+        except HTTPException:
+            raise
+        except Exception:
+            logger.exception("Error al parsear CSV")
+            raise HTTPException(status_code=400, detail="Error al parsear el archivo CSV.")
 
-    # ── Análisis ──
-    result = analyze_rows(rows)
-    _last_result = result
-
-    return result
+        # ── Análisis ──
+        result = analyze_rows(rows)
+        user_id = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="No se pudo determinar el usuario autenticado.")
+        _last_results[str(user_id)] = result
+        return result
+    finally:
+        await file.close()
 
 
 @app.get("/api/incidents/results/export")
@@ -272,13 +288,15 @@ async def get_export(
 
     Requiere autenticación (token JWT).
     """
-    if _last_result is None:
+    user_id = current_user.get("id") or current_user.get("user_id") or current_user.get("sub")
+    result = _last_results.get(str(user_id)) if user_id is not None else None
+    if result is None:
         raise HTTPException(
             status_code=404,
-            detail="No hay ningún análisis previo. Realiza un POST /api/incidents/analyze primero.",
+            detail="No hay resultados disponibles para exportar.",
         )
 
-    csv_content = build_results_csv(_last_result)
+    csv_content = build_results_csv(result)
 
     return StreamingResponse(
         iter([csv_content]),
