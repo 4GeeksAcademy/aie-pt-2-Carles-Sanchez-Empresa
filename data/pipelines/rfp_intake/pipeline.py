@@ -86,8 +86,6 @@ class Classification(BaseModel):
 def _extract_markdown(path: Path, converter: MarkItDown | None = None) -> str:
     result = (converter or MarkItDown()).convert(str(path))
     markdown = (result.text_content or "").strip()
-    if not markdown:
-        raise ValueError("El PDF no produjo texto extraíble.")
     return markdown[:MAX_MARKDOWN_CHARS]
 
 
@@ -200,8 +198,18 @@ def classify_markdown(markdown: str, *, client=None, model: str | None = None) -
 
 
 def _normalize_classifier_payload(payload: dict) -> dict:
-    """Normalize safe number representations while leaving unknown quantities unclaimed."""
+    """Normalize safe omissions while ensuring uncertain RFPs reach human review."""
     normalized = dict(payload)
+    # Compatible model endpoints occasionally omit this routing field even in JSON
+    # mode. Its absence is not evidence that a document is not an RFP: retain it
+    # and force human review rather than failing all Celery attempts or discarding it.
+    if "is_rfp" not in normalized:
+        normalized["is_rfp"] = True
+        normalized["confidence"] = "low"
+        reason = normalized.get("reason")
+        note = "El clasificador omitió is_rfp; validar manualmente antes de descartar."
+        normalized["reason"] = f"{reason} {note}".strip() if isinstance(reason, str) else note
+
     value = normalized.get("monthly_volume")
     if isinstance(value, str):
         candidate = value.strip()
@@ -239,9 +247,16 @@ def _validate_classification(result: Classification) -> None:
     validate_generated_text(generated_text)
 
 
-def _manual_review(result: Classification) -> tuple[bool, str | None]:
-    if result.confidence == "low":
-        return True, "Confianza baja en la clasificación; requiere revisión manual."
+def _manual_review(
+    result: Classification,
+    readability_metrics: dict | None = None,
+) -> tuple[bool, str | None]:
+    if (
+        result.is_rfp
+        and readability_metrics
+        and readability_metrics.get("readability_status") == "insufficient_text"
+    ):
+        return True, "El documento contiene texto insuficiente y requiere revisión manual."
     if result.is_rfp and not result.departments_needed:
         return True, "La solicitud no permite asignar un workstream soportado con confianza."
     return False, None
@@ -270,10 +285,24 @@ def _build_graph(*, converter=None, classifier=None, worker=None, db_engine=None
         }
 
     def classify_document(state: RfpPipelineState) -> dict:
-        result = (classifier or classify_markdown)(state.markdown or "")
-        _validate_classification(result)
+        markdown = state.markdown or ""
+
+        if not markdown.strip():
+            result = Classification(
+                is_rfp=True,
+                confidence="low",
+                reason="No se pudo extraer texto del documento.",
+                unassigned_scope=["Documento sin texto extraíble."],
+                open_questions=[
+                    "Revisar manualmente el PDF; no se pudo extraer texto."
+                ],
+            )
+        else:
+            result = (classifier or classify_markdown)(markdown)
+
         if state.instruction_injection_detected and result.confidence != "low":
             result = result.model_copy(update={"confidence": "low"})
+
         if state.instruction_injection_detected:
             result = result.model_copy(
                 update={
@@ -283,9 +312,19 @@ def _build_graph(*, converter=None, classifier=None, worker=None, db_engine=None
                     ][:30]
                 }
             )
-        record_node(database_engine, state.ticket_id, "classify_document", "rfp_classifier",
-                    {"markdown_chars": len(state.markdown or "")}, result.model_dump(mode="json"))
-        return {"classification": result.model_dump()}
+
+        _validate_classification(result)
+
+        record_node(
+            database_engine,
+            state.ticket_id,
+            "classify_document",
+            "rfp_classifier",
+            {"markdown_chars": len(markdown)},
+            result.model_dump(mode="json"),
+        )
+
+        return {"classification": result.model_dump(mode="json")}
 
     def persist_classified(state: RfpPipelineState, *, rejected: bool) -> dict:
         result = Classification.model_validate(state.classification)
@@ -475,8 +514,10 @@ def process_ticket(
         "handoff_payload": result.get("handoff_payload"),
         "manual_review_required": (
             result["instruction_injection_detected"]
-            or _manual_review(Classification.model_validate(result["classification"]))[0]
-        ),
+            or _manual_review(
+                Classification.model_validate(result["classification"]),
+                result["readability_metrics"],
+            )[0]        ),
     }
 
 def _persist_completed_analysis(database_engine, ticket_id: str, sections: list[dict], handoff: dict) -> None:
@@ -532,7 +573,7 @@ def _persist_triage(
     *,
     instruction_injection_detected: bool = False,
 ) -> None:
-    manual_review_required, manual_review_reason = _manual_review(result)
+    manual_review_required, manual_review_reason = _manual_review(result, metrics)
     if instruction_injection_detected:
         manual_review_required = True
         manual_review_reason = "El documento contiene texto similar a una instrucción; requiere revisión manual."

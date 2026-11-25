@@ -39,7 +39,7 @@ venv/
 *.sqlite-*
 *.db
 
-# Generated data and local runtime state (mounted into Compose when needed)
+# Datos generados y estado local de runtime; Compose los monta cuando aplica.
 data/qdrant/
 data/flower/
 data/support_agent/

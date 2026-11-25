@@ -56,6 +56,35 @@ def test_departments_have_independent_threads_and_can_resume_out_of_order(approv
         assert session.exec(select(RfpApprovalTrace).where(RfpApprovalTrace.ticket_id == ticket_id)).all()
 
 
+def test_recovering_partial_approval_keeps_existing_department_checkpoint(approval_engine):
+    engine, ticket_id = approval_engine
+    started = start_approval(ticket_id, db_engine=engine)
+    existing_thread = started["threads"]["warehouse"]
+    with Session(engine) as session:
+        ticket = session.get(RfpTicket, ticket_id)
+        ticket.status = "needs_human_review"
+        lastmile = session.exec(select(DepartmentSection).where(
+            DepartmentSection.ticket_id == ticket_id,
+            DepartmentSection.department_id == "lastmile",
+        )).one()
+        lastmile.checkpoint_thread_id = None
+        session.add(ticket)
+        session.add(lastmile)
+        session.commit()
+
+    recovered = start_approval(ticket_id, db_engine=engine)
+
+    assert recovered["status"] == "waiting_for_approval"
+    assert recovered["threads"]["warehouse"] == existing_thread
+    assert recovered["threads"]["lastmile"].endswith(":lastmile:approval-2")
+    with Session(engine) as session:
+        warehouse = session.exec(select(DepartmentSection).where(
+            DepartmentSection.ticket_id == ticket_id,
+            DepartmentSection.department_id == "warehouse",
+        )).one()
+        assert warehouse.approval_iteration == 1
+
+
 def test_invalid_decisions_and_wrong_approver_are_rejected(approval_engine):
     engine, ticket_id = approval_engine
     start_approval(ticket_id, db_engine=engine)
@@ -171,3 +200,35 @@ def test_returns_breach_rejects_reverse_under_sofia_and_requires_changes(approva
         assert reverse.approval_status == "changes_requested"
         assert "menos de 48 horas" in reverse.approval_comment
         assert session.get(RfpTicket, ticket_id).final_proposal is None
+
+
+def test_start_approval_creates_checkpoints_for_review_required_drafts():
+    from data.pipelines.rfp_approval import start_approval
+
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    SQLModel.metadata.create_all(engine, tables=[
+        RfpTicket.__table__, RfpMetadata.__table__, DepartmentSection.__table__,
+        RfpApprovalTrace.__table__, RfpNodeTrace.__table__,
+    ])
+    with Session(engine) as session:
+        ticket = RfpTicket(status="needs_human_review", raw_pdf_path="unused.pdf")
+        session.add(ticket)
+        session.flush()
+        session.add(DepartmentSection(
+            ticket_id=ticket.ticket_id, department_id="warehouse", owner="Ana Whitfield",
+            draft_content="Borrador pendiente de revisión", needs_human_review=True,
+        ))
+        session.commit()
+        ticket_id = ticket.ticket_id
+
+    started = start_approval(ticket_id, db_engine=engine)
+
+    assert started["status"] == "waiting_for_approval"
+    assert "warehouse" in started["threads"]
+    with Session(engine) as session:
+        section = session.exec(select(DepartmentSection).where(
+            DepartmentSection.ticket_id == ticket_id,
+        )).one()
+        assert section.checkpoint_thread_id
+        assert section.approval_status == "pending"
+    engine.dispose()

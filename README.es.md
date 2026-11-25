@@ -47,20 +47,26 @@ ai-engineering-company-project-monorepo/
 ├── AGENTS.md
 ├── company-choice.md
 ├── package.json              # npm workspaces root (monorepo)
+├── docker-compose.yml        # Entorno local completo
 ├── agents/                   # Patrones/plantillas de agentes y documentación de tools
-├── data/                     # raw, process, pipelines, eval
+├── audit/                    # Informes Lighthouse y de rendimiento
+├── data/                     # Datos, pipelines, eval, bases de datos y almacenamiento
 ├── docs/                     # Documentación de proyecto y arquitectura
 ├── infra/                    # Docker, Terraform, configuraciones de despliegue
 ├── internal/                 # CLIs, scripts de migración empaquetados, utilidades internas
 ├── mcps/                     # Servidores Model Context Protocol (MCP)
+├── media/                    # Imágenes y recursos visuales compartidos
 ├── packages/
-│   └── shared/               # Paquete compartido (@repo/shared-types)
+│   ├── shared/               # Paquete compartido (@repo/shared-types)
+│   └── shared-py/            # Enums y validadores compartidos de Python
 ├── scripts/                  # Convenciones/documentación de scripts
 ├── services/
-│   └── api/                  # Backend FastAPI (auth, users, suppliers, incidents, profiles)
+│   ├── api/                  # Backend FastAPI y rutas de negocio
+│   └── support_agent/        # Agente RAG con LangGraph
 ├── shared/                   # Recursos/convenciones compartidas a nivel repo
 ├── skills/                   # Skills reutilizables para agentes
 ├── src/                      # @trackflow/core — lógica TS compartida usada por todas las UIs
+├── tests/                    # Pruebas cruzadas de servicios y pipelines
 ├── uis/
 │   ├── backoffice/           # App Next.js 16 (puerto 3001)
 │   ├── website/              # App Next.js 16 (puerto 3000)
@@ -97,33 +103,64 @@ Cada servicio corre en un puerto diferente para poder coexistir localmente o en 
 
 ### Requisitos previos
 
+- Node.js 20+ y npm
+- Python 3.10+ y `uv`
+- Docker y Docker Compose para el entorno completo
+
 ```bash
 # Desde la raíz del repositorio, instalar dependencias de todos los workspaces
 npm install
 ```
 
-### 🐳 Entorno completo con Docker Compose (perfil `dev`)
+### 🐳 Entorno completo con Docker Compose
 
-Los servicios de desarrollo del archivo `docker-compose.yml` pertenecen al perfil `dev`. Para arrancar el entorno completo desde la raíz del repositorio:
+Compose levanta la web corporativa, el backoffice, Talent Pipeline, FastAPI, Redis, el worker Celery, Flower y Qdrant.
+Crea `.env` si todavía no existe y ejecuta:
 
 ```bash
 cp .env.example .env   # si todavía no tienes un archivo .env
-docker compose --profile dev up --build
+docker compose up --build
 ```
 
-El perfil es necesario: sin `--profile dev`, Compose no selecciona ningún servicio y puede mostrar `no service selected`. Para detener el entorno, pulsa `Ctrl+C`; para iniciarlo en segundo plano, añade `-d` al comando.
+Pulsa `Ctrl+C` para detenerlo; añade `-d` para iniciarlo en segundo plano.
+
+| Servicio | URL |
+|---|---|
+| Web corporativa | `http://localhost:3000` |
+| Backoffice | `http://localhost:3001` |
+| Talent Pipeline | `http://localhost:3002` |
+| FastAPI | `http://localhost:8000` |
+| Flower | `http://localhost:5555` |
+| Qdrant | `http://localhost:6333/dashboard` |
+
+Detén los contenedores con `docker compose down`.
 
 ### 🖥️ Backend FastAPI (puerto 8000)
 
 ```bash
 cd services/api
 uv sync                    # instalar deps de Python
-source venv/bin/activate   # activar entorno virtual
 uv run seed                # opcional: datos de ejemplo de proveedores
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-> ⚠️ Ejecuta `uvicorn` **dentro** del venv (`source venv/bin/activate` primero), o usa `uv run uvicorn main:app ...` como alternativa.
+### Tareas asíncronas (Celery + Redis)
+
+Docker Compose levanta Redis, el worker y Flower junto con la API:
+
+```bash
+docker compose up --build api redis worker flower
+```
+
+El worker es un proceso separado de FastAPI y publica eventos para Flower. Para iniciarlo manualmente:
+
+```bash
+celery -A services.celery_app worker --loglevel=INFO -E
+```
+
+Detén el worker con `Ctrl+C` o ejecuta `docker compose stop worker`. Flower está disponible en `http://localhost:5555` y conserva el historial en `data/flower/flower.db`.
+
+`POST /reporting/pipeline-runs` devuelve inmediatamente un `task_id`. Consulta su estado con `GET /tasks/{task_id}`.
 
 Endpoints de la API:
 
@@ -139,6 +176,11 @@ Endpoints de la API:
 | `GET  /api/incidents/results/export` | JWT | Exportar último CSV |
 | `GET  /suppliers` | JWT | Listar proveedores |
 | `POST /suppliers` | JWT | Crear proveedor |
+| `POST /reporting/pipeline-runs` | No | Iniciar el pipeline semanal de reporting de forma asíncrona |
+| `GET  /tasks/{task_id}` | No | Consultar el resultado de una tarea asíncrona |
+| `GET  /reporting/weekly-warehouse-client-performance` | JWT | KPIs semanales por almacén y cliente |
+| `GET  /reporting/weekly-warehouse-client-performance/summary` | JWT | Resumen del reporting |
+| `GET  /reporting/weekly-warehouse-client-performance/export` | JWT | Exportar los datos de reporting |
 
 ### 🌐 Web Corporativa (Next.js — puerto 3000)
 
@@ -152,7 +194,7 @@ npm run dev
 | `/` | Landing principal |
 | `/application` | Formulario de solicitud |
 
-### 📊 Backoffice (Next.js — puerto 3000)
+### 📊 Backoffice (Next.js — puerto 3001)
 
 ```bash
 cd uis/backoffice
@@ -210,7 +252,7 @@ Cada servicio está disponible en una URL HTTPS única:
 | Talent Pipeline | 3002 | `https://<codespace>-3002.app.github.dev` |
 
 > 💡 En la pestaña **Ports** de VS Code puedes ver las URLs públicas exactas y cambiar la visibilidad de *Privado* a *Público* si es necesario.
-> ⚠️ El backoffice usa el puerto 3000 por defecto. Si el website ya ocupa el 3000, Next.js asignará automáticamente el puerto 3001.
+> El paquete del backoffice usa explícitamente el puerto 3001. En Docker Compose, web corporativa, backoffice y Talent Pipeline funcionan juntos en los puertos 3000, 3001 y 3002.
 
 ---
 

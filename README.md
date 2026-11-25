@@ -47,20 +47,26 @@ ai-engineering-company-project-monorepo/
 ├── AGENTS.md
 ├── company-choice.md
 ├── package.json              # npm workspaces root (monorepo)
+├── docker-compose.yml        # Full local development environment
 ├── agents/                   # Agent patterns/templates and tools docs
-├── data/                     # raw, process, pipelines, eval
+├── audit/                    # Lighthouse and performance reports
+├── data/                     # Raw data, pipelines, eval, databases and storage
 ├── docs/                     # Project and architecture documentation
 ├── infra/                    # Docker, Terraform, deployment configs
 ├── internal/                 # CLIs, packaged migration scripts, internal utilities
 ├── mcps/                     # Model Context Protocol (MCP) Servers
+├── media/                    # Images and shared visual assets
 ├── packages/
-│   └── shared/               # Shared package (@repo/shared-types)
+│   ├── shared/               # Shared package (@repo/shared-types)
+│   └── shared-py/            # Shared Python enums and validators
 ├── scripts/                  # Script conventions/documentation
 ├── services/
-│   └── api/                  # FastAPI backend (auth, users, suppliers, incidents, profiles)
+│   ├── api/                  # FastAPI backend and business routes
+│   └── support_agent/        # LangGraph RAG support agent
 ├── shared/                   # Shared assets/conventions at repo level
 ├── skills/                   # Reusable agent skills
 ├── src/                      # @trackflow/core — shared TS logic used by all UIs
+├── tests/                    # Cross-service and pipeline tests
 ├── uis/
 │   ├── backoffice/           # Next.js 16 app (port 3001)
 │   ├── website/              # Next.js 16 app (port 3000)
@@ -90,16 +96,6 @@ All UIs share logic from `src/` via the `@trackflow/core` package (barrel export
 
 ---
 
-## How to start
-
-1. **Use this repository as a template** and create your own project repo.
-2. **Clone** your repository (or open it in Codespaces).
-3. **Replace** `CONTEXT.md` with the full context for your assigned company.
-4. **Review** each top-level folder `README.md` to understand intended responsibilities (`uis/`, `services/`, `data/`, `skills/`, etc.).
-5. **Start implementing** milestone deliverables in `uis/` and `services/`, reusing `packages/shared/` and `data/` as needed.
-
----
-
 ## Running the project (monorepo)
 
 This monorepo uses **npm workspaces**. All Next.js UIs share domain logic from `src/` (`@trackflow/core`).  
@@ -107,53 +103,66 @@ Each service runs on a different port so they can coexist locally or in Codespac
 
 ### Prerequisites
 
+- Node.js 20+ and npm
+- Python 3.10+ and `uv`
+- Docker and Docker Compose for the full environment
+
 ```bash
 # From the repository root, install all workspace dependencies once
 npm install
 ```
 
-### 🐳 Full environment with Docker Compose (`dev` profile)
+### 🐳 Full environment with Docker Compose
 
-The development services in `docker-compose.yml` belong to the `dev` profile. To start the full environment from the repository root:
+The Compose file starts the website, backoffice, Talent Pipeline, FastAPI, Redis, Celery worker, Flower, and Qdrant.
+Create `.env` if it does not exist, then run:
 
 ```bash
 cp .env.example .env   # if you don't already have a .env file
-docker compose --profile dev up --build
+docker compose up --build
 ```
 
-The profile is required: without `--profile dev`, Compose selects no services and may report `no service selected`. Press `Ctrl+C` to stop the environment; add `-d` to run it in the background.
+Press `Ctrl+C` to stop it; add `-d` to run it in the background.
+
+| Service | URL |
+|---|---|
+| Website | `http://localhost:3000` |
+| Backoffice | `http://localhost:3001` |
+| Talent Pipeline | `http://localhost:3002` |
+| FastAPI | `http://localhost:8000` |
+| Flower | `http://localhost:5555` |
+| Qdrant | `http://localhost:6333/dashboard` |
+
+Stop containers with `docker compose down`.
 
 ### 🖥️ FastAPI Backend (port 8000)
 
 ```bash
 cd services/api
 uv sync                    # install Python deps
-source venv/bin/activate   # enter virtual environment
 uv run seed                # optional: populate sample suppliers
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### Tareas asíncronas (Celery + Redis)
+### Asynchronous tasks (Celery + Redis)
 
-Con Docker Compose se levantan Redis, el worker y Flower junto con la API:
+Docker Compose starts Redis, the worker, and Flower together with the API:
 
 ```bash
 docker compose up --build api redis worker flower
 ```
 
-El worker es un proceso separado de FastAPI y publica eventos para Flower. Para iniciarlo manualmente:
+The worker is separate from FastAPI and publishes events to Flower. Start it manually with:
 
 ```bash
 celery -A services.celery_app worker --loglevel=INFO -E
 ```
 
-Para detenerlo, pulsa `Ctrl+C` o ejecuta `docker compose stop worker`. Flower está disponible en `http://localhost:5555`.
+Stop it with `Ctrl+C`, or run `docker compose stop worker`. Flower is available at `http://localhost:5555`.
 
-Flower usa almacenamiento persistente en `data/flower/flower.db`, por lo que su historial no se pierde al recrear el contenedor. El historial solo incluye tareas observadas después de activar esta configuración; para la evidencia de la PR hay que ejecutar de nuevo una tarea completada y otra fallida.
+Flower persists its history in `data/flower/flower.db`.
 
-El endpoint `POST /reporting/pipeline-runs` devuelve un `task_id` inmediatamente. Consulta el estado con `GET /tasks/{task_id}`.
-
-> ⚠️ Run `uvicorn` **inside** the venv (`source venv/bin/activate` first), or use `uv run uvicorn main:app ...` as an alternative.
+`POST /reporting/pipeline-runs` returns a `task_id` immediately. Query its status with `GET /tasks/{task_id}`.
 
 API endpoints:
 
@@ -169,6 +178,11 @@ API endpoints:
 | `GET  /api/incidents/results/export` | JWT | Export last analysis as CSV |
 | `GET  /suppliers` | JWT | List suppliers |
 | `POST /suppliers` | JWT | Create supplier |
+| `POST /reporting/pipeline-runs` | No | Start the weekly reporting pipeline asynchronously |
+| `GET  /tasks/{task_id}` | No | Query an asynchronous task result |
+| `GET  /reporting/weekly-warehouse-client-performance` | JWT | Weekly warehouse/client KPIs |
+| `GET  /reporting/weekly-warehouse-client-performance/summary` | JWT | Reporting summary |
+| `GET  /reporting/weekly-warehouse-client-performance/export` | JWT | Export reporting data |
 
 ### 🌐 Corporate Website (Next.js — port 3000)
 
@@ -182,7 +196,7 @@ npm run dev
 | `/` | Main landing page |
 | `/application` | Request form |
 
-### 📊 Backoffice (Next.js — port 3000)
+### 📊 Backoffice (Next.js — port 3001)
 
 ```bash
 cd uis/backoffice
@@ -240,7 +254,7 @@ Each service is available at a unique HTTPS URL:
 | Talent Pipeline | 3002 | `https://<codespace-name>-3002.app.github.dev` |
 
 > 💡 In the VS Code **Ports** tab you can see the exact public URLs and change port visibility from *Private* to *Public* if needed.
-> ⚠️ The backoffice uses port 3000 by default. If port 3000 is already occupied by the website, Next.js will auto-assign port 3001.
+> The backoffice package explicitly uses port 3001. In Docker Compose, the website, backoffice, and Talent Pipeline run together on ports 3000, 3001, and 3002.
 
 ---
 

@@ -320,6 +320,25 @@ def run_section_cycle(department_id: str, metadata: dict, key_aspects: list[str]
     }
 
 
+def _fallback_draft(department_id: str, key_aspects: list[str], open_questions: list[str]) -> str:
+    """Return a safe review placeholder when generation fails for one department."""
+    department_name = DEPARTMENTS[department_id]["name"]
+    lines = [
+        f"Propuesta preliminar — {department_name}",
+        "La generación automática no se completó; este borrador requiere revisión y aprobación del departamento.",
+        "No se han asumido precios, capacidades ni compromisos que no estén confirmados.",
+        "Alcance:",
+    ]
+    lines.extend(f"- {aspect}" for aspect in key_aspects)
+    if not key_aspects:
+        lines.append("- [PENDIENTE DE CONFIRMAR] Alcance específico de esta área.")
+    lines.append("Datos pendientes:")
+    lines.extend(f"- {question}" for question in open_questions)
+    if not open_questions:
+        lines.append("- [PENDIENTE DE CONFIRMAR] Información requerida para preparar la propuesta.")
+    return "\n".join(lines)
+
+
 def generate_ticket_responses(ticket_id: str, *, db_engine, generator=None, evaluator=evaluate_draft, max_iterations: int = MAX_ITERATIONS, client=None, model: str | None = None, retrieve_fn=None, force_regenerate: bool = False) -> dict:
     """Consume exclusivamente metadatos y workstreams del handoff Parte 1; persiste cada sección."""
     with Session(db_engine) as session:
@@ -424,7 +443,9 @@ def generate_ticket_responses(ticket_id: str, *, db_engine, generator=None, eval
             # Isolate generator/worker failures to this department and let other workstreams finish.
             result = {
                 "department_id": department_id,
-                "draft_content": section_data.get("draft_content") or "",
+                "draft_content": section_data.get("draft_content") or _fallback_draft(
+                    department_id, aspects, questions,
+                ),
                 "open_questions": questions,
                 "evaluation_results": {
                     "department_id": department_id,

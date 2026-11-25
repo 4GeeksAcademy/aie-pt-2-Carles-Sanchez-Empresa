@@ -57,7 +57,7 @@ def start_approval(ticket_id: str, *, db_engine) -> dict:
         ticket = session.get(RfpTicket, ticket_id)
         if ticket is None:
             raise ValueError("Ticket RFP no encontrado.")
-        if ticket.status not in {"en_evaluación", "waiting_for_approval"}:
+        if ticket.status not in {"en_evaluación", "needs_human_review", "waiting_for_approval"}:
             raise ValueError("El ticket todavía no está listo para aprobación.")
         sections = _active_sections(session, ticket_id)
         if not sections or any(not section.draft_content for section in sections):
@@ -67,7 +67,15 @@ def start_approval(ticket_id: str, *, db_engine) -> dict:
                     "threads": {section.department_id: section.checkpoint_thread_id for section in sections}}
         from data.pipelines.rfp_approval_graph import pause_for_approval, thread_config
         for section in sections:
-            if section.needs_human_review:
+            # Recovery may be needed after only some durable checkpoints were
+            # created. Preserve those threads; rebuilding them would orphan the
+            # UI's existing decision controls and could invalidate an in-flight
+            # approver's thread.
+            if section.approval_status in {"approved", "rejected"}:
+                continue
+            if section.checkpoint_thread_id:
+                continue
+            if section.approval_status != "changes_requested":
                 section.approval_status = "pending"
             section.approval_iteration += 1
             config = thread_config(ticket_id, section.department_id, section.approval_iteration)
@@ -87,7 +95,10 @@ def start_approval(ticket_id: str, *, db_engine) -> dict:
         session.add(ticket)
         session.commit()
         return {"ticket_id": ticket_id, "status": ticket.status,
-                "threads": {section.department_id: section.checkpoint_thread_id for section in sections}}
+                "threads": {
+                    section.department_id: section.checkpoint_thread_id
+                    for section in sections if section.checkpoint_thread_id
+                }}
 
 
 def _conflicts(sections, metadata):
@@ -167,6 +178,8 @@ def resume_approval(ticket_id: str, department_id: str, decision: str, *, db_eng
                     approver_name: str, comment: str | None = None,
                     generator=None, evaluator=None, request_id: str | None = None) -> dict:
     """Resume exactly one department thread after validating the human decision."""
+    if decision in {"reject", "request_changes"} and not (comment and comment.strip()):
+        raise ValueError("El motivo es obligatorio para rechazar o solicitar cambios.")
     if decision not in {"approve", "reject", "request_changes"}:
         raise ValueError("Decisión no válida: usa approve, reject o request_changes.")
     if department_id not in ACTIVE_DEPARTMENTS or approver_name != SECTION_APPROVERS[department_id]:
@@ -186,36 +199,68 @@ def resume_approval(ticket_id: str, department_id: str, decision: str, *, db_eng
             raise ValueError("No hay una interrupción pendiente para este departamento.")
         if section.approval_status not in {"pending", "changes_requested"}:
             raise ValueError("La decisión de este departamento ya fue registrada.")
-        old = {"department_id": department_id, "decision": decision, "draft": section.draft_content,
-               "thread_id": section.checkpoint_thread_id, "approval_iteration": section.approval_iteration}
-        if decision == "approve":
-            section.approval_status = "approved"
-            section.approver_name = approver_name
-            section.approved_at = _now()
-            section.approval_comment = comment
-        elif decision == "reject":
-            section.approval_status = "rejected"
-            section.approver_name = approver_name
-            section.approved_at = None
-            section.approval_comment = comment
-        else:
-            section.approval_status = "changes_requested"
-            section.approver_name = approver_name
-            section.approved_at = None
-            section.approval_comment = comment
-        if request_id:
-            section.approval_request_id = request_id
-        session.add(section)
-        _trace(session, ticket_id, "resume_department", approver_name, old,
-               {"decision": decision, "comment": comment, "resumed_thread_id": section.checkpoint_thread_id}, department_id)
-        session.commit()
+        old = {
+            "department_id": department_id,
+            "decision": decision,
+            "draft": section.draft_content,
+            "thread_id": section.checkpoint_thread_id,
+            "approval_iteration": section.approval_iteration,
+        }
 
     from data.pipelines.rfp_approval_graph import resume_department
     resume_department(
-        ticket_id=ticket_id, department_id=department_id,
+        ticket_id=ticket_id,
+        department_id=department_id,
         approval_iteration=old["approval_iteration"],
-        decision={"decision": decision, "approver_name": approver_name, "comment": comment},
+        decision={
+            "ticket_id": ticket_id,
+            "department_id": department_id,
+            "decision": decision,
+            "approver_name": approver_name,
+            "comment": comment,
+        },
     )
+    with Session(db_engine) as session:
+        ticket = session.get(RfpTicket, ticket_id)
+        section = session.exec(select(DepartmentSection).where(
+            DepartmentSection.ticket_id == ticket_id,
+            DepartmentSection.department_id == department_id,
+        )).first()
+
+        if ticket is None or section is None:
+            raise ValueError("Ticket o departamento no encontrado.")
+
+        if decision == "approve":
+            section.approval_status = "approved"
+            section.approved_at = _now()
+        elif decision == "reject":
+            section.approval_status = "rejected"
+            section.approved_at = None
+        else:
+            section.approval_status = "changes_requested"
+            section.approved_at = None
+
+        section.approver_name = approver_name
+        section.approval_comment = comment
+
+        if request_id:
+            section.approval_request_id = request_id
+
+        _trace(
+            session,
+            ticket_id,
+            "resume_department",
+            approver_name,
+            old,
+            {
+                "decision": decision,
+                "comment": comment,
+                "resumed_thread_id": section.checkpoint_thread_id,
+            },
+            department_id,
+        )
+        session.add(section)
+        session.commit()    
 
     if decision == "request_changes":
         # Reutiliza el generador y el evaluador de Parte 2 solo para esta rama.

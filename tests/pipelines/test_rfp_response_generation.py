@@ -239,6 +239,43 @@ def test_ticket_runs_department_workstreams_in_parallel_and_isolates_failure(tmp
     engine.dispose()
 
 
+def test_generation_failure_persists_nonempty_department_draft_for_approval():
+    engine = database()
+    with Session(engine) as session:
+        ticket = RfpTicket(status="analisis_completo", raw_pdf_path="unused.pdf")
+        session.add(ticket)
+        session.flush()
+        ticket.handoff_payload = {
+            "ticket_id": ticket.ticket_id,
+            "active_workstreams": [{"department_id": "warehouse", "key_aspects": ["storage_capacity: unknown"], "open_questions": ["¿Qué capacidad requiere?"]}],
+        }
+        session.add(RfpMetadata(ticket_id=ticket.ticket_id, client_country="US", currency="USD"))
+        session.add(DepartmentSection(
+            ticket_id=ticket.ticket_id, department_id="warehouse", owner="Ana Whitfield",
+            key_aspects=["storage_capacity: unknown"], open_questions=["¿Qué capacidad requiere?"],
+        ))
+        session.commit()
+        ticket_id = ticket.ticket_id
+
+    def fail_generator(*_args, **_kwargs):
+        raise RuntimeError("provider unavailable")
+
+    result = generate_ticket_responses(
+        ticket_id, db_engine=engine, generator=fail_generator,
+        retrieve_fn=lambda _query, _limit: [], max_iterations=1,
+    )
+
+    assert result["status"] == "needs_human_review"
+    assert "generación automática no se completó" in result["sections"][0]["draft_content"]
+    with Session(engine) as session:
+        section = session.exec(select(DepartmentSection).where(
+            DepartmentSection.ticket_id == ticket_id,
+        )).one()
+        assert section.draft_content
+        assert section.needs_human_review is True
+    engine.dispose()
+
+
 def test_ticket_consumes_stored_handoff_and_persists_part2_result():
     engine = database()
     with Session(engine) as session:

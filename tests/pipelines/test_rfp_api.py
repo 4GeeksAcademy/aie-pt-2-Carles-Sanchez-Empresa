@@ -415,6 +415,32 @@ def test_delete_ticket_cancels_retrying_analysis(client, tmp_path, monkeypatch):
     assert client.get(f"/rfp-intake/tickets/{ticket_id}").status_code == 404
 
 
+def test_delete_ticket_continues_when_retry_cannot_be_revoked(client, tmp_path, monkeypatch):
+    upload = client.post(
+        "/rfp-intake/tickets",
+        files={"file": ("brief.pdf", b"%PDF-1.7\ncontent", "application/pdf")},
+    )
+    ticket_id = upload.json()["ticket_id"]
+    with Session(client.app.state.test_engine) as session:
+        ticket = session.get(RfpTicket, ticket_id)
+        ticket.retry_count = 1
+        ticket.last_error = "Worker validation failed"
+        ticket.celery_task_id = "unreachable-broker-task"
+        session.add(ticket)
+        session.commit()
+
+    def fail_revoke(_task_id):
+        raise RuntimeError("broker unavailable")
+
+    monkeypatch.setattr(rfp_intake, "_revoke_celery_task", fail_revoke)
+    client.app.dependency_overrides[get_current_user] = lambda: {"id": "admin-user", "role": "admin"}
+    response = client.delete(f"/rfp-intake/tickets/{ticket_id}")
+
+    assert response.status_code == 204
+    assert client.get(f"/rfp-intake/tickets/{ticket_id}").status_code == 404
+    assert list((tmp_path / "raw").glob("rfp-*.pdf")) == []
+
+
 def test_delete_ticket_allows_failed_analysis_after_retries(client, tmp_path):
     upload = client.post(
         "/rfp-intake/tickets",
@@ -580,13 +606,32 @@ def test_approval_api_rejects_invalid_decisions_and_prevents_duplicate_resume(cl
     assert invalid.status_code == 409
     assert "Decisión no válida" in invalid.json()["detail"]
 
+    missing_reason = client.post(
+        f"{endpoint}/departments/warehouse/decision",
+        json={"decision": "reject", "approver_name": "Ana Whitfield"},
+    )
+    assert missing_reason.status_code == 422
+
     first_decision = client.post(
         f"{endpoint}/departments/warehouse/decision",
         json={"decision": "reject", "approver_name": "Ana Whitfield", "comment": "Falta evidencia."},
     )
     assert first_decision.status_code == 200
-    assert first_decision.json()["status"] == "needs_human_review"
+    assert first_decision.json()["status"] == "waiting_for_approval"
     assert first_decision.json()["final_proposal"] is None
+    with Session(client.app.state.test_engine) as session:
+        ticket = session.get(RfpTicket, ticket_id)
+        ticket.status = "needs_human_review"
+        session.add(ticket)
+        session.commit()
+    lastmile_decision = client.post(
+        f"{endpoint}/departments/lastmile/decision",
+        json={"decision": "approve", "approver_name": "Carlos Vega"},
+    )
+    assert lastmile_decision.status_code == 200
+    assert lastmile_decision.json()["status"] == "needs_human_review"
+    final_approval = client.post(f"{endpoint}/human-review", json={"action": "approve"})
+    assert final_approval.status_code == 409
 
     duplicate = client.post(
         f"{endpoint}/departments/warehouse/decision",
@@ -631,6 +676,7 @@ def test_human_review_approve_generates_download_and_reject_archives(client):
     downloaded = client.get(f"{endpoint}/final-document")
     assert downloaded.status_code == 200
     assert downloaded.headers["content-type"].startswith("text/markdown")
+    assert downloaded.headers["content-disposition"] == f'attachment; filename="rfp-{ticket_id}-final.md"'
     assert downloaded.text == approved.json()["final_proposal"]
 
     archived_id = _seed_approval_ticket(client)
