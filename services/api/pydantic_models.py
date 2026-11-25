@@ -119,7 +119,7 @@ class SupplierResponse(BaseModel):
     service_zone: Optional[str] = Field(None, description="Zona de cobertura")
     contact_email: Optional[str] = Field(None, description="Email de contacto")
     notes: Optional[str] = Field(None, description="Observaciones de operaciones")
-    updated_at: str = Field(..., description="Timestamp ISO 8601 de la última actualización")
+    updated_at: Optional[str] = Field(None, description="Timestamp ISO 8601 de la última actualización")
 
 
 class SupplierUpdateRate(BaseModel):
@@ -143,6 +143,7 @@ class SupplierListItem(BaseModel):
     categories: list[str] = Field(..., description="Lista de categorías")
     currency: str = Field(..., description="Moneda del contrato")
     status: SupplierStatus = Field(..., description="Estado del proveedor: active o suspended")
+    updated_at: Optional[str] = Field(None, description="Timestamp ISO 8601 de la última actualización")
 
 
 # ──────────────────────────── Helpers ────────────────────────────

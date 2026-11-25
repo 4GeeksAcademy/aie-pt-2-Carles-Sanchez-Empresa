@@ -53,7 +53,7 @@ export function SupplierTable({ suppliers, onEdit, onDelete }: SupplierTableProp
                 </span>
               </td>
               <td className="px-4 py-3 text-[#2f4a62]">{s.contact_email ?? "—"}</td>
-              <td className="px-4 py-3 text-xs text-[#2f4a62]">{new Date(s.updated_at).toLocaleDateString(lang)}</td>
+              <td className="px-4 py-3 text-xs text-[#2f4a62]">{s.updated_at ? new Date(s.updated_at).toLocaleDateString(lang) : "—"}</td>
               <td className="px-4 py-3 text-right">
                 <button onClick={() => onEdit(s)} className="mr-2 rounded bg-[#14263a] px-3 py-1 text-xs font-medium text-[#f8fbff] transition-colors hover:bg-[#1d4f7a]">{t("suppliers.edit")}</button>
                 <button onClick={() => onDelete(s.id)} className="rounded bg-red-700 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-red-800">{t("suppliers.delete")}</button>

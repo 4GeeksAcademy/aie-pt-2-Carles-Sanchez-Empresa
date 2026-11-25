@@ -2,10 +2,11 @@
 
 The backoffice chat creates an authenticated `ChatSession` with
 `POST /agent/chat/sessions` before opening `WS /agent/chat/ws/{session_id}`.
-The WebSocket authenticates with the existing JWT as the `token` query
-parameter, validates session ownership, and sends a persisted `session_snapshot`
-on every connection. Messages are persisted in the agent state directory's
-`chat.sqlite3`; each session UUID is also the LangGraph conversation/thread ID.
+The WebSocket authenticates with the existing JWT in the `bearer.<JWT>`
+subprotocol, alongside the `trackflow-chat-v1` protocol. It validates session
+ownership and sends a persisted `session_snapshot` on every connection.
+Messages are persisted in the agent state directory's `chat.sqlite3`; each
+session UUID is also the LangGraph conversation/thread ID.
 
 ## Client/server frames
 
@@ -38,6 +39,6 @@ ownership before scaling the API horizontally. Configure
 WebSocket origin; otherwise the backoffice uses its own origin at `/api`. The
 backoffice CSP allows `ws:` and `wss:`; production should use `wss:`.
 
-The query token is required by browser WebSocket APIs, so access logs and proxy
-logs must redact the `token` query parameter. Chat messages are scoped to their
-creating user and are not RFP/SSE events.
+The JWT is sent as a WebSocket subprotocol because browser WebSocket APIs cannot
+set an Authorization header. This avoids exposing it in URLs and access logs.
+Chat messages are scoped to their creating user and are not RFP/SSE events.
